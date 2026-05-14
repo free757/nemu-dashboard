@@ -13,7 +13,10 @@ import {
   Globe,
   Trash2,
   Edit2,
-  MapPin
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,6 +35,7 @@ export default function Dashboard() {
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   const [formData, setFormData] = useState({
     pin: '',
@@ -304,33 +308,53 @@ export default function Dashboard() {
   return (
     <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir="ltr">
       {/* Sidebar */}
-      <aside className={`w-64 border-r flex flex-col transition-colors ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 80 : 256 }}
+        className={`border-r flex flex-col transition-colors relative ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
+      >
+        {/* Toggle Button */}
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className={`absolute -right-3 top-10 w-6 h-6 rounded-full border flex items-center justify-center z-10 transition-all ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-900 shadow-sm'}`}
+        >
+          {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
+        <div className={`p-6 flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex-shrink-0 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight">NEMU<span className="text-blue-500">ADMIN</span></span>
+          {!isSidebarCollapsed && (
+            <motion.span 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="font-bold text-xl tracking-tight whitespace-nowrap"
+            >
+              NEMU<span className="text-blue-500">ADMIN</span>
+            </motion.span>
+          )}
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2">
           <button 
             onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
           >
-            <Users className="w-5 h-5" />
-            <span className="font-medium">{t.users}</span>
+            <Users className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.users}</motion.span>}
           </button>
           <button 
             onClick={() => setActiveTab('config')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
           >
-            <Settings className="w-5 h-5" />
-            <span className="font-medium">{t.config}</span>
+            <Settings className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
           </button>
         </nav>
 
-        <div className="p-4 border-t border-white/5 space-y-4">
-          <div className="flex justify-between items-center px-2">
+        <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
+          <div className={`flex items-center px-2 ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
             <button 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}
@@ -341,15 +365,15 @@ export default function Dashboard() {
               onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
               className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-blue-400' : 'bg-gray-100 text-blue-600'}`}
             >
-              {lang === 'en' ? 'ARABIC' : 'ENGLISH'}
+              {isSidebarCollapsed ? lang.toUpperCase() : (lang === 'en' ? 'ARABIC' : 'ENGLISH')}
             </button>
           </div>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">{t.signOut}</span>
+          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <span className="font-medium">{t.signOut}</span>}
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-8">
