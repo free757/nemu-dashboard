@@ -25,9 +25,11 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{id: string, name: string} | null>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingConfig, setEditingConfig] = useState<any>(null);
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   
@@ -43,6 +45,12 @@ export default function Dashboard() {
     proxy_timezone: ''
   });
 
+  const [configFormData, setConfigFormData] = useState({
+    config_key: '',
+    config_value: '',
+    is_enabled: true
+  });
+
   const t = {
     en: {
       users: 'Users Management',
@@ -52,7 +60,7 @@ export default function Dashboard() {
       configTitle: 'Remote Configuration',
       subtitle: 'Control everything in real-time from one place.',
       addNew: 'Add New User',
-      addConfig: 'Add Config',
+      addConfig: 'Add New Config',
       search: 'Search users by name or PIN...',
       profile: 'User Profile',
       pin: 'PIN',
@@ -75,8 +83,13 @@ export default function Dashboard() {
       cancel: 'Cancel',
       save: 'Save Changes',
       createBtn: 'Create User',
+      configKey: 'Configuration Key (e.g. home_link)',
+      configVal: 'Value (JSON or Text)',
+      enabled: 'Is Enabled',
+      saveConfig: 'Save Configuration',
+      createConfig: 'Create Configuration',
       confirmTitle: 'Are you sure?',
-      confirmText: 'Do you really want to delete this user? This action cannot be undone.',
+      confirmText: 'Do you really want to delete this? This action cannot be undone.',
       confirmBtn: 'Yes, Delete',
       confirmCancel: 'No, Keep'
     },
@@ -88,7 +101,7 @@ export default function Dashboard() {
       configTitle: 'الإعدادات عن بعد',
       subtitle: 'تحكم في كل شيء في الوقت الفعلي من مكان واحد.',
       addNew: 'إضافة مستخدم جديد',
-      addConfig: 'إضافة إعداد',
+      addConfig: 'إضافة إعداد جديد',
       search: 'ابحث عن المستخدمين بالاسم أو الـ PIN...',
       profile: 'ملف المستخدم',
       pin: 'كود الدخول',
@@ -111,8 +124,13 @@ export default function Dashboard() {
       cancel: 'إلغاء',
       save: 'حفظ التعديلات',
       createBtn: 'إنشاء المستخدم',
+      configKey: 'اسم الإعداد (مثلاً: home_link)',
+      configVal: 'القيمة (نص أو JSON)',
+      enabled: 'مفعل',
+      saveConfig: 'حفظ الإعداد',
+      createConfig: 'إنشاء الإعداد',
       confirmTitle: 'هل أنت متأكد؟',
-      confirmText: 'هل تريد حقاً حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.',
+      confirmText: 'هل تريد حقاً حذف هذا؟ لا يمكن التراجع عن هذا الإجراء.',
       confirmBtn: 'نعم، احذف',
       confirmCancel: 'لا، تراجع'
     }
@@ -126,7 +144,7 @@ export default function Dashboard() {
   };
 
   const fetchConfigs = async () => {
-    const { data, error } = await supabase.from('remote_configs').select('*');
+    const { data, error } = await supabase.from('remote_configs').select('*').order('created_at', { ascending: false });
     if (!error) setRemoteConfigs(data);
   };
 
@@ -135,16 +153,18 @@ export default function Dashboard() {
     fetchConfigs();
   }, []);
 
-  const handleDeleteClick = (id: string, name: string) => {
+  const handleDeleteClick = (id: string, name: string, type: 'user' | 'config' = 'user') => {
     setConfirmAction({id, name});
+    // Store type in confirmAction metadata if needed, but for now we'll check activeTab
     setIsConfirmOpen(true);
   };
 
   const confirmDelete = async () => {
     if (confirmAction) {
-      const { error } = await supabase.from('app_users').delete().eq('id', confirmAction.id);
+      const table = activeTab === 'users' ? 'app_users' : 'remote_configs';
+      const { error } = await supabase.from(table).delete().eq('id', confirmAction.id);
       if (!error) {
-        fetchUsers();
+        activeTab === 'users' ? fetchUsers() : fetchConfigs();
         setIsConfirmOpen(false);
       }
     }
@@ -166,14 +186,34 @@ export default function Dashboard() {
     setIsModalOpen(true);
   };
 
-  const handleOpenAdd = () => {
-    setEditingUser(null);
-    setFormData({
-      pin: '', username: '', phone_number: '',
-      proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
-      proxy_location: '', proxy_timezone: ''
+  const handleOpenConfigEdit = (config: any) => {
+    setEditingConfig(config);
+    setConfigFormData({
+      config_key: config.config_key,
+      config_value: typeof config.config_value === 'object' ? JSON.stringify(config.config_value, null, 2) : config.config_value,
+      is_enabled: config.is_enabled
     });
-    setIsModalOpen(true);
+    setIsConfigModalOpen(true);
+  };
+
+  const handleOpenAdd = () => {
+    if (activeTab === 'users') {
+      setEditingUser(null);
+      setFormData({
+        pin: '', username: '', phone_number: '',
+        proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
+        proxy_location: '', proxy_timezone: ''
+      });
+      setIsModalOpen(true);
+    } else {
+      setEditingConfig(null);
+      setConfigFormData({
+        config_key: '',
+        config_value: '',
+        is_enabled: true
+      });
+      setIsConfigModalOpen(true);
+    }
   };
 
   const fetchIpInfo = async () => {
@@ -200,6 +240,37 @@ export default function Dashboard() {
     }, 1200);
     return () => clearTimeout(timer);
   }, [formData.proxy_ip]);
+
+  const handleConfigSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let parsedValue;
+    try {
+      parsedValue = JSON.parse(configFormData.config_value);
+    } catch (e) {
+      parsedValue = configFormData.config_value;
+    }
+
+    const payload = {
+      ...configFormData,
+      config_value: parsedValue
+    };
+
+    let error;
+    if (editingConfig) {
+      const { error: err } = await supabase.from('remote_configs').update(payload).eq('id', editingConfig.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('remote_configs').insert([payload]);
+      error = err;
+    }
+
+    if (!error) {
+      setIsConfigModalOpen(false);
+      fetchConfigs();
+    } else {
+      alert(error.message);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +363,7 @@ export default function Dashboard() {
           
           <div className="flex gap-4">
             <button 
-              onClick={fetchUsers}
+              onClick={activeTab === 'users' ? fetchUsers : fetchConfigs}
               className={`p-3 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -408,21 +479,103 @@ export default function Dashboard() {
                     </div>
                     <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{config.config_key}</h3>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${config.is_enabled ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                    {config.is_enabled ? 'ACTIVE' : 'DISABLED'}
+                  <div className="flex items-center gap-2">
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${config.is_enabled ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                      {config.is_enabled ? 'ACTIVE' : 'DISABLED'}
+                    </div>
+                    <button 
+                      onClick={() => handleOpenConfigEdit(config)}
+                      className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-all"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(config.id, config.config_key)}
+                      className="p-2 text-red-500/50 hover:text-red-500 rounded-lg transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div className={`rounded-2xl p-4 font-mono text-sm overflow-x-auto max-h-60 overflow-y-auto ${theme === 'dark' ? 'bg-black/50' : 'bg-gray-50 border border-gray-100'}`}>
                   <pre className="text-blue-400">{JSON.stringify(config.config_value, null, 2)}</pre>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                   <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-blue-500">Edit Configuration</button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </main>
+
+      {/* Add/Edit Config Modal */}
+      <AnimatePresence>
+        {isConfigModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsConfigModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-lg rounded-[2.5rem] border p-8 shadow-2xl ${theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'}`}
+            >
+              <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{editingConfig ? t.saveConfig : t.createConfig}</h2>
+              <form onSubmit={handleConfigSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400 ml-1">{t.configKey}</label>
+                  <input 
+                    required
+                    value={configFormData.config_key}
+                    onChange={e => setConfigFormData({...configFormData, config_key: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}
+                    placeholder="e.g. home_button_url"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400 ml-1">{t.configVal}</label>
+                  <textarea 
+                    required
+                    rows={6}
+                    value={configFormData.config_value}
+                    onChange={e => setConfigFormData({...configFormData, config_value: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}
+                    placeholder='{"url": "https://google.com", "label": "Google"}'
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                   <input 
+                    type="checkbox"
+                    checked={configFormData.is_enabled}
+                    onChange={e => setConfigFormData({...configFormData, is_enabled: e.target.checked})}
+                    className="w-5 h-5 accent-blue-600"
+                   />
+                   <label className="text-sm font-medium">{t.enabled}</label>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsConfigModalOpen(false)}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-6 py-4 bg-blue-600 rounded-2xl font-bold hover:bg-blue-500 transition-all text-white"
+                  >
+                    {editingConfig ? t.save : t.createBtn}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add/Edit User Modal */}
       <AnimatePresence>
