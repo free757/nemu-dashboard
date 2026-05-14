@@ -37,7 +37,9 @@ export default function Dashboard() {
     proxy_ip: '',
     proxy_port: '',
     proxy_user: '',
-    proxy_pass: ''
+    proxy_pass: '',
+    proxy_location: '',
+    proxy_timezone: ''
   });
 
   const t = {
@@ -66,6 +68,8 @@ export default function Dashboard() {
       port: 'Port',
       user: 'Proxy Username',
       pass: 'Proxy Password',
+      location: 'IP Location',
+      timezone: 'Timezone',
       cancel: 'Cancel',
       save: 'Save Changes',
       createBtn: 'Create User',
@@ -99,6 +103,8 @@ export default function Dashboard() {
       port: 'المنفذ (Port)',
       user: 'اسم مستخدم البروكسي',
       pass: 'كلمة سر البروكسي',
+      location: 'موقع الـ IP',
+      timezone: 'المنطقة الزمنية',
       cancel: 'إلغاء',
       save: 'حفظ التعديلات',
       createBtn: 'إنشاء المستخدم',
@@ -150,7 +156,9 @@ export default function Dashboard() {
       proxy_ip: user.proxy_ip || '',
       proxy_port: user.proxy_port?.toString() || '',
       proxy_user: user.proxy_user || '',
-      proxy_pass: user.proxy_pass || ''
+      proxy_pass: user.proxy_pass || '',
+      proxy_location: user.proxy_location || '',
+      proxy_timezone: user.proxy_timezone || ''
     });
     setIsModalOpen(true);
   };
@@ -159,7 +167,8 @@ export default function Dashboard() {
     setEditingUser(null);
     setFormData({
       pin: '', username: '', phone_number: '',
-      proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: ''
+      proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
+      proxy_location: '', proxy_timezone: ''
     });
     setIsModalOpen(true);
   };
@@ -327,7 +336,9 @@ export default function Dashboard() {
                               <Globe className="w-3 h-3 text-gray-500" />
                               <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>{user.proxy_ip}:{user.proxy_port}</span>
                             </p>
-                            <p className="text-gray-500 text-xs">Auth: {user.proxy_user}</p>
+                            <p className="text-gray-500 text-xs flex items-center gap-1">
+                               <MapPin className="w-3 h-3" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
+                            </p>
                           </div>
                         </td>
                         <td className="px-6 py-5 text-right">
@@ -467,6 +478,18 @@ export default function Dashboard() {
                       onChange={e => setFormData({...formData, proxy_pass: e.target.value})}
                       className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
                       placeholder={t.pass}
+                    />
+                    <input 
+                      value={formData.proxy_location}
+                      onChange={e => setFormData({...formData, proxy_location: e.target.value})}
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.location}
+                    />
+                    <input 
+                      value={formData.proxy_timezone}
+                      onChange={e => setFormData({...formData, proxy_timezone: e.target.value})}
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.timezone}
                     />
                   </div>
                 </div>
