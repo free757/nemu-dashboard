@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const [formData, setFormData] = useState({
     pin: '',
     username: '',
@@ -58,19 +59,47 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent) => {
+  const handleOpenEdit = (user: any) => {
+    setEditingUser(user);
+    setFormData({
+      pin: user.pin || '',
+      username: user.username || '',
+      phone_number: user.phone_number || '',
+      proxy_ip: user.proxy_ip || '',
+      proxy_port: user.proxy_port?.toString() || '',
+      proxy_user: user.proxy_user || '',
+      proxy_pass: user.proxy_pass || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenAdd = () => {
+    setEditingUser(null);
+    setFormData({
+      pin: '', username: '', phone_number: '',
+      proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('app_users').insert([{
+    const payload = {
       ...formData,
       proxy_port: parseInt(formData.proxy_port)
-    }]);
+    };
+
+    let error;
+    if (editingUser) {
+      const { error: err } = await supabase.from('app_users').update(payload).eq('id', editingUser.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('app_users').insert([payload]);
+      error = err;
+    }
 
     if (!error) {
       setIsModalOpen(false);
-      setFormData({
-        pin: '', username: '', phone_number: '',
-        proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: ''
-      });
       fetchUsers();
     } else {
       alert(error.message);
@@ -136,7 +165,7 @@ export default function Dashboard() {
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenAdd}
               className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold"
             >
               <Plus className="w-5 h-5" />
@@ -207,7 +236,10 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex justify-end gap-2">
-                            <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                            <button 
+                              onClick={() => handleOpenEdit(user)}
+                              className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                            >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button 
@@ -257,7 +289,7 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Add User Modal */}
+      {/* Add/Edit User Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -274,8 +306,8 @@ export default function Dashboard() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="relative w-full max-w-2xl bg-[#111] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
             >
-              <h2 className="text-2xl font-bold mb-6">Create New User</h2>
-              <form onSubmit={handleAddUser} className="space-y-6">
+              <h2 className="text-2xl font-bold mb-6">{editingUser ? 'Edit User Profile' : 'Create New User'}</h2>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm text-gray-400 ml-1">Full Name</label>
@@ -355,7 +387,7 @@ export default function Dashboard() {
                     type="submit"
                     className="flex-1 px-6 py-4 bg-blue-600 rounded-2xl font-bold hover:bg-blue-500 transition-all"
                   >
-                    Create User
+                    {editingUser ? 'Save Changes' : 'Create User'}
                   </button>
                 </div>
               </form>
