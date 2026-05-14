@@ -179,13 +179,13 @@ export default function Dashboard() {
   const fetchIpInfo = async () => {
     if (!formData.proxy_ip || formData.proxy_ip.length < 7) return;
     try {
-      const res = await fetch(`http://ip-api.com/json/${formData.proxy_ip}`);
+      const res = await fetch(`https://ipapi.co/${formData.proxy_ip}/json/`);
       const data = await res.json();
-      if (data.status === 'success') {
+      if (!data.error) {
         setFormData(prev => ({
           ...prev,
-          proxy_location: `${data.city}, ${data.country}`,
-          proxy_timezone: data.timezone
+          proxy_location: `${data.city || ''}, ${data.country_name || ''}`,
+          proxy_timezone: data.timezone || ''
         }));
       }
     } catch (err) {
