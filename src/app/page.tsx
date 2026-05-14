@@ -177,7 +177,7 @@ export default function Dashboard() {
   };
 
   const fetchIpInfo = async () => {
-    if (!formData.proxy_ip) return;
+    if (!formData.proxy_ip || formData.proxy_ip.length < 7) return;
     try {
       const res = await fetch(`http://ip-api.com/json/${formData.proxy_ip}`);
       const data = await res.json();
@@ -192,6 +192,14 @@ export default function Dashboard() {
       console.error('Failed to fetch IP info:', err);
     }
   };
+
+  // Auto-fetch IP info when IP changes (with debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchIpInfo();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [formData.proxy_ip]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -480,13 +488,6 @@ export default function Dashboard() {
                         className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
                         placeholder={t.ip}
                       />
-                      <button 
-                        type="button"
-                        onClick={fetchIpInfo}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-blue-600/20 text-blue-500 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all"
-                      >
-                        {t.fetchBtn}
-                      </button>
                     </div>
                     <input 
                       required
