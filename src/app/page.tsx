@@ -12,7 +12,8 @@ import {
   ShieldCheck, 
   Globe,
   Trash2,
-  Edit2
+  Edit2,
+  MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
