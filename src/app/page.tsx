@@ -176,7 +176,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir="ltr">
       {/* Sidebar */}
       <aside className={`w-64 border-r flex flex-col transition-colors ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
         <div className="p-6 flex items-center gap-3">
@@ -268,13 +268,13 @@ export default function Dashboard() {
 
             {/* Users Table */}
             <div className={`rounded-3xl border overflow-hidden shadow-sm ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
-              <table className="w-full text-left rtl:text-right">
+              <table className="w-full text-left">
                 <thead>
                   <tr className={`border-b ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.profile}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.pin}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.proxy}</th>
-                    <th className="px-6 py-5 text-gray-400 font-medium text-right rtl:text-left">{t.actions}</th>
+                    <th className="px-6 py-5 text-gray-400 font-medium text-right">{t.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -312,8 +312,8 @@ export default function Dashboard() {
                             <p className="text-gray-500 text-xs">Auth: {user.proxy_user}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-right rtl:text-left">
-                          <div className="flex justify-end gap-2 rtl:justify-start">
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex justify-end gap-2">
                             <button 
                               onClick={() => handleOpenEdit(user)}
                               className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
