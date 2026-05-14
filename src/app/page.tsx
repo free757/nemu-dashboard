@@ -25,6 +25,9 @@ export default function Dashboard() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [lang, setLang] = useState<'en' | 'ar'>('en');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  
   const [formData, setFormData] = useState({
     pin: '',
     username: '',
@@ -34,6 +37,67 @@ export default function Dashboard() {
     proxy_user: '',
     proxy_pass: ''
   });
+
+  const t = {
+    en: {
+      users: 'Users Management',
+      config: 'Remote Config',
+      signOut: 'Sign Out',
+      title: 'Manage Users',
+      configTitle: 'Remote Configuration',
+      subtitle: 'Control everything in real-time from one place.',
+      addNew: 'Add New User',
+      addConfig: 'Add Config',
+      search: 'Search users by name or PIN...',
+      profile: 'User Profile',
+      pin: 'PIN',
+      proxy: 'Proxy Info',
+      actions: 'Actions',
+      noUsers: 'No users found matching your search.',
+      edit: 'Edit User Profile',
+      create: 'Create New User',
+      fullName: 'Full Name',
+      loginPin: 'Login PIN',
+      phone: 'Phone Number',
+      proxyConfig: 'Proxy Configuration',
+      ip: 'IP Address',
+      port: 'Port',
+      user: 'Proxy Username',
+      pass: 'Proxy Password',
+      cancel: 'Cancel',
+      save: 'Save Changes',
+      createBtn: 'Create User'
+    },
+    ar: {
+      users: 'إدارة المستخدمين',
+      config: 'الإعدادات عن بعد',
+      signOut: 'تسجيل الخروج',
+      title: 'إدارة المستخدمين',
+      configTitle: 'الإعدادات عن بعد',
+      subtitle: 'تحكم في كل شيء في الوقت الفعلي من مكان واحد.',
+      addNew: 'إضافة مستخدم جديد',
+      addConfig: 'إضافة إعداد',
+      search: 'ابحث عن المستخدمين بالاسم أو الـ PIN...',
+      profile: 'ملف المستخدم',
+      pin: 'كود الدخول',
+      proxy: 'بيانات البروكسي',
+      actions: 'الإجراءات',
+      noUsers: 'لم يتم العثور على مستخدمين يطابقون بحثك.',
+      edit: 'تعديل ملف المستخدم',
+      create: 'إنشاء مستخدم جديد',
+      fullName: 'الاسم الكامل',
+      loginPin: 'كود الدخول (PIN)',
+      phone: 'رقم الهاتف',
+      proxyConfig: 'إعدادات البروكسي',
+      ip: 'عنوان الـ IP',
+      port: 'المنفذ (Port)',
+      user: 'اسم مستخدم البروكسي',
+      pass: 'كلمة سر البروكسي',
+      cancel: 'إلغاء',
+      save: 'حفظ التعديلات',
+      createBtn: 'إنشاء المستخدم'
+    }
+  }[lang];
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -112,12 +176,12 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a]">
+    <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Sidebar */}
-      <aside className="w-64 bg-[#111] border-r border-white/5 flex flex-col">
+      <aside className={`w-64 border-r flex flex-col transition-colors ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5" />
+            <ShieldCheck className="w-5 h-5 text-white" />
           </div>
           <span className="font-bold text-xl tracking-tight">NEMU<span className="text-blue-500">ADMIN</span></span>
         </div>
@@ -125,24 +189,38 @@ export default function Dashboard() {
         <nav className="flex-1 px-4 py-4 space-y-2">
           <button 
             onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'text-gray-400 hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             <Users className="w-5 h-5" />
-            <span className="font-medium">Users Management</span>
+            <span className="font-medium">{t.users}</span>
           </button>
           <button 
             onClick={() => setActiveTab('config')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : 'text-gray-400 hover:bg-white/5'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             <Settings className="w-5 h-5" />
-            <span className="font-medium">Remote Config</span>
+            <span className="font-medium">{t.config}</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-white/5 space-y-4">
+          <div className="flex justify-between items-center px-2">
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}
+            >
+              {theme === 'dark' ? <motion.div animate={{ rotate: 360 }}>☀️</motion.div> : <motion.div animate={{ rotate: 180 }}>🌙</motion.div>}
+            </button>
+            <button 
+              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-blue-400' : 'bg-gray-100 text-blue-600'}`}
+            >
+              {lang === 'en' ? 'ARABIC' : 'ENGLISH'}
+            </button>
+          </div>
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all">
             <LogOut className="w-5 h-5" />
-            <span className="font-medium">Sign Out</span>
+            <span className="font-medium">{t.signOut}</span>
           </button>
         </div>
       </aside>
@@ -152,24 +230,24 @@ export default function Dashboard() {
         <header className="flex justify-between items-center mb-10">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              {activeTab === 'users' ? 'Manage Users' : 'Remote Configuration'}
+              {activeTab === 'users' ? t.title : t.configTitle}
             </h1>
-            <p className="text-gray-500">Control everything in real-time from one place.</p>
+            <p className="text-gray-500">{t.subtitle}</p>
           </div>
           
           <div className="flex gap-4">
             <button 
               onClick={fetchUsers}
-              className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all"
+              className={`p-3 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button 
               onClick={handleOpenAdd}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold"
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
             >
               <Plus className="w-5 h-5" />
-              <span>{activeTab === 'users' ? 'Add New User' : 'Add Config'}</span>
+              <span>{activeTab === 'users' ? t.addNew : t.addConfig}</span>
             </button>
           </div>
         </header>
@@ -181,22 +259,22 @@ export default function Dashboard() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
               <input 
                 type="text" 
-                placeholder="Search users by name or PIN..."
+                placeholder={t.search}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111] border border-white/5 rounded-2xl py-4 pl-12 pr-4 focus:border-blue-500 outline-none transition-all"
+                className={`w-full border rounded-2xl py-4 pl-12 pr-4 focus:border-blue-500 outline-none transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200 text-gray-900'}`}
               />
             </div>
 
             {/* Users Table */}
-            <div className="bg-[#111] rounded-3xl border border-white/5 overflow-hidden">
-              <table className="w-full text-left">
+            <div className={`rounded-3xl border overflow-hidden shadow-sm ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+              <table className="w-full text-left rtl:text-right">
                 <thead>
-                  <tr className="bg-white/5 border-b border-white/5">
-                    <th className="px-6 py-5 text-gray-400 font-medium">User Profile</th>
-                    <th className="px-6 py-5 text-gray-400 font-medium">PIN</th>
-                    <th className="px-6 py-5 text-gray-400 font-medium">Proxy Info</th>
-                    <th className="px-6 py-5 text-gray-400 font-medium text-right">Actions</th>
+                  <tr className={`border-b ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                    <th className="px-6 py-5 text-gray-400 font-medium">{t.profile}</th>
+                    <th className="px-6 py-5 text-gray-400 font-medium">{t.pin}</th>
+                    <th className="px-6 py-5 text-gray-400 font-medium">{t.proxy}</th>
+                    <th className="px-6 py-5 text-gray-400 font-medium text-right rtl:text-left">{t.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -207,38 +285,38 @@ export default function Dashboard() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="hover:bg-white/[0.02] transition-all group"
+                        className={`transition-all group ${theme === 'dark' ? 'hover:bg-white/[0.02] divide-white/5' : 'hover:bg-gray-50 divide-gray-100'}`}
                       >
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg text-white">
                               {user.username?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold">{user.username}</p>
+                              <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.username}</p>
                               <p className="text-gray-500 text-sm">{user.phone_number}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg font-mono text-blue-400">
+                          <span className={`px-3 py-1 border rounded-lg font-mono text-blue-400 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
                             {user.pin}
                           </span>
                         </td>
                         <td className="px-6 py-5">
                           <div className="text-sm">
-                            <p className="text-gray-300 flex items-center gap-2">
+                            <p className="flex items-center gap-2">
                               <Globe className="w-3 h-3 text-gray-500" />
-                              {user.proxy_ip}:{user.proxy_port}
+                              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>{user.proxy_ip}:{user.proxy_port}</span>
                             </p>
                             <p className="text-gray-500 text-xs">Auth: {user.proxy_user}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex justify-end gap-2">
+                        <td className="px-6 py-5 text-right rtl:text-left">
+                          <div className="flex justify-end gap-2 rtl:justify-start">
                             <button 
                               onClick={() => handleOpenEdit(user)}
-                              className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                              className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -257,7 +335,7 @@ export default function Dashboard() {
               </table>
               {filteredUsers.length === 0 && !loading && (
                 <div className="p-20 text-center text-gray-500">
-                  No users found matching your search.
+                  {t.noUsers}
                 </div>
               )}
             </div>
@@ -265,23 +343,23 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {remoteConfigs.map((config) => (
-              <div key={config.id} className="bg-[#111] p-6 rounded-3xl border border-white/5 space-y-4">
+              <div key={config.id} className={`p-6 rounded-3xl border space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-600/20 text-purple-500 rounded-xl flex items-center justify-center">
                       <Settings className="w-5 h-5" />
                     </div>
-                    <h3 className="text-xl font-bold">{config.config_key}</h3>
+                    <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{config.config_key}</h3>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs font-bold ${config.is_enabled ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                     {config.is_enabled ? 'ACTIVE' : 'DISABLED'}
                   </div>
                 </div>
-                <div className="bg-black/50 rounded-2xl p-4 font-mono text-sm overflow-x-auto max-h-60 overflow-y-auto">
+                <div className={`rounded-2xl p-4 font-mono text-sm overflow-x-auto max-h-60 overflow-y-auto ${theme === 'dark' ? 'bg-black/50' : 'bg-gray-50 border border-gray-100'}`}>
                   <pre className="text-blue-400">{JSON.stringify(config.config_value, null, 2)}</pre>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                   <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white">Edit Configuration</button>
+                   <button className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-blue-500">Edit Configuration</button>
                 </div>
               </div>
             ))}
@@ -304,73 +382,73 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-2xl bg-[#111] rounded-[2.5rem] border border-white/10 p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
+              className={`relative w-full max-w-2xl rounded-[2.5rem] border p-8 shadow-2xl overflow-y-auto max-h-[90vh] ${theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'}`}
             >
-              <h2 className="text-2xl font-bold mb-6">{editingUser ? 'Edit User Profile' : 'Create New User'}</h2>
+              <h2 className={`text-2xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{editingUser ? t.edit : t.create}</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Full Name</label>
+                    <label className="text-sm text-gray-400 ml-1">{t.fullName}</label>
                     <input 
                       required
                       value={formData.username}
                       onChange={e => setFormData({...formData, username: e.target.value})}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 outline-none focus:border-blue-500 transition-all"
+                      className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}
                       placeholder="e.g. John Doe"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Login PIN</label>
+                    <label className="text-sm text-gray-400 ml-1">{t.loginPin}</label>
                     <input 
                       required
                       value={formData.pin}
                       onChange={e => setFormData({...formData, pin: e.target.value})}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-mono"
+                      className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}
                       placeholder="4-6 digits"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400 ml-1">Phone Number</label>
+                    <label className="text-sm text-gray-400 ml-1">{t.phone}</label>
                     <input 
                       value={formData.phone_number}
                       onChange={e => setFormData({...formData, phone_number: e.target.value})}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 outline-none focus:border-blue-500 transition-all"
+                      className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}
                       placeholder="+20123456789"
                     />
                   </div>
                 </div>
 
-                <div className="p-6 bg-white/[0.02] rounded-3xl border border-white/5 space-y-6">
+                <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                   <h3 className="text-sm font-bold text-blue-500 flex items-center gap-2 uppercase tracking-widest">
-                    <Globe className="w-4 h-4" /> Proxy Configuration
+                    <Globe className="w-4 h-4" /> {t.proxyConfig}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input 
                       required
                       value={formData.proxy_ip}
                       onChange={e => setFormData({...formData, proxy_ip: e.target.value})}
-                      className="bg-black/20 border border-white/5 rounded-xl p-3 outline-none focus:border-blue-500 transition-all"
-                      placeholder="IP Address"
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.ip}
                     />
                     <input 
                       required
                       type="number"
                       value={formData.proxy_port}
                       onChange={e => setFormData({...formData, proxy_port: e.target.value})}
-                      className="bg-black/20 border border-white/5 rounded-xl p-3 outline-none focus:border-blue-500 transition-all"
-                      placeholder="Port"
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.port}
                     />
                     <input 
                       value={formData.proxy_user}
                       onChange={e => setFormData({...formData, proxy_user: e.target.value})}
-                      className="bg-black/20 border border-white/5 rounded-xl p-3 outline-none focus:border-blue-500 transition-all"
-                      placeholder="Proxy Username"
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.user}
                     />
                     <input 
                       value={formData.proxy_pass}
                       onChange={e => setFormData({...formData, proxy_pass: e.target.value})}
-                      className="bg-black/20 border border-white/5 rounded-xl p-3 outline-none focus:border-blue-500 transition-all"
-                      placeholder="Proxy Password"
+                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                      placeholder={t.pass}
                     />
                   </div>
                 </div>
@@ -379,15 +457,15 @@ export default function Dashboard() {
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-6 py-4 bg-white/5 rounded-2xl font-bold hover:bg-white/10 transition-all"
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                   >
-                    Cancel
+                    {t.cancel}
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-6 py-4 bg-blue-600 rounded-2xl font-bold hover:bg-blue-500 transition-all"
+                    className="flex-1 px-6 py-4 bg-blue-600 rounded-2xl font-bold hover:bg-blue-500 transition-all text-white"
                   >
-                    {editingUser ? 'Save Changes' : 'Create User'}
+                    {editingUser ? t.save : t.createBtn}
                   </button>
                 </div>
               </form>
@@ -398,3 +476,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
