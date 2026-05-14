@@ -71,6 +71,7 @@ export default function Dashboard() {
       pass: 'Proxy Password',
       location: 'IP Location',
       timezone: 'Timezone',
+      fetchBtn: 'Fetch Info',
       cancel: 'Cancel',
       save: 'Save Changes',
       createBtn: 'Create User',
@@ -106,6 +107,7 @@ export default function Dashboard() {
       pass: 'كلمة سر البروكسي',
       location: 'موقع الـ IP',
       timezone: 'المنطقة الزمنية',
+      fetchBtn: 'جلب المعلومات',
       cancel: 'إلغاء',
       save: 'حفظ التعديلات',
       createBtn: 'إنشاء المستخدم',
@@ -172,6 +174,23 @@ export default function Dashboard() {
       proxy_location: '', proxy_timezone: ''
     });
     setIsModalOpen(true);
+  };
+
+  const fetchIpInfo = async () => {
+    if (!formData.proxy_ip) return;
+    try {
+      const res = await fetch(`http://ip-api.com/json/${formData.proxy_ip}`);
+      const data = await res.json();
+      if (data.status === 'success') {
+        setFormData(prev => ({
+          ...prev,
+          proxy_location: `${data.city}, ${data.country}`,
+          proxy_timezone: data.timezone
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch IP info:', err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -453,13 +472,22 @@ export default function Dashboard() {
                     <Globe className="w-4 h-4" /> {t.proxyConfig}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input 
-                      required
-                      value={formData.proxy_ip}
-                      onChange={e => setFormData({...formData, proxy_ip: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.ip}
-                    />
+                    <div className="relative">
+                      <input 
+                        required
+                        value={formData.proxy_ip}
+                        onChange={e => setFormData({...formData, proxy_ip: e.target.value})}
+                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                        placeholder={t.ip}
+                      />
+                      <button 
+                        type="button"
+                        onClick={fetchIpInfo}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-blue-600/20 text-blue-500 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all"
+                      >
+                        {t.fetchBtn}
+                      </button>
+                    </div>
                     <input 
                       required
                       type="number"
