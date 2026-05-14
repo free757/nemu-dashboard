@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{id: string, name: string} | null>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -66,7 +68,11 @@ export default function Dashboard() {
       pass: 'Proxy Password',
       cancel: 'Cancel',
       save: 'Save Changes',
-      createBtn: 'Create User'
+      createBtn: 'Create User',
+      confirmTitle: 'Are you sure?',
+      confirmText: 'Do you really want to delete this user? This action cannot be undone.',
+      confirmBtn: 'Yes, Delete',
+      confirmCancel: 'No, Keep'
     },
     ar: {
       users: 'إدارة المستخدمين',
@@ -95,7 +101,11 @@ export default function Dashboard() {
       pass: 'كلمة سر البروكسي',
       cancel: 'إلغاء',
       save: 'حفظ التعديلات',
-      createBtn: 'إنشاء المستخدم'
+      createBtn: 'إنشاء المستخدم',
+      confirmTitle: 'هل أنت متأكد؟',
+      confirmText: 'هل تريد حقاً حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.',
+      confirmBtn: 'نعم، احذف',
+      confirmCancel: 'لا، تراجع'
     }
   }[lang];
 
@@ -116,10 +126,18 @@ export default function Dashboard() {
     fetchConfigs();
   }, []);
 
-  const deleteUser = async (id: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      const { error } = await supabase.from('app_users').delete().eq('id', id);
-      if (!error) fetchUsers();
+  const handleDeleteClick = (id: string, name: string) => {
+    setConfirmAction({id, name});
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (confirmAction) {
+      const { error } = await supabase.from('app_users').delete().eq('id', confirmAction.id);
+      if (!error) {
+        fetchUsers();
+        setIsConfirmOpen(false);
+      }
     }
   };
 
@@ -321,7 +339,7 @@ export default function Dashboard() {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={() => deleteUser(user.id)}
+                              onClick={() => handleDeleteClick(user.id, user.username)}
                               className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -469,6 +487,48 @@ export default function Dashboard() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {isConfirmOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsConfirmOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className={`relative w-full max-w-sm rounded-[2rem] border p-8 shadow-2xl text-center ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'}`}
+            >
+              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{t.confirmTitle}</h3>
+              <p className="text-gray-500 text-sm mb-8">{t.confirmText}</p>
+              
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={confirmDelete}
+                  className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-500 transition-all"
+                >
+                  {t.confirmBtn}
+                </button>
+                <button 
+                  onClick={() => setIsConfirmOpen(false)}
+                  className={`w-full py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {t.confirmCancel}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
