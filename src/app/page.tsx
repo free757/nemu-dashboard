@@ -47,6 +47,9 @@ export default function Dashboard() {
   const [isListening, setIsListening] = useState(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [isCloningVoice, setIsCloningVoice] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
 
   const fetchProfiles = async () => {
@@ -424,6 +427,71 @@ export default function Dashboard() {
     }
   };
 
+  const handleVoiceUpload = async (file: File) => {
+    setIsCloningVoice(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+      formData.append('name', `${profile?.profile_name || 'User'} - Cloned Voice`);
+      
+      const res = await fetch('/api/voice-clone', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      const { error } = await supabase
+        .from('interview_profiles')
+        .update({ voice_id: data.voice_id })
+        .eq('id', selectedProfileId);
+        
+      if (error) throw error;
+      
+      alert(lang === 'ar' ? 'تم استنساخ الصوت وحفظه بنجاح!' : 'Voice cloned and saved successfully!');
+      fetchProfiles();
+    } catch (err: any) {
+      console.error(err);
+      alert(lang === 'ar' ? `خطأ: ${err.message}` : `Error cloning voice: ${err.message}`);
+    } finally {
+      setIsCloningVoice(false);
+    }
+  };
+
+  const startRecordingVoice = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const file = new File([audioBlob], "recording.wav", { type: 'audio/wav' });
+        handleVoiceUpload(file);
+      };
+
+      mediaRecorder.start();
+      setIsRecordingVoice(true);
+    } catch (err: any) {
+      alert("Microphone access denied or error: " + err.message);
+    }
+  };
+
+  const stopRecordingVoice = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecordingVoice(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     user.pin?.includes(searchQuery)
@@ -745,50 +813,30 @@ export default function Dashboard() {
                         accept="audio/mp3, audio/wav, audio/mpeg, audio/x-m4a, audio/mp4"
                         id="voice-upload"
                         className="hidden"
-                        onChange={async (e) => {
+                        onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (!file) return;
-                          
-                          setIsCloningVoice(true);
-                          try {
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            const profile = interviewProfiles.find(p => p.id === selectedProfileId);
-                            formData.append('name', `${profile?.profile_name || 'User'} - Cloned Voice`);
-                            
-                            const res = await fetch('/api/voice-clone', {
-                              method: 'POST',
-                              body: formData
-                            });
-                            
-                            const data = await res.json();
-                            if (!res.ok) throw new Error(data.error);
-                            
-                            // Save the new voice_id to Supabase
-                            const { error } = await supabase
-                              .from('interview_profiles')
-                              .update({ voice_id: data.voice_id })
-                              .eq('id', selectedProfileId);
-                              
-                            if (error) throw error;
-                            
-                            alert(lang === 'ar' ? 'تم استنساخ الصوت وحفظه بنجاح!' : 'Voice cloned and saved successfully!');
-                            fetchProfiles();
-                          } catch (err: any) {
-                            console.error(err);
-                            alert(lang === 'ar' ? `خطأ: ${err.message}` : `Error cloning voice: ${err.message}`);
-                          } finally {
-                            setIsCloningVoice(false);
-                          }
+                          if (file) handleVoiceUpload(file);
                         }}
                       />
-                      <button 
-                        disabled={isCloningVoice}
-                        onClick={() => document.getElementById('voice-upload')?.click()}
-                        className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${theme === 'dark' ? 'border-white/20 hover:border-purple-500 hover:bg-purple-500/10' : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'}`}
-                      >
-                        {isCloningVoice ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Clone Voice (MP3/WAV)'}
-                      </button>
+                      <div className="flex gap-2 w-full max-w-md">
+                        <button 
+                          disabled={isCloningVoice || isRecordingVoice}
+                          onClick={() => document.getElementById('voice-upload')?.click()}
+                          className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${theme === 'dark' ? 'border-white/20 hover:border-purple-500 hover:bg-purple-500/10' : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'}`}
+                        >
+                          {isCloningVoice && !isRecordingVoice ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                          <span>Upload Audio</span>
+                        </button>
+                        
+                        <button 
+                          disabled={isCloningVoice}
+                          onClick={isRecordingVoice ? stopRecordingVoice : startRecordingVoice}
+                          className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isRecordingVoice ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' : theme === 'dark' ? 'border-white/20 hover:border-red-500 hover:bg-red-500/10' : 'border-gray-300 hover:border-red-500 hover:bg-red-50'}`}
+                        >
+                          {isRecordingVoice ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                          <span>{isRecordingVoice ? 'Stop & Clone' : 'Record Voice'}</span>
+                        </button>
+                      </div>
                     </>
                   )}
 
