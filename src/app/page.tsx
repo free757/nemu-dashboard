@@ -44,6 +44,9 @@ export default function Dashboard() {
     elevenlabs: ''
   });
 
+  const [cvText, setCvText] = useState('');
+  const [isUploadingCv, setIsUploadingCv] = useState(false);
+
   useEffect(() => {
     // Load keys from local storage on mount
     const savedKeys = localStorage.getItem('nemu_api_keys');
@@ -52,11 +55,54 @@ export default function Dashboard() {
         setApiKeys(JSON.parse(savedKeys));
       } catch (e) {}
     }
+    
+    // Load saved CV text if exists
+    const savedCv = localStorage.getItem('nemu_cv_text');
+    if (savedCv) {
+      setCvText(savedCv);
+    }
   }, []);
 
   const handleSaveApiKeys = () => {
     localStorage.setItem('nemu_api_keys', JSON.stringify(apiKeys));
     alert(lang === 'ar' ? 'تم الحفظ بنجاح!' : 'Saved successfully!');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert(lang === 'ar' ? 'يرجى رفع ملف PDF فقط' : 'Please upload a PDF file only');
+      return;
+    }
+
+    setIsUploadingCv(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/parse-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setCvText(data.text);
+        localStorage.setItem('nemu_cv_text', data.text);
+        alert(lang === 'ar' ? 'تم استخراج النص من السيرة الذاتية بنجاح!' : 'CV text extracted successfully!');
+      } else {
+        alert(data.error || 'Failed to parse PDF');
+      }
+    } catch (error) {
+      console.error('Error uploading CV:', error);
+      alert('Error parsing PDF');
+    } finally {
+      setIsUploadingCv(false);
+      // reset file input
+      e.target.value = '';
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -621,10 +667,20 @@ export default function Dashboard() {
               </p>
               
               <div className="flex gap-4 w-full max-w-md mt-8">
-                <button className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}>
-                  Upload CV (PDF)
-                </button>
-                <button className="flex-1 py-4 bg-gray-500 cursor-not-allowed text-white rounded-xl font-bold opacity-50">
+                <label className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all cursor-pointer flex flex-col items-center justify-center ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}>
+                  {isUploadingCv ? (
+                    <span className="flex items-center gap-2"><RefreshCw className="w-5 h-5 animate-spin" /> Parsing...</span>
+                  ) : cvText ? (
+                    <span className="text-green-500 flex items-center gap-2">✓ CV Ready</span>
+                  ) : (
+                    "Upload CV (PDF)"
+                  )}
+                  <input type="file" accept="application/pdf" className="hidden" onChange={handleFileUpload} disabled={isUploadingCv} />
+                </label>
+                <button 
+                  className={`flex-1 py-4 rounded-xl font-bold transition-all ${cvText ? 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20' : 'bg-gray-500 cursor-not-allowed text-white opacity-50'}`}
+                  disabled={!cvText}
+                >
                   Start Session
                 </button>
               </div>
