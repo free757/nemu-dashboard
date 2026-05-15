@@ -17,7 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Bot
+  Bot,
+  Upload,
+  Mic,
+  MicOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
