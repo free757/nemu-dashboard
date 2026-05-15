@@ -44,6 +44,25 @@ export default function Dashboard() {
     elevenlabs: ''
   });
 
+  // Interview Assistant State
+  const [interviewProfiles, setInterviewProfiles] = useState<any[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('');
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from('interview_profiles').select('*').order('created_at', { ascending: false });
+    if (data) {
+      setInterviewProfiles(data);
+      if (data.length > 0 && !selectedProfileId) setSelectedProfileId(data[0].id);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'tools') fetchProfiles();
+  }, [activeTab]);
+
   useEffect(() => {
     // Load keys from local storage on mount
     const savedKeys = localStorage.getItem('nemu_api_keys');
@@ -325,6 +344,64 @@ export default function Dashboard() {
       fetchUsers();
     } else {
       alert(error.message);
+    }
+  };
+
+  // --- End of State ---
+
+  let recognition: any = null;
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Speech Recognition. Please use Chrome.");
+      return;
+    }
+    
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.onresult = async (event: any) => {
+      const question = event.results[0][0].transcript;
+      setTranscript(prev => [...prev, { role: 'user', text: question }]);
+      
+      const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+      if (profile) {
+        setTranscript(prev => [...prev, { role: 'system', text: 'Thinking...' }]);
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, cvText: profile.cv_text, apiKey: apiKeys.gemini })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          
+          setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
+          setTranscript(prev => [...prev, { role: 'assistant', text: data.answer }]);
+          
+          // Audio TTS placeholder (ElevenLabs)
+        } catch (e: any) {
+           setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
+           alert(e.message);
+        }
+      }
+    };
+
+    recognition.start();
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      setIsListening(false);
+      // Since we don't store the recognition instance in state (to avoid unmount issues), 
+      // stopping it forcefully is tricky, but onend will fire anyway when user stops talking.
+    } else {
+      startListening();
     }
   };
 
@@ -610,67 +687,135 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Interview Assistant Placeholder */}
-            <div className={`p-8 rounded-3xl border flex flex-col items-center justify-center text-center space-y-6 min-h-[400px] ${theme === 'dark' ? 'bg-gradient-to-b from-[#111] to-black border-white/5' : 'bg-gradient-to-b from-white to-gray-50 border-gray-200'}`}>
-              <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                <Bot className="w-10 h-10" />
-              </div>
-              <h2 className="text-3xl font-bold">Interview Pilot</h2>
-              <p className="text-gray-500 max-w-lg">
-                Upload your CV and start a live interview session. The AI will listen to the questions and provide real-time suggestions based on your experience.
-              </p>
-              
-              <div className="flex gap-4 w-full max-w-md mt-8">
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  id="cv-upload"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    
-                    try {
-                      // Dynamically import pdfjs to avoid SSR issues
-                      const pdfjs = await import('pdfjs-dist');
-                      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+            {/* Interview Assistant Placeholder / Active Session */}
+            {!isSessionActive ? (
+              <div className={`p-8 rounded-3xl border flex flex-col items-center justify-center text-center space-y-6 min-h-[400px] ${theme === 'dark' ? 'bg-gradient-to-b from-[#111] to-black border-white/5' : 'bg-gradient-to-b from-white to-gray-50 border-gray-200'}`}>
+                <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Bot className="w-10 h-10" />
+                </div>
+                <h2 className="text-3xl font-bold">Interview Pilot</h2>
+                <p className="text-gray-500 max-w-lg">
+                  Upload your CV and start a live interview session. The AI will listen to the questions and provide real-time suggestions based on your experience.
+                </p>
+                
+                <div className="w-full max-w-md mt-4">
+                  <select 
+                    value={selectedProfileId}
+                    onChange={e => setSelectedProfileId(e.target.value)}
+                    className={`w-full p-4 rounded-xl border outline-none font-medium mb-4 ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-white' : 'bg-white border-gray-200'}`}
+                  >
+                    <option value="" disabled>Select a CV Profile...</option>
+                    {interviewProfiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.profile_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-4 w-full max-w-md mt-4">
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    id="cv-upload"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
                       
-                      const arrayBuffer = await file.arrayBuffer();
-                      const pdf = await pdfjs.getDocument(arrayBuffer).promise;
-                      let fullText = '';
-                      
-                      for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-                        fullText += pageText + '\n';
+                      try {
+                        const pdfjs = await import('pdfjs-dist');
+                        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+                        
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+                        let fullText = '';
+                        
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                          const page = await pdf.getPage(i);
+                          const textContent = await page.getTextContent();
+                          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                          fullText += pageText + '\n';
+                        }
+                        
+                        const { error } = await supabase.from('interview_profiles').insert([{
+                          profile_name: file.name.replace('.pdf', ''),
+                          cv_text: fullText
+                        }]);
+                        
+                        if (error) throw error;
+                        alert(lang === 'ar' ? 'تم استخراج النص وحفظه بنجاح!' : 'CV text extracted and saved successfully!');
+                        fetchProfiles(); // refresh list
+                      } catch (err: any) {
+                        console.error(err);
+                        alert(lang === 'ar' ? `حدث خطأ: ${err.message}` : `Error processing PDF: ${err.message}`);
                       }
-                      
-                      // Save to Supabase
-                      const { error } = await supabase.from('interview_profiles').insert([{
-                        profile_name: file.name.replace('.pdf', ''),
-                        cv_text: fullText
-                      }]);
-                      
-                      if (error) throw error;
-                      alert(lang === 'ar' ? 'تم استخراج النص وحفظه بنجاح!' : 'CV text extracted and saved successfully!');
-                    } catch (err: any) {
-                      console.error(err);
-                      alert(lang === 'ar' ? `حدث خطأ: ${err.message}` : `Error processing PDF: ${err.message}`);
-                    }
-                  }}
-                />
-                <button 
-                  onClick={() => document.getElementById('cv-upload')?.click()}
-                  className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}
-                >
-                  Upload CV (PDF)
-                </button>
-                <button className="flex-1 py-4 bg-gray-500 cursor-not-allowed text-white rounded-xl font-bold opacity-50">
-                  Start Session
-                </button>
+                    }}
+                  />
+                  <button 
+                    onClick={() => document.getElementById('cv-upload')?.click()}
+                    className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}
+                  >
+                    Upload CV (PDF)
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if(!selectedProfileId) return alert('Please select or upload a CV first!');
+                      setIsSessionActive(true);
+                      setTranscript([{ role: 'system', text: 'Session started. Click the mic icon to start listening.' }]);
+                    }}
+                    className={`flex-1 py-4 text-white rounded-xl font-bold transition-all ${selectedProfileId ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-500 cursor-not-allowed opacity-50'}`}
+                  >
+                    Start Session
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className={`p-8 rounded-3xl border flex flex-col min-h-[600px] ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center">
+                      <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-xl">Active Session</h2>
+                      <p className="text-sm text-gray-500">
+                        {isListening ? 'Listening...' : 'Paused'}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsSessionActive(false)}
+                    className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold hover:bg-red-500/20"
+                  >
+                    End Session
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-4 mb-6">
+                  {transcript.map((msg, i) => (
+                    <div key={i} className={`p-4 rounded-2xl max-w-[80%] ${
+                      msg.role === 'user' ? 'bg-gray-100 text-gray-800 self-start ml-0 mr-auto' : 
+                      msg.role === 'assistant' ? 'bg-blue-600 text-white self-end ml-auto mr-0' : 
+                      'bg-transparent border border-dashed border-gray-300 text-gray-500 text-center mx-auto text-sm w-full'
+                    }`}>
+                      {msg.role === 'assistant' && <strong className="block mb-1 text-blue-200">Suggested Answer:</strong>}
+                      {msg.role === 'user' && <strong className="block mb-1 text-gray-500">Question Heard:</strong>}
+                      {msg.text}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center mt-auto">
+                  <button 
+                    onClick={toggleListening}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl transition-all ${
+                      isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-blue-600 hover:bg-blue-500'
+                    }`}
+                  >
+                    {isListening ? <div className="w-6 h-6 bg-white rounded-sm" /> : <Bot className="w-8 h-8" />}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
