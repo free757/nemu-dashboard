@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Users, 
@@ -333,7 +333,8 @@ export default function Dashboard() {
 
   // --- End of State ---
 
-  let recognition: any = null;
+  const recognitionRef = useRef<any>(null);
+
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -341,13 +342,31 @@ export default function Dashboard() {
       return;
     }
     
-    recognition = new SpeechRecognition();
+    // Stop previous instance if exists
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch(e) {}
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
 
     recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
+    
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech Recognition Error:", event.error);
+      if (event.error === 'not-allowed') {
+        alert("Microphone access denied. Please allow microphone permissions in your browser.");
+      }
+      setIsListening(false);
+    };
     
     recognition.onresult = async (event: any) => {
       const question = event.results[0][0].transcript;
@@ -398,8 +417,7 @@ export default function Dashboard() {
   const toggleListening = () => {
     if (isListening) {
       setIsListening(false);
-      // Since we don't store the recognition instance in state (to avoid unmount issues), 
-      // stopping it forcefully is tricky, but onend will fire anyway when user stops talking.
+      if (recognitionRef.current) recognitionRef.current.stop();
     } else {
       startListening();
     }
