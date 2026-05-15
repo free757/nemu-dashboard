@@ -822,6 +822,40 @@ export default function Dashboard() {
                         }}
                       />
                       <div className="flex gap-2 w-full max-w-md">
+                        <input 
+                          type="text"
+                          placeholder="Paste ElevenLabs Voice ID here..."
+                          defaultValue={interviewProfiles.find(p => p.id === selectedProfileId)?.voice_id || ''}
+                          id="manual-voice-id"
+                          className={`flex-1 p-4 rounded-xl border outline-none font-mono text-sm ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-blue-400' : 'bg-gray-50 border-gray-200 text-blue-600'}`}
+                        />
+                        <button 
+                          onClick={async () => {
+                            const val = (document.getElementById('manual-voice-id') as HTMLInputElement).value;
+                            if(!val) return;
+                            try {
+                              const { error } = await supabase
+                                .from('interview_profiles')
+                                .update({ voice_id: val })
+                                .eq('id', selectedProfileId);
+                              if (error) throw error;
+                              alert(lang === 'ar' ? 'تم تحديث معرف الصوت!' : 'Voice ID updated!');
+                              fetchProfiles();
+                            } catch (e: any) {
+                              alert(e.message);
+                            }
+                          }}
+                          className="px-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all"
+                        >
+                          Update
+                        </button>
+                      </div>
+
+                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                        <span>Tip: Get IDs from <a href="https://elevenlabs.io/app/voice-library" target="_blank" className="text-blue-500 underline">ElevenLabs Voice Library</a></span>
+                      </div>
+
+                      <div className="flex gap-2 w-full max-w-md">
                         <button 
                           disabled={isCloningVoice || isRecordingVoice}
                           onClick={() => document.getElementById('voice-upload')?.click()}
