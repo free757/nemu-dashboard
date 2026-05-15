@@ -16,7 +16,8 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -37,6 +38,27 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
+  // API Keys State (Stored locally for security)
+  const [apiKeys, setApiKeys] = useState({
+    gemini: '',
+    elevenlabs: ''
+  });
+
+  useEffect(() => {
+    // Load keys from local storage on mount
+    const savedKeys = localStorage.getItem('nemu_api_keys');
+    if (savedKeys) {
+      try {
+        setApiKeys(JSON.parse(savedKeys));
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleSaveApiKeys = () => {
+    localStorage.setItem('nemu_api_keys', JSON.stringify(apiKeys));
+    alert(lang === 'ar' ? 'تم الحفظ بنجاح!' : 'Saved successfully!');
+  };
+
   const [formData, setFormData] = useState({
     pin: '',
     username: '',
@@ -59,10 +81,13 @@ export default function Dashboard() {
     en: {
       users: 'Users Management',
       config: 'Remote Config',
+      tools: 'AI Tools',
       signOut: 'Sign Out',
       title: 'Manage Users',
       configTitle: 'Remote Configuration',
+      toolsTitle: 'AI Interview Pilot',
       subtitle: 'Control everything in real-time from one place.',
+      toolsSubtitle: 'Your personal AI assistant for interviews.',
       addNew: 'Add New User',
       addConfig: 'Add New Config',
       search: 'Search users by name or PIN...',
@@ -100,10 +125,13 @@ export default function Dashboard() {
     ar: {
       users: 'إدارة المستخدمين',
       config: 'الإعدادات عن بعد',
+      tools: 'أدوات الذكاء الاصطناعي',
       signOut: 'تسجيل الخروج',
       title: 'إدارة المستخدمين',
       configTitle: 'الإعدادات عن بعد',
+      toolsTitle: 'المساعد الذكي للمقابلات',
       subtitle: 'تحكم في كل شيء في الوقت الفعلي من مكان واحد.',
+      toolsSubtitle: 'مساعدك الشخصي المدعوم بالذكاء الاصطناعي لاجتياز المقابلات.',
       addNew: 'إضافة مستخدم جديد',
       addConfig: 'إضافة إعداد جديد',
       search: 'ابحث عن المستخدمين بالاسم أو الـ PIN...',
@@ -351,6 +379,13 @@ export default function Dashboard() {
             <Settings className="w-5 h-5 flex-shrink-0" />
             {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
           </button>
+          <button 
+            onClick={() => setActiveTab('tools')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'tools' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+          >
+            <Bot className="w-5 h-5 flex-shrink-0" />
+            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.tools}</motion.span>}
+          </button>
         </nav>
 
         <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
@@ -380,25 +415,31 @@ export default function Dashboard() {
         <header className="flex justify-between items-center mb-10">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              {activeTab === 'users' ? t.title : t.configTitle}
+              {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : t.toolsTitle}
             </h1>
-            <p className="text-gray-500">{t.subtitle}</p>
+            <p className="text-gray-500">
+              {activeTab === 'users' ? t.subtitle : activeTab === 'config' ? t.subtitle : t.toolsSubtitle}
+            </p>
           </div>
           
           <div className="flex gap-4">
-            <button 
-              onClick={activeTab === 'users' ? fetchUsers : fetchConfigs}
-              className={`p-3 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-            <button 
-              onClick={handleOpenAdd}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
-            >
-              <Plus className="w-5 h-5" />
-              <span>{activeTab === 'users' ? t.addNew : t.addConfig}</span>
-            </button>
+            {activeTab !== 'tools' && (
+              <>
+                <button 
+                  onClick={activeTab === 'users' ? fetchUsers : fetchConfigs}
+                  className={`p-3 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+                >
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                <button 
+                  onClick={handleOpenAdd}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>{activeTab === 'users' ? t.addNew : t.addConfig}</span>
+                </button>
+              </>
+            )}
           </div>
         </header>
 
@@ -492,7 +533,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'config' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {remoteConfigs.map((config) => (
               <div key={config.id} className={`p-6 rounded-3xl border space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
@@ -526,6 +567,68 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="space-y-6 max-w-4xl">
+            {/* API Settings Section */}
+            <div className={`p-8 rounded-3xl border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6 text-blue-500" />
+                API Keys Settings
+              </h2>
+              <p className="text-gray-500 mb-8">
+                Your keys are stored securely in your browser's local storage. They are never sent to our servers.
+              </p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-400">Gemini API Key (Required)</label>
+                  <input 
+                    type="password"
+                    value={apiKeys.gemini}
+                    onChange={(e) => setApiKeys({...apiKeys, gemini: e.target.value})}
+                    placeholder="AIzaSy..."
+                    className={`w-full border rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-gray-200'}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-400">ElevenLabs API Key (Optional for Voice)</label>
+                  <input 
+                    type="password"
+                    value={apiKeys.elevenlabs}
+                    onChange={(e) => setApiKeys({...apiKeys, elevenlabs: e.target.value})}
+                    placeholder="sk_..."
+                    className={`w-full border rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-gray-200'}`}
+                  />
+                </div>
+                <button 
+                  onClick={handleSaveApiKeys}
+                  className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  Save Keys Securely
+                </button>
+              </div>
+            </div>
+
+            {/* Interview Assistant Placeholder */}
+            <div className={`p-8 rounded-3xl border flex flex-col items-center justify-center text-center space-y-6 min-h-[400px] ${theme === 'dark' ? 'bg-gradient-to-b from-[#111] to-black border-white/5' : 'bg-gradient-to-b from-white to-gray-50 border-gray-200'}`}>
+              <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                <Bot className="w-10 h-10" />
+              </div>
+              <h2 className="text-3xl font-bold">Interview Pilot</h2>
+              <p className="text-gray-500 max-w-lg">
+                Upload your CV and start a live interview session. The AI will listen to the questions and provide real-time suggestions based on your experience.
+              </p>
+              
+              <div className="flex gap-4 w-full max-w-md mt-8">
+                <button className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}>
+                  Upload CV (PDF)
+                </button>
+                <button className="flex-1 py-4 bg-gray-500 cursor-not-allowed text-white rounded-xl font-bold opacity-50">
+                  Start Session
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>
