@@ -11,12 +11,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Gemini API key is missing. Please set it in Settings.' }, { status: 400 });
     }
 
+    // Truncate CV to avoid token limits (gemini-pro supports ~30k tokens, but let's be safe)
+    const safeCvText = cvText ? cvText.substring(0, 20000) : '';
+
     const prompt = `You are an expert AI interview assistant helping a candidate. You are acting AS the candidate. 
 Based on the following CV, answer the interview question professionally, confidently, and concisely.
 Use the first person ("I", "my"). Keep the answer under 4 sentences so it is easy to read and say aloud.
 
 CV Content:
-${cvText}
+${safeCvText}
 
 Interview Question:
 "${question}"
@@ -36,7 +39,17 @@ Interview Question:
         return NextResponse.json({ error: data.error?.message || 'Error from Gemini API' }, { status: 500 });
     }
 
-    const answer = data.candidates[0].content.parts[0].text;
+    if (!data.candidates || data.candidates.length === 0) {
+        console.error("Gemini returned no candidates. Full response:", JSON.stringify(data));
+        return NextResponse.json({ error: "Gemini returned no answer. This might be due to safety filters blocking the content. Raw details: " + JSON.stringify(data) }, { status: 500 });
+    }
+
+    const answer = data.candidates[0].content?.parts?.[0]?.text;
+    
+    if (!answer) {
+        return NextResponse.json({ error: "Could not parse text from Gemini response. Raw details: " + JSON.stringify(data) }, { status: 500 });
+    }
+
     return NextResponse.json({ answer });
   } catch (error: any) {
     console.error('Chat API Error:', error);
