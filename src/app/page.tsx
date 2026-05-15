@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [selectedProfileId, setSelectedProfileId] = useState<string>('');
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
 
   const fetchProfiles = async () => {
@@ -384,7 +385,23 @@ export default function Dashboard() {
           setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
           setTranscript(prev => [...prev, { role: 'assistant', text: data.answer }]);
           
-          // Audio TTS placeholder (ElevenLabs)
+          if (isVoiceEnabled) {
+            try {
+              const audioRes = await fetch('/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: data.answer, apiKey: apiKeys.elevenlabs })
+              });
+              if (!audioRes.ok) throw new Error('Failed to fetch audio');
+              
+              const audioBlob = await audioRes.blob();
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audio = new Audio(audioUrl);
+              audio.play();
+            } catch (audioErr) {
+              console.error("TTS Error:", audioErr);
+            }
+          }
         } catch (e: any) {
            setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
            alert(e.message);
@@ -782,12 +799,24 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setIsSessionActive(false)}
-                    className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold hover:bg-red-500/20"
-                  >
-                    End Session
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
+                      className={`px-4 py-2 rounded-lg font-bold transition-all border ${
+                        isVoiceEnabled 
+                        ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' 
+                        : theme === 'dark' ? 'bg-white/5 text-gray-400 border-white/10' : 'bg-gray-100 text-gray-500 border-gray-200'
+                      }`}
+                    >
+                      {isVoiceEnabled ? 'Voice: ON 🔊' : 'Voice: OFF 🔇'}
+                    </button>
+                    <button 
+                      onClick={() => setIsSessionActive(false)}
+                      className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold hover:bg-red-500/20"
+                    >
+                      End Session
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-4 mb-6">
