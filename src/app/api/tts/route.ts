@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { text, apiKey } = await req.json();
+    const { text, apiKey, voiceId: reqVoiceId } = await req.json();
 
     const elevenLabsKey = process.env.ElevenLabs_API_Key || apiKey;
 
@@ -11,7 +11,8 @@ export async function POST(req: Request) {
     }
 
     // Default Voice ID: Rachel (21m00Tcm4TlvDq8ikWAM)
-    const voiceId = '21m00Tcm4TlvDq8ikWAM'; 
+    // Use the requested voiceId if provided, else fallback to Rachel
+    const voiceId = reqVoiceId || '21m00Tcm4TlvDq8ikWAM'; 
 
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',

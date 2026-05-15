@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [isCloningVoice, setIsCloningVoice] = useState(false);
   const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
 
   const fetchProfiles = async () => {
@@ -392,7 +393,7 @@ export default function Dashboard() {
               const audioRes = await fetch('/api/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: data.answer })
+                body: JSON.stringify({ text: data.answer, voiceId: profile.voice_id })
               });
               if (!audioRes.ok) throw new Error('Failed to fetch audio');
               
@@ -736,6 +737,61 @@ export default function Dashboard() {
                   >
                     Upload CV (PDF)
                   </button>
+
+                  {selectedProfileId && (
+                    <>
+                      <input 
+                        type="file" 
+                        accept="audio/mp3, audio/wav, audio/mpeg, audio/x-m4a, audio/mp4"
+                        id="voice-upload"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          setIsCloningVoice(true);
+                          try {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+                            formData.append('name', `${profile?.profile_name || 'User'} - Cloned Voice`);
+                            
+                            const res = await fetch('/api/voice-clone', {
+                              method: 'POST',
+                              body: formData
+                            });
+                            
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error);
+                            
+                            // Save the new voice_id to Supabase
+                            const { error } = await supabase
+                              .from('interview_profiles')
+                              .update({ voice_id: data.voice_id })
+                              .eq('id', selectedProfileId);
+                              
+                            if (error) throw error;
+                            
+                            alert(lang === 'ar' ? 'تم استنساخ الصوت وحفظه بنجاح!' : 'Voice cloned and saved successfully!');
+                            fetchProfiles();
+                          } catch (err: any) {
+                            console.error(err);
+                            alert(lang === 'ar' ? `خطأ: ${err.message}` : `Error cloning voice: ${err.message}`);
+                          } finally {
+                            setIsCloningVoice(false);
+                          }
+                        }}
+                      />
+                      <button 
+                        disabled={isCloningVoice}
+                        onClick={() => document.getElementById('voice-upload')?.click()}
+                        className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${theme === 'dark' ? 'border-white/20 hover:border-purple-500 hover:bg-purple-500/10' : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'}`}
+                      >
+                        {isCloningVoice ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Clone Voice (MP3/WAV)'}
+                      </button>
+                    </>
+                  )}
+
                   <button 
                     onClick={() => {
                       if(!selectedProfileId) return alert('Please select or upload a CV first!');
