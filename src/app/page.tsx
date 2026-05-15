@@ -38,11 +38,7 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
-  // API Keys State (Stored locally for security)
-  const [apiKeys, setApiKeys] = useState({
-    gemini: '',
-    elevenlabs: ''
-  });
+
 
   // Interview Assistant State
   const [interviewProfiles, setInterviewProfiles] = useState<any[]>([]);
@@ -64,20 +60,7 @@ export default function Dashboard() {
     if (activeTab === 'tools') fetchProfiles();
   }, [activeTab]);
 
-  useEffect(() => {
-    // Load keys from local storage on mount
-    const savedKeys = localStorage.getItem('nemu_api_keys');
-    if (savedKeys) {
-      try {
-        setApiKeys(JSON.parse(savedKeys));
-      } catch (e) {}
-    }
-  }, []);
 
-  const handleSaveApiKeys = () => {
-    localStorage.setItem('nemu_api_keys', JSON.stringify(apiKeys));
-    alert(lang === 'ar' ? 'تم الحفظ بنجاح!' : 'Saved successfully!');
-  };
 
   const [formData, setFormData] = useState({
     pin: '',
@@ -377,7 +360,7 @@ export default function Dashboard() {
           const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, cvText: profile.cv_text, apiKey: apiKeys.gemini })
+            body: JSON.stringify({ question, cvText: profile.cv_text })
           });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
@@ -390,7 +373,7 @@ export default function Dashboard() {
               const audioRes = await fetch('/api/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: data.answer, apiKey: apiKeys.elevenlabs })
+                body: JSON.stringify({ text: data.answer })
               });
               if (!audioRes.ok) throw new Error('Failed to fetch audio');
               
@@ -664,45 +647,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-6 max-w-4xl">
-            {/* API Settings Section */}
-            <div className={`p-8 rounded-3xl border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <ShieldCheck className="w-6 h-6 text-blue-500" />
-                API Keys Settings
-              </h2>
-              <p className="text-gray-500 mb-8">
-                Your keys are stored securely in your browser's local storage. They are never sent to our servers.
-              </p>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-400">Gemini API Key (Required)</label>
-                  <input 
-                    type="password"
-                    value={apiKeys.gemini}
-                    onChange={(e) => setApiKeys({...apiKeys, gemini: e.target.value})}
-                    placeholder="AIzaSy..."
-                    className={`w-full border rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-gray-200'}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-400">ElevenLabs API Key (Optional for Voice)</label>
-                  <input 
-                    type="password"
-                    value={apiKeys.elevenlabs}
-                    onChange={(e) => setApiKeys({...apiKeys, elevenlabs: e.target.value})}
-                    placeholder="sk_..."
-                    className={`w-full border rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-gray-50 border-gray-200'}`}
-                  />
-                </div>
-                <button 
-                  onClick={handleSaveApiKeys}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
-                >
-                  Save Keys Securely
-                </button>
-              </div>
-            </div>
+
 
             {/* Interview Assistant Placeholder / Active Session */}
             {!isSessionActive ? (
