@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [isCloningVoice, setIsCloningVoice] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [rateLimitNotice, setRateLimitNotice] = useState<string | null>(null);
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
   const rateLimitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -436,13 +437,19 @@ export default function Dashboard() {
         onTriggerCancelled: (reason) => {
           console.log(`[UI] trigger cancelled: ${reason}`);
         },
+        onAnswerGenerating: (question) => {
+          console.log('[UI] answer generation started for:', question);
+          setTranscript(prev => [...prev, { role: 'user', text: question }]);
+          setIsAIGenerating(true);
+          setDraftPreview('');
+          setManualQuestion('');
+        },
         onAnswerGenerated: async (answer) => {
           console.log('[UI] answer generated');
           setRateLimitNotice(null);
+          setIsAIGenerating(false);
           if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
-          const currentQ = manualQuestion.trim() || pipelineRef.current?.getTranscript() || 'Voice Question';
           
-          setTranscript(prev => [...prev, { role: 'user', text: currentQ }]);
           setTranscript(prev => [...prev, { role: 'assistant', text: answer }]);
           setDraftPreview('');
           setManualQuestion('');
@@ -493,15 +500,22 @@ export default function Dashboard() {
         onRateLimited: (cooldownMs) => {
           const waitSec = Math.ceil(cooldownMs / 1000);
           setRateLimitNotice(`AI provider is rate limited. Retrying in ${waitSec}s…`);
+          setIsAIGenerating(false);
+          setTranscript(prev => [...prev, { role: 'system', text: `⚠️ AI provider is rate limited. Skipping this answer.` }]);
           if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
           rateLimitTimerRef.current = setTimeout(() => setRateLimitNotice(null), cooldownMs);
         },
         onPipelineError: (err) => {
+          setIsAIGenerating(false);
           // Suppress AbortErrors — these are intentional pipeline cancellations, not real errors
           if (err.name === 'AbortError') {
             console.log('[UI] Pipeline request aborted (intentional — suppressing UI error)');
             return;
           }
+          
+          // Append error message to chat so user has direct visibility
+          setTranscript(prev => [...prev, { role: 'system', text: `❌ Error generating answer: ${err.message || 'AI request failed'}` }]);
+
           // Suppress 429 — already handled by retry logic, show rate limit notice instead
           if (err.message?.includes('429') || err.message?.toLowerCase().includes('rate limit')) {
             const waitSec = 10;
@@ -1477,6 +1491,20 @@ export default function Dashboard() {
                       </div>
                     );
                   })}
+                  
+                  {isAIGenerating && (
+                    <div className={`w-full ${theme === 'dark' ? 'bg-blue-900/10 border-blue-500/20' : 'bg-blue-50/50 border-blue-200'} border-l-4 p-5 md:p-8 rounded-r-2xl shadow-sm transition-all`}>
+                      <strong className={`block mb-3 text-xs md:text-sm tracking-wider uppercase font-bold text-blue-400 dark:text-blue-500`}>
+                        🤖 AI Answer Generating...
+                      </strong>
+                      <div className="flex space-x-2 items-center py-2">
+                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                    </div>
+                  )}
+
                   {draftPreview && (
                     <div className="w-full bg-blue-500/5 border-l-4 border-blue-500/40 p-4 md:p-6 rounded-r-2xl animate-pulse">
                       <strong className="block mb-2 text-xs tracking-wider uppercase font-bold text-blue-500">

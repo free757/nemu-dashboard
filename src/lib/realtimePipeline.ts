@@ -26,6 +26,7 @@ export interface PipelineEvents {
   onDraftReady?: (draft: string) => void;
   onTriggerScheduled?: (delayMs: number) => void;
   onTriggerCancelled?: (reason: string) => void;
+  onAnswerGenerating?: (question: string) => void;
   onAnswerGenerated?: (answer: string) => void;
   onRateLimited?: (cooldownMs: number) => void;
   onPipelineError?: (error: Error) => void;
@@ -322,6 +323,7 @@ export class RealtimePipeline {
     this.isFinalGenerationActive = true;
     this.state = PipelineState.GENERATING_ANSWER;
     console.log('[Pipeline] answer generation started');
+    this.events.onAnswerGenerating?.(questionText);
 
     cancelDraftGeneration();
     cancelPendingTrigger('manual');
