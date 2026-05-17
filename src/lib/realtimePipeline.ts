@@ -27,6 +27,7 @@ export interface PipelineEvents {
   onTriggerScheduled?: (delayMs: number) => void;
   onTriggerCancelled?: (reason: string) => void;
   onAnswerGenerated?: (answer: string) => void;
+  onRateLimited?: (cooldownMs: number) => void;
   onPipelineError?: (error: Error) => void;
 }
 
@@ -370,8 +371,9 @@ export class RealtimePipeline {
                 continue;
               }
 
-              // All retries exhausted — fail silently (do not surface as UI error)
+              // All retries exhausted — notify UI, do not surface as error
               console.log('[Provider] rate limited — all retries exhausted, skipping answer');
+              this.events.onRateLimited?.(8000);
               return null;
             }
 
