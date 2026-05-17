@@ -1,5 +1,8 @@
 'use client';
 
+// Set to true to enable verbose per-event pipeline logging (for development debugging only)
+const DEBUG_PIPELINE_LOGS = false;
+
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
@@ -514,6 +517,7 @@ export default function Dashboard() {
       finalTranscriptRef.current = '';
       setManualQuestion('');
       startNewSession();
+      console.log('[UI] pipeline listening');
     };
     
     recognition.onend = () => {
@@ -544,7 +548,9 @@ export default function Dashboard() {
 
       if (pipelineRef.current) {
         const profile = interviewProfiles.find(p => p.id === selectedProfileId);
-        console.log('[UI] pipeline listening');
+        if (DEBUG_PIPELINE_LOGS) {
+          console.log('[UI] pipeline chunk received:', fullText.slice(-40));
+        }
         
         pipelineRef.current.debounceAndProcess({
           chunk: fullText,
