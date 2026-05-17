@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
 import { RealtimePipeline } from '@/lib/realtimePipeline';
-import { PipelineDebounce, resetThrottler } from '@/lib/pipelineDebounce';
+import { resetThrottler, throttleAIRequest, startNewSession, getCurrentSessionId } from '@/lib/pipelineDebounce';
 import { 
   Users, 
   Settings, 
@@ -406,14 +406,10 @@ export default function Dashboard() {
 
   const [draftPreview, setDraftPreview] = useState('');
   const pipelineRef = useRef<RealtimePipeline | null>(null);
-  const pipelineDebounceRef = useRef<PipelineDebounce | null>(null);
 
   if (typeof window !== 'undefined') {
     if (!pipelineRef.current) {
       pipelineRef.current = new RealtimePipeline();
-    }
-    if (!pipelineDebounceRef.current) {
-      pipelineDebounceRef.current = new PipelineDebounce();
     }
   }
 
@@ -517,6 +513,7 @@ export default function Dashboard() {
       setIsListening(true);
       finalTranscriptRef.current = '';
       setManualQuestion('');
+      startNewSession();
     };
     
     recognition.onend = () => {
@@ -545,20 +542,19 @@ export default function Dashboard() {
       const fullText = finalTranscriptRef.current + interim;
       setManualQuestion(fullText);
 
-      if (pipelineRef.current && pipelineDebounceRef.current) {
+      if (pipelineRef.current) {
         const profile = interviewProfiles.find(p => p.id === selectedProfileId);
         console.log('[UI] pipeline listening');
         
-        pipelineDebounceRef.current.debounceSpeech({
+        pipelineRef.current.debounceAndProcess({
           chunk: fullText,
           isPartial: !event.results[event.results.length - 1]?.isFinal,
           incomingConfidence: event.results[event.results.length - 1]?.[0]?.confidence,
           silenceDuration: 0,
           isUserSpeaking: true,
           cvText: profile?.cv_text || '',
-          systemPrompt: profile?.system_prompt || ''
-        }, (approvedParams) => {
-          pipelineRef.current?.processIncomingSpeech(approvedParams);
+          systemPrompt: profile?.system_prompt || '',
+          sessionId: getCurrentSessionId()
         });
       }
     };
@@ -573,21 +569,34 @@ export default function Dashboard() {
     if (profile) {
       setTranscript(prev => [...prev, { role: 'system', text: 'Thinking...' }]);
       try {
-        console.log('Using server /api/chat (OpenRouter)...');
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            question, 
-            cvText: profile.cv_text,
-            systemPrompt: profile.system_prompt 
-          })
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        console.log('Using server /api/chat (OpenRouter) with protection...');
+        const answer = await throttleAIRequest<string | null>(
+          'final',
+          question,
+          async (signal) => {
+            const res = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                question, 
+                cvText: profile.cv_text,
+                systemPrompt: profile.system_prompt 
+              }),
+              signal
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            return data.answer || null;
+          },
+          getCurrentSessionId() || undefined
+        );
         
         setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
-        setTranscript(prev => [...prev, { role: 'assistant', text: data.answer }]);
+        if (!answer) {
+          throw new Error('Chat request throttled, blocked, or aborted');
+        }
+        
+        setTranscript(prev => [...prev, { role: 'assistant', text: answer }]);
         
         if (isVoiceEnabled) {
           const playBrowserTTS = (textToSpeak: string) => {
@@ -608,7 +617,7 @@ export default function Dashboard() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  text: data.answer,
+                  text: answer,
                   voiceId: profile.voice_id
                 })
               });
@@ -622,14 +631,14 @@ export default function Dashboard() {
                 const errData = await ttsRes.json();
                 console.error("Cartesia API Error:", errData);
                 alert(`Cartesia TTS Error: ${errData.error || 'Check logs'}`);
-                playBrowserTTS(data.answer);
+                playBrowserTTS(answer);
               }
             } catch (ttsErr) {
               console.error("TTS Exception:", ttsErr);
-              playBrowserTTS(data.answer);
+              playBrowserTTS(answer);
             }
           } else {
-            playBrowserTTS(data.answer);
+            playBrowserTTS(answer);
           }
         }
       } catch (e: any) {
@@ -656,10 +665,6 @@ export default function Dashboard() {
       if (pipelineRef.current) {
         pipelineRef.current.reset();
       }
-      if (pipelineDebounceRef.current) {
-        pipelineDebounceRef.current.reset();
-      }
-      resetThrottler();
       setDraftPreview('');
 
       // Auto-send the accumulated text when manually closing the mic

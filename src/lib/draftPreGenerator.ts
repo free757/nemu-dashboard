@@ -20,6 +20,7 @@ export interface PreGenParams {
   cvText?: string;
   systemPrompt?: string;
   onDraftUpdate: (draft: string) => void;
+  sessionId?: string;
 }
 
 // Module-level state tracking
@@ -66,7 +67,8 @@ export async function startDraftPreGeneration({
   semanticResult,
   cvText = '',
   systemPrompt = '',
-  onDraftUpdate
+  onDraftUpdate,
+  sessionId
 }: PreGenParams): Promise<void> {
   const cleanTranscript = transcript.trim();
   const words = cleanTranscript.split(/\s+/).filter(Boolean);
@@ -157,7 +159,8 @@ export async function startDraftPreGeneration({
 
         const data = await res.json();
         return data.answer || null;
-      }
+      },
+      sessionId
     );
 
     if (draftResult) {

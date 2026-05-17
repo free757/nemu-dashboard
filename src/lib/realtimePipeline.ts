@@ -1,7 +1,7 @@
 import { stabilizeTranscript, cleanTranscript, calculateTranscriptStability } from '@/lib/transcriptStabilizer';
 import { addChunk, getBufferedTranscript, clearBuffer } from '@/lib/incrementalBuffer';
 import { analyzeQuestionCompletion } from '@/lib/semanticCompletion';
-import { throttleAIRequest } from './pipelineDebounce';
+import { throttleAIRequest, PipelineDebounce, resetThrottler } from './pipelineDebounce';
 import { calculateDynamicThreshold, calculateStability, calculateNoise } from '@/lib/confidenceThreshold';
 import { shouldGenerateAnswer } from '@/lib/smartTriggerController';
 import { scheduleDelayedTrigger, cancelPendingTrigger, resetTriggerState } from '@/lib/delayedAutoTrigger';
@@ -35,6 +35,7 @@ export interface ProcessSpeechParams {
   isUserSpeaking: boolean;
   cvText?: string;
   systemPrompt?: string;
+  sessionId?: string;
 }
 
 /**
@@ -50,6 +51,8 @@ export class RealtimePipeline {
   private latestSemanticConfidence = 0.0;
   private latestDraft = '';
   private isProcessing = false;
+  private debouncer = new PipelineDebounce();
+  private sessionId = '';
 
   constructor(private events: PipelineEvents = {}) {}
 
@@ -58,6 +61,15 @@ export class RealtimePipeline {
    */
   public registerEvents(events: PipelineEvents) {
     this.events = { ...this.events, ...events };
+  }
+
+  /**
+   * Main entrypoint with debouncing built-in.
+   */
+  public debounceAndProcess(params: ProcessSpeechParams) {
+    this.debouncer.debounceSpeech(params, (approvedParams) => {
+      this.processIncomingSpeech(approvedParams);
+    });
   }
 
   /**
@@ -71,10 +83,17 @@ export class RealtimePipeline {
     this.latestSemanticConfidence = 0.0;
     this.latestDraft = '';
     this.isProcessing = false;
+    this.sessionId = '';
     
     clearBuffer();
     resetTriggerState();
     clearDraft();
+    cancelDraftGeneration();
+    cancelPendingTrigger('manual');
+    this.debouncer.reset();
+    resetThrottler();
+
+    console.log('[Pipeline] full reset completed');
   }
 
   /**
@@ -101,7 +120,8 @@ export class RealtimePipeline {
     silenceDuration,
     isUserSpeaking,
     cvText = '',
-    systemPrompt = ''
+    systemPrompt = '',
+    sessionId = ''
   }: ProcessSpeechParams): Promise<void> {
     
     // Protect against overlapping speech processing loops (race condition check)
@@ -112,6 +132,10 @@ export class RealtimePipeline {
     // Protect against stale processing if we are actively generating the final answer
     if (this.state === PipelineState.GENERATING_ANSWER) {
       return;
+    }
+
+    if (sessionId) {
+      this.sessionId = sessionId;
     }
 
     this.isProcessing = true;
@@ -152,7 +176,7 @@ export class RealtimePipeline {
       this.state = PipelineState.ANALYZING;
 
       const [semanticResult] = await Promise.all([
-        analyzeQuestionCompletion(bufferedTranscript),
+        analyzeQuestionCompletion(bufferedTranscript, this.sessionId),
         startDraftPreGeneration({
           transcript: bufferedTranscript,
           semanticResult: {
@@ -166,7 +190,8 @@ export class RealtimePipeline {
             this.latestDraft = draft;
             console.log('[Pipeline] draft ready');
             this.events.onDraftReady?.(draft);
-          }
+          },
+          sessionId: this.sessionId
         }).catch(err => {
           console.error('[Pipeline] Background pre-generation error:', err);
           return null;
@@ -295,7 +320,8 @@ export class RealtimePipeline {
 
           const data = await res.json();
           return data.answer || null;
-        }
+        },
+        this.sessionId
       );
 
       if (throttledAnswer) {

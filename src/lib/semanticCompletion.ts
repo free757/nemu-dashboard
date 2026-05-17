@@ -63,7 +63,7 @@ function endsWithPhrase(text: string, phrase: string): boolean {
  * Evaluates whether an interviewer has finished their question or thought.
  * Uses lightweight local heuristics first, falling back to an LLM call if inconclusive.
  */
-export async function analyzeQuestionCompletion(transcript: string): Promise<CompletionResult> {
+export async function analyzeQuestionCompletion(transcript: string, sessionId?: string): Promise<CompletionResult> {
   console.log(`[SemanticCompletion] Starting evaluation for: "${transcript}"`);
   
   if (!transcript || transcript.trim().length === 0) {
@@ -197,7 +197,8 @@ Do not add punctuation or any other words.`;
         confidence: isComplete ? 0.85 : 0.15,
         reason: `LLM Evaluated (Answer: "${answer}")`
       };
-    }
+    },
+    sessionId
   );
 
   if (throttledResult === null) {
