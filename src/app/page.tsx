@@ -587,6 +587,13 @@ export default function Dashboard() {
     if (isListening) {
       setIsListening(false);
       if (recognitionRef.current) recognitionRef.current.stop();
+      
+      // Auto-send the accumulated text when manually closing the mic
+      if (manualQuestion.trim()) {
+        const q = manualQuestion;
+        setManualQuestion('');
+        processQuestion(q);
+      }
     } else {
       startListening();
     }
