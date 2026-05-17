@@ -58,6 +58,8 @@ export default function Dashboard() {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const [isCloningVoice, setIsCloningVoice] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [rateLimitNotice, setRateLimitNotice] = useState<string | null>(null);
+  const rateLimitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
@@ -436,6 +438,8 @@ export default function Dashboard() {
         },
         onAnswerGenerated: async (answer) => {
           console.log('[UI] answer generated');
+          setRateLimitNotice(null);
+          if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
           const currentQ = manualQuestion.trim() || pipelineRef.current?.getTranscript() || 'Voice Question';
           
           setTranscript(prev => [...prev, { role: 'user', text: currentQ }]);
@@ -486,10 +490,24 @@ export default function Dashboard() {
             }
           }
         },
+        onRateLimited: (cooldownMs) => {
+          const waitSec = Math.ceil(cooldownMs / 1000);
+          setRateLimitNotice(`AI provider is rate limited. Retrying in ${waitSec}s…`);
+          if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
+          rateLimitTimerRef.current = setTimeout(() => setRateLimitNotice(null), cooldownMs);
+        },
         onPipelineError: (err) => {
           // Suppress AbortErrors — these are intentional pipeline cancellations, not real errors
           if (err.name === 'AbortError') {
             console.log('[UI] Pipeline request aborted (intentional — suppressing UI error)');
+            return;
+          }
+          // Suppress 429 — already handled by retry logic, show rate limit notice instead
+          if (err.message?.includes('429') || err.message?.toLowerCase().includes('rate limit')) {
+            const waitSec = 10;
+            setRateLimitNotice(`AI provider is rate limited. Retrying in ${waitSec}s…`);
+            if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
+            rateLimitTimerRef.current = setTimeout(() => setRateLimitNotice(null), waitSec * 1000);
             return;
           }
           console.error('[UI] Pipeline Error:', err);
@@ -1417,6 +1435,15 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
+
+                {rateLimitNotice && (
+                  <div className="mb-6 p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-medium flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">⚠️</span>
+                      {rateLimitNotice}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2 scroll-smooth">
                   {transcript.map((msg, i) => {
