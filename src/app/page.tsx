@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { sanitizeTranscript } from '@/lib/speechManager';
 import { 
   Users, 
   Settings, 
@@ -457,10 +458,11 @@ export default function Dashboard() {
       
       pauseTimerRef.current = setTimeout(async () => {
         if (isCheckingRef.current) return;
-        const textToCheck = finalTranscriptRef.current + interim;
+        const rawTextToCheck = finalTranscriptRef.current + interim;
+        const textToCheck = sanitizeTranscript(rawTextToCheck);
         
         // Ignore very short noise, but allow short Arabic questions (e.g. "من أنت؟")
-        if (textToCheck.trim().length < 3) {
+        if (textToCheck.length < 3) {
           console.log('Text too short to check:', textToCheck);
           return; 
         }
@@ -590,7 +592,7 @@ export default function Dashboard() {
       
       // Auto-send the accumulated text when manually closing the mic
       if (manualQuestion.trim()) {
-        const q = manualQuestion;
+        const q = sanitizeTranscript(manualQuestion);
         setManualQuestion('');
         processQuestion(q);
       }
