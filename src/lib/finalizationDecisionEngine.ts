@@ -139,10 +139,17 @@ export function evaluateTranscript(transcript: string): TranscriptEvaluation {
     }
   }
   if (isGreeting) {
-    score += 0.45;
-    intent = 'greeting';
-    signals.push('greeting(+0.45)');
+    // A greeting is a complete utterance by definition.
+    // Short-circuit: return immediately with isComplete=true and a score that always clears the threshold.
+    const greetingScore = Math.max(0.75, score + 0.45);
     console.log('[DecisionEngine] greeting detected');
+    console.log(`[DecisionEngine] semantic confidence accepted (score=${greetingScore.toFixed(2)}, intent=greeting)`);
+    return {
+      isComplete: true,
+      confidence: greetingScore,
+      intent: 'greeting',
+      reason: `Approved [greeting(+0.45), guaranteed_complete]`,
+    };
   }
 
   // Signal: interview pattern
@@ -154,10 +161,17 @@ export function evaluateTranscript(transcript: string): TranscriptEvaluation {
     }
   }
   if (isInterviewPattern) {
-    score += 0.45;
-    intent = 'interview_question';
-    signals.push('interview_pattern(+0.45)');
+    // An interview question opener is a structurally complete intent.
+    // Short-circuit: return immediately with isComplete=true and a high confidence score.
+    const interviewScore = Math.max(0.80, score + 0.45);
     console.log('[DecisionEngine] interview pattern matched');
+    console.log(`[DecisionEngine] semantic confidence accepted (score=${interviewScore.toFixed(2)}, intent=interview_question)`);
+    return {
+      isComplete: true,
+      confidence: interviewScore,
+      intent: 'interview_question',
+      reason: `Approved [interview_pattern(+0.45), guaranteed_complete]`,
+    };
   }
 
   // Signal: starts with a question word
