@@ -452,41 +452,51 @@ export default function Dashboard() {
       const fullText = finalTranscriptRef.current + interim;
       setManualQuestion(fullText); // Display the live dictation in the input box
 
-      // Smart Silence Debounce (2.5 seconds)
+      // Smart Silence Debounce (2 seconds)
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
       
       pauseTimerRef.current = setTimeout(async () => {
         if (isCheckingRef.current) return;
         const textToCheck = finalTranscriptRef.current + interim;
         
-        // Ignore background noise or very short stutters
-        if (textToCheck.trim().length < 15) return; 
+        // Ignore very short noise, but allow short Arabic questions (e.g. "من أنت؟")
+        if (textToCheck.trim().length < 3) {
+          console.log('Text too short to check:', textToCheck);
+          return; 
+        }
 
         isCheckingRef.current = true;
         try {
-          console.log('Semantically evaluating speech completion...', textToCheck);
+          console.log('⏳ Checking semantic completion for:', textToCheck);
           const res = await fetch('/api/check-completion', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: textToCheck })
           });
+          
+          if (!res.ok) {
+            console.error('Check completion failed with status', res.status);
+            return;
+          }
+          
           const data = await res.json();
+          console.log('🤖 Semantic AI Response:', data);
           
           if (data.isComplete) {
-             console.log('✓ Semantic logic says COMPLETE. Sending to AI...');
+             console.log('✅ COMPLETE! Stopping mic and sending to AI...');
              try { recognitionRef.current.stop(); } catch(e) {}
              finalTranscriptRef.current = '';
              setManualQuestion('');
              await processQuestion(textToCheck);
           } else {
-             console.log('✗ Semantic logic says INCOMPLETE. Continuing to listen...');
+             console.log('❌ INCOMPLETE! Keeping mic open...');
           }
         } catch (e) {
-          console.error('Semantic check failed', e);
+          console.error('Semantic check failed exception', e);
         } finally {
           isCheckingRef.current = false;
         }
-      }, 2500); // 2.5s of silence triggers the semantic check
+      }, 2000); // 2s of silence triggers the semantic check
     };
 
     recognition.start();
