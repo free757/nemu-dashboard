@@ -59,6 +59,64 @@ function endsWithPhrase(text: string, phrase: string): boolean {
   return false;
 }
 
+function startsWithPhrase(text: string, prefix: string): boolean {
+  const normalizedText = text.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟?]/g, "");
+  const normalizedPrefix = prefix.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟?]/g, "");
+  
+  return normalizedText.startsWith(normalizedPrefix);
+}
+
+function isGrammaticallyComplete(text: string, words: string[]): boolean {
+  if (words.length < 4) return false;
+  
+  // Make sure it doesn't end with a continuation phrase
+  for (const phrase of continuationPhrases) {
+    if (endsWithPhrase(text, phrase)) {
+      return false;
+    }
+  }
+
+  const normalizedWords = words.map(w => w.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()؟?]/g, ""));
+  
+  const subjects = ['i', 'you', 'he', 'she', 'it', 'we', 'they', 'who', 'what', 'how', 'why', 'this', 'that', 'someone', 'anyone', 'انا', 'انت', 'هو', 'هي', 'نحن', 'هم'];
+  const verbs = [
+    'is', 'am', 'are', 'was', 'were', 'do', 'does', 'did', 'have', 'has', 'had', 'go', 'went', 'feel', 'feeling', 
+    'think', 'thinking', 'explain', 'explaining', 'describe', 'describing', 'tell', 'telling', 'walk', 'walking',
+    'work', 'working', 'make', 'making', 'say', 'saying', 'get', 'getting', 'would', 'could', 'should', 'can',
+    'like', 'want', 'need', 'see', 'know', 'happen', 'happens', 'يجري', 'يشعر', 'يفكر', 'يشرح', 'يصف', 'يقول', 'يعمل'
+  ];
+
+  const hasSubject = normalizedWords.some((w, idx) => idx < 3 && subjects.includes(w));
+  const hasVerb = normalizedWords.some(w => verbs.includes(w));
+
+  const isLengthAdequate = words.length >= 4;
+
+  const naturalEndingWords = ['and', 'but', 'or', 'so', 'because', 'with', 'for', 'to', 'at', 'in', 'of', 'about', 'by', 'from', 'if', 'then', 'و', 'لكن', 'أو', 'في', 'من', 'إلى', 'عن', 'مع'];
+  const lastWord = normalizedWords[normalizedWords.length - 1];
+  const endsNaturally = !naturalEndingWords.includes(lastWord);
+
+  return hasSubject && hasVerb && isLengthAdequate && endsNaturally;
+}
+
+const conversationalQuestionPrefixes = [
+  'how are you',
+  'what do you think',
+  'can you explain',
+  'could you describe',
+  'why did you',
+  'when would you',
+  'tell me about',
+  'walk me through'
+];
+
+const interviewPatterns = [
+  'tell me about',
+  'can you explain',
+  'how would you',
+  'describe a time',
+  'what happens if'
+];
+
 /**
  * Evaluates whether an interviewer has finished their question or thought.
  * Uses lightweight local heuristics first, falling back to an LLM call if inconclusive.
@@ -78,13 +136,35 @@ export async function analyzeQuestionCompletion(transcript: string, sessionId?: 
   const cleanText = transcript.trim();
   const words = cleanText.split(/\s+/).filter(Boolean);
 
+  let isConversational = false;
+  let isInterviewPattern = false;
+
+  for (const prefix of conversationalQuestionPrefixes) {
+    if (startsWithPhrase(cleanText, prefix)) {
+      isConversational = true;
+      break;
+    }
+  }
+
+  for (const prefix of interviewPatterns) {
+    if (startsWithPhrase(cleanText, prefix)) {
+      isInterviewPattern = true;
+      break;
+    }
+  }
+
+  const isGrammatical = isGrammaticallyComplete(cleanText, words);
+
+  // If a strong completion pattern is matched, allow it to be 4 words or more
+  const minWords = (isConversational || isInterviewPattern || isGrammatical) ? 4 : 5;
+
   // --- 1. Lightweight Heuristic: Length Check ---
-  if (words.length < 5) {
-    console.log(`[SemanticCompletion] Incomplete: Short transcript (< 5 words).`);
+  if (words.length < minWords) {
+    console.log(`[SemanticCompletion] Incomplete: Short transcript (< ${minWords} words).`);
     return {
       isComplete: false,
       confidence: 0.0,
-      reason: 'Short transcript (< 5 words)'
+      reason: `Short transcript (< ${minWords} words)`
     };
   }
 
@@ -110,7 +190,30 @@ export async function analyzeQuestionCompletion(transcript: string, sessionId?: 
     }
   }
 
-  // --- 4. Lightweight Heuristic: Question Patterns ---
+  // --- 4. Lightweight Heuristic: Conversational / Interview / Grammatical Pattern Detection ---
+  if (isConversational || isInterviewPattern || isGrammatical) {
+    if (isConversational) {
+      console.log('[SemanticCompletion] conversational question detected');
+    }
+    if (isInterviewPattern) {
+      console.log('[SemanticCompletion] interview pattern detected');
+    }
+    if (isGrammatical) {
+      console.log('[SemanticCompletion] grammatical completion detected');
+    }
+
+    // Boost confidence significantly
+    const boostVal = (isConversational || isInterviewPattern) ? 0.98 : 0.90;
+
+    console.log(`[SemanticCompletion] Complete: Local pattern matched. Confidence boosted to ${boostVal}.`);
+    return {
+      isComplete: true,
+      confidence: boostVal,
+      reason: `Pattern matched (conversational=${isConversational}, interview=${isInterviewPattern}, grammatical=${isGrammatical})`
+    };
+  }
+
+  // --- 5. Lightweight Heuristic: Question Patterns ---
   for (const pattern of questionPatterns) {
     if (endsWithPhrase(cleanText, pattern)) {
       console.log(`[SemanticCompletion] Complete: Ends with question pattern "${pattern}".`);
@@ -122,7 +225,7 @@ export async function analyzeQuestionCompletion(transcript: string, sessionId?: 
     }
   }
 
-  // --- 5. AI Fallback (Inconclusive Heuristics) ---
+  // --- 6. AI Fallback (Inconclusive Heuristics) ---
   console.log('[SemanticCompletion] Heuristics inconclusive. Falling back to LLM semantic analysis...');
   
   const throttledResult = await throttleAIRequest<CompletionResult>(
