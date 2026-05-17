@@ -1,4 +1,4 @@
-import { throttleAIRequest } from './pipelineDebounce';
+import { throttleAIRequest, openRouterFetch, getTranscriptHash } from './pipelineDebounce';
 
 export interface CompletionResult {
   isComplete: boolean;
@@ -232,7 +232,7 @@ export async function analyzeQuestionCompletion(transcript: string, sessionId?: 
     'semantic',
     cleanText,
     async (signal) => {
-      const openRouterKey = process.env.OPENROUTER_API_KEY;
+      const openRouterKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
       if (!openRouterKey) {
         const res = await fetch('/api/check-completion', {
           method: 'POST',
@@ -261,35 +261,24 @@ If it is complete, reply with EXACTLY the word "TRUE".
 If it is incomplete, reply with EXACTLY the word "FALSE".
 Do not add punctuation or any other words.`;
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openRouterKey}`,
-          'HTTP-Referer': 'https://nemu-dashboard-ten.vercel.app',
-          'X-Title': 'Nemu AI Interview Assistant',
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.2-3b-instruct:free',
+      const requestId = crypto.randomUUID();
+      const response = await openRouterFetch(
+        requestId,
+        'semantic',
+        sessionId,
+        getTranscriptHash(cleanText),
+        {
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Transcript:\n"${cleanText}"` },
           ],
           max_tokens: 5,
           temperature: 0.1,
-        }),
+        },
         signal
-      });
+      );
 
       const data = await response.json();
-      if (!response.ok) {
-        console.error('[SemanticCompletion] OpenRouter Error:', data);
-        return {
-          isComplete: false,
-          confidence: 0.3,
-          reason: `LLM Error: ${data.error?.message || 'OpenRouter failure'}`
-        };
-      }
 
       const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase();
       const isComplete = answer?.includes('TRUE') || false;
