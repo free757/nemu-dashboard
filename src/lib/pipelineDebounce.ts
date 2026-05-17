@@ -356,3 +356,21 @@ export function resetThrottler(): void {
     delete lastProcessedAIHash[key];
   });
 }
+
+/**
+ * Explicitly enters the shared client-side cooldown period.
+ * Call this whenever /api/chat returns 429, so the browser-side throttler
+ * also knows to block further requests — even when the 429 came from the
+ * server-side OpenRouter call that the browser never sees directly.
+ */
+export function enterCooldown(durationMs: number = 8000): void {
+  cooldownUntil = Date.now() + durationMs;
+  console.log(`[Cooldown] AI requests temporarily paused | duration=${durationMs / 1000}s`);
+}
+
+/**
+ * Returns true if we are currently inside a cooldown window.
+ */
+export function isInCooldown(): boolean {
+  return Date.now() < cooldownUntil;
+}

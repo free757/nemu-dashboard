@@ -1,7 +1,7 @@
 import { stabilizeTranscript } from '@/lib/transcriptStabilizer';
 import { addChunk, getBufferedTranscript, clearBuffer } from '@/lib/incrementalBuffer';
 import { analyzeQuestionCompletion } from '@/lib/semanticCompletion';
-import { throttleAIRequest, PipelineDebounce, abortAllActiveRequests } from './pipelineDebounce';
+import { throttleAIRequest, PipelineDebounce, abortAllActiveRequests, enterCooldown, isInCooldown } from './pipelineDebounce';
 import { calculateDynamicThreshold, calculateStability, calculateNoise } from '@/lib/confidenceThreshold';
 import { shouldGenerateAnswer } from '@/lib/smartTriggerController';
 import { scheduleDelayedTrigger, cancelPendingTrigger, resetTriggerState } from '@/lib/delayedAutoTrigger';
@@ -296,6 +296,10 @@ export class RealtimePipeline {
   /**
    * Finalizes the response generation. Uses pre-generated draft or falls back to API.
    * Protects the final request from being reset/aborted mid-flight via isFinalGenerationActive.
+   *
+   * Pre-flight semantic validation is intentionally NOT repeated here — it was already
+   * performed by requestFinalization() or the auto-trigger path. Repeating it causes
+   * double LLM calls and creates divergent rejection behavior.
    */
   private async triggerAnswerGeneration(
     questionText: string,
@@ -306,27 +310,9 @@ export class RealtimePipeline {
       return;
     }
 
-    // Validate via the unified FinalizationDecisionEngine before committing to generation
-    const stability = calculateStability(questionText);
-    const noise = calculateNoise(questionText);
-    const words = questionText.trim().split(/\s+/).filter(Boolean);
-    const semanticResult = await analyzeQuestionCompletion(questionText, this.sessionId);
-    const thresholdResult = calculateDynamicThreshold({
-      transcriptLength: words.length,
-      semanticConfidence: semanticResult.confidence,
-      silenceDuration: 2000,
-      transcriptStability: stability,
-      noiseLevel: noise,
-      speakingSpeed: 0.5
-    });
-
-    const preflightDecision = evaluateFinalization({
-      transcript: questionText,
-      isComplete: semanticResult.isComplete,
-      confidence: thresholdResult.adjustedConfidence,
-    });
-
-    if (!preflightDecision.shouldGenerate) {
+    // Block if currently in rate-limit cooldown
+    if (isInCooldown()) {
+      console.log('[Pipeline] answer generation blocked — in rate-limit cooldown');
       this.gracefulCleanup();
       return;
     }
@@ -336,7 +322,6 @@ export class RealtimePipeline {
     this.state = PipelineState.GENERATING_ANSWER;
     console.log('[Pipeline] answer generation started');
 
-    // Cancel only pre-generation and pending trigger — NOT the throttler (it owns the final request)
     cancelDraftGeneration();
     cancelPendingTrigger('manual');
 
@@ -349,29 +334,55 @@ export class RealtimePipeline {
       return;
     }
 
-    // Fallback: make a fresh API call
+    // Fallback: fresh API call with 429-aware retry + backoff
+    const RETRY_DELAYS_MS = [1000, 2000, 4000];
+    let lastError: Error | null = null;
+
     try {
       const throttledAnswer = await throttleAIRequest<string | null>(
         'final',
         questionText,
         async (signal) => {
-          const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              question: questionText,
-              cvText,
-              systemPrompt: systemPrompt || undefined
-            }),
-            signal
-          });
+          for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+            if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-          if (!res.ok) {
-            throw new Error(`Chat API status: ${res.status}`);
+            const res = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                question: questionText,
+                cvText,
+                systemPrompt: systemPrompt || undefined
+              }),
+              signal
+            });
+
+            if (res.status === 429) {
+              const retryAfterHeader = res.headers.get('retry-after');
+              const cooldownMs = retryAfterHeader ? parseInt(retryAfterHeader) * 1000 : 8000;
+              enterCooldown(cooldownMs);
+              console.log(`[Provider] rate limited — /api/chat returned 429, attempt=${attempt + 1}`);
+
+              if (attempt < RETRY_DELAYS_MS.length) {
+                const delay = RETRY_DELAYS_MS[attempt];
+                console.log(`[Request] retrying in ${delay}ms (attempt ${attempt + 2})`);
+                await new Promise(r => setTimeout(r, delay));
+                continue;
+              }
+
+              // All retries exhausted — fail silently (do not surface as UI error)
+              console.log('[Provider] rate limited — all retries exhausted, skipping answer');
+              return null;
+            }
+
+            if (!res.ok) {
+              throw new Error(`Chat API status: ${res.status}`);
+            }
+
+            const data = await res.json();
+            return data.answer || null;
           }
-
-          const data = await res.json();
-          return data.answer || null;
+          return null;
         },
         this.sessionId
       );
@@ -380,18 +391,17 @@ export class RealtimePipeline {
         this.state = PipelineState.ANSWER_COMPLETED;
         this.events.onAnswerGenerated?.(throttledAnswer);
       } else {
-        // Throttled or empty — not an error, just skip cleanly
-        console.log('[Pipeline] Final answer skipped (throttled or empty)');
+        console.log('[Pipeline] Final answer skipped (throttled, rate-limited, or empty)');
       }
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        // Intentional abort — suppress UI error, clean up silently
         console.log('[Pipeline] Final answer request aborted (intentional)');
         this.isFinalGenerationActive = false;
         this.state = PipelineState.IDLE;
         return;
       }
+      // 429 errors are already handled above and return null — this catches other failures
       console.error('[Pipeline] Final answer generation failed:', error);
       this.isFinalGenerationActive = false;
       this.state = PipelineState.ERROR;
@@ -399,7 +409,6 @@ export class RealtimePipeline {
       return;
     }
 
-    // Graceful teardown — runs only after successful answer delivery
     this.gracefulCleanup();
   }
 
