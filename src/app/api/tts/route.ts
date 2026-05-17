@@ -4,10 +4,11 @@ export async function POST(req: Request) {
   try {
     const { text, apiKey, voiceId: reqVoiceId } = await req.json();
 
-    const elevenLabsKey = process.env.ElevenLabs_API_Key || apiKey;
+    // Support both camelCase and UPPERCASE environment variables
+    const elevenLabsKey = process.env.ElevenLabs_API_Key || process.env.ELEVENLABS_API_KEY || apiKey;
 
     if (!elevenLabsKey) {
-      return NextResponse.json({ error: 'ElevenLabs API key is missing. Please set it in Settings.' }, { status: 400 });
+      return NextResponse.json({ error: 'ElevenLabs API key is missing. Please set ElevenLabs_API_Key in Vercel.' }, { status: 400 });
     }
 
     // Default Voice ID: Rachel (21m00Tcm4TlvDq8ikWAM)
@@ -33,7 +34,11 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        return NextResponse.json({ error: errData.detail?.message || 'ElevenLabs API Error' }, { status: response.status });
+        console.error('ElevenLabs API Error:', JSON.stringify(errData));
+        return NextResponse.json({ 
+          error: errData.detail?.message || 'ElevenLabs API Error',
+          raw: errData 
+        }, { status: response.status });
     }
 
     const audioBuffer = await response.arrayBuffer();

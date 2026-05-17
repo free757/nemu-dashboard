@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [lang, setLang] = useState<'en' | 'ar'>('en');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
 
 
@@ -54,12 +55,53 @@ export default function Dashboard() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [transcript, setTranscript] = useState<{role: string, text: string}[]>([]);
+  const [manualQuestion, setManualQuestion] = useState('');
+  const [activeAITool, setActiveAITool] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editProfileData, setEditProfileData] = useState({ name: '', cv: '', prompt: '' });
 
   const fetchProfiles = async () => {
     const { data } = await supabase.from('interview_profiles').select('*').order('created_at', { ascending: false });
     if (data) {
       setInterviewProfiles(data);
       if (data.length > 0 && !selectedProfileId) setSelectedProfileId(data[0].id);
+    }
+  };
+
+  const handleCreateProfile = async () => {
+    const { data, error } = await supabase.from('interview_profiles').insert([{ profile_name: 'New Candidate' }]).select();
+    if (data && data.length > 0) {
+      await fetchProfiles();
+      setSelectedProfileId(data[0].id);
+      setEditProfileData({ name: data[0].profile_name, cv: '', prompt: '' });
+      setIsEditingProfile(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    const { error } = await supabase.from('interview_profiles').update({
+      profile_name: editProfileData.name,
+      cv_text: editProfileData.cv,
+      system_prompt: editProfileData.prompt
+    }).eq('id', selectedProfileId);
+    
+    if (!error) {
+      await fetchProfiles();
+      setIsEditingProfile(false);
+    } else {
+      alert(error.message);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!confirm('Are you sure you want to delete this profile?')) return;
+    const { error } = await supabase.from('interview_profiles').delete().eq('id', selectedProfileId);
+    if (!error) {
+      setSelectedProfileId('');
+      setIsEditingProfile(false);
+      fetchProfiles();
+    } else {
+      alert(error.message);
     }
   };
 
@@ -95,9 +137,9 @@ export default function Dashboard() {
       signOut: 'Sign Out',
       title: 'Manage Users',
       configTitle: 'Remote Configuration',
-      toolsTitle: 'AI Interview Pilot',
+      toolsTitle: 'AI Tools Suite',
       subtitle: 'Control everything in real-time from one place.',
-      toolsSubtitle: 'Your personal AI assistant for interviews.',
+      toolsSubtitle: 'Your personal AI productivity and career suite.',
       addNew: 'Add New User',
       addConfig: 'Add New Config',
       search: 'Search users by name or PIN...',
@@ -139,9 +181,9 @@ export default function Dashboard() {
       signOut: 'تسجيل الخروج',
       title: 'إدارة المستخدمين',
       configTitle: 'الإعدادات عن بعد',
-      toolsTitle: 'المساعد الذكي للمقابلات',
+      toolsTitle: 'حزمة أدوات الذكاء الاصطناعي',
       subtitle: 'تحكم في كل شيء في الوقت الفعلي من مكان واحد.',
-      toolsSubtitle: 'مساعدك الشخصي المدعوم بالذكاء الاصطناعي لاجتياز المقابلات.',
+      toolsSubtitle: 'حزمة أدواتك الشخصية للإنتاجية والمسار المهني.',
       addNew: 'إضافة مستخدم جديد',
       addConfig: 'إضافة إعداد جديد',
       search: 'ابحث عن المستخدمين بالاسم أو الـ PIN...',
@@ -377,48 +419,59 @@ export default function Dashboard() {
     
     recognition.onresult = async (event: any) => {
       const question = event.results[0][0].transcript;
-      setTranscript(prev => [...prev, { role: 'user', text: question }]);
-      
-      const profile = interviewProfiles.find(p => p.id === selectedProfileId);
-      if (profile) {
-        setTranscript(prev => [...prev, { role: 'system', text: 'Thinking...' }]);
-        try {
-          const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, cvText: profile.cv_text })
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          
-          setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
-          setTranscript(prev => [...prev, { role: 'assistant', text: data.answer }]);
-          
-          if (isVoiceEnabled) {
-            try {
-              const audioRes = await fetch('/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: data.answer, voiceId: profile.voice_id })
-              });
-              if (!audioRes.ok) throw new Error('Failed to fetch audio');
-              
-              const audioBlob = await audioRes.blob();
-              const audioUrl = URL.createObjectURL(audioBlob);
-              const audio = new Audio(audioUrl);
-              audio.play();
-            } catch (audioErr) {
-              console.error("TTS Error:", audioErr);
-            }
-          }
-        } catch (e: any) {
-           setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
-           alert(e.message);
-        }
-      }
+      await processQuestion(question);
     };
 
     recognition.start();
+  };
+
+  const processQuestion = async (question: string) => {
+    setTranscript(prev => [...prev, { role: 'user', text: question }]);
+    
+    const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+    if (profile) {
+      setTranscript(prev => [...prev, { role: 'system', text: 'Thinking...' }]);
+      try {
+        console.log('Using server /api/chat (OpenRouter)...');
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            question, 
+            cvText: profile.cv_text,
+            systemPrompt: profile.system_prompt 
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
+        setTranscript(prev => [...prev, { role: 'assistant', text: data.answer }]);
+        
+        if (isVoiceEnabled) {
+          // Free browser built-in TTS
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(data.answer);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.95;
+            utterance.pitch = 1;
+            window.speechSynthesis.speak(utterance);
+          }
+        }
+      } catch (e: any) {
+         setTranscript(prev => prev.filter(t => t.text !== 'Thinking...'));
+         setTranscript(prev => [...prev, { role: 'system', text: `⚠️ Error: ${e.message}` }]);
+      }
+    }
+  };
+
+  const submitManualQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualQuestion.trim()) return;
+    const q = manualQuestion;
+    setManualQuestion('');
+    await processQuestion(q);
   };
 
   const toggleListening = () => {
@@ -501,95 +554,129 @@ export default function Dashboard() {
   );
 
   return (
-    <div className={`flex h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir="ltr">
-      {/* Sidebar */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarCollapsed ? 80 : 256 }}
-        className={`border-r flex flex-col transition-colors relative ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
-      >
-        {/* Toggle Button */}
-        <button 
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className={`absolute -right-3 top-10 w-6 h-6 rounded-full border flex items-center justify-center z-10 transition-all ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-900 shadow-sm'}`}
-        >
-          {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-
-        <div className={`p-6 flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex-shrink-0 flex items-center justify-center">
+    <div className={`flex flex-col md:flex-row h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir="ltr">
+      {/* Mobile Header */}
+      <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-white" />
           </div>
-          {!isSidebarCollapsed && (
-            <motion.span 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="font-bold text-xl tracking-tight whitespace-nowrap"
-            >
-              NEMU<span className="text-blue-500">ADMIN</span>
-            </motion.span>
-          )}
+          <span className="font-bold text-lg tracking-tight">NEMU<span className="text-blue-500">ADMIN</span></span>
         </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)}
+          className={`p-2 rounded-lg ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          <button 
-            onClick={() => setActiveTab('users')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-          >
-            <Users className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.users}</motion.span>}
-          </button>
-          <button 
-            onClick={() => setActiveTab('config')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-          >
-            <Settings className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
-          </button>
-          <button 
-            onClick={() => setActiveTab('tools')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'tools' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-          >
-            <Bot className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.tools}</motion.span>}
-          </button>
-        </nav>
+      {/* Sidebar / Mobile Drawer */}
+      <AnimatePresence>
+        {(isMobileMenuOpen || !isSidebarCollapsed) && (
+          <>
+            {/* Backdrop for mobile */}
+            {isMobileMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              />
+            )}
+            
+            <motion.aside 
+              initial={isMobileMenuOpen ? { x: -256 } : false}
+              animate={isMobileMenuOpen ? { x: 0 } : { width: isSidebarCollapsed ? 80 : 256 }}
+              exit={isMobileMenuOpen ? { x: -256 } : {}}
+              className={`fixed md:relative top-0 left-0 bottom-0 z-[101] md:z-auto border-r flex flex-col transition-colors h-full ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} ${isMobileMenuOpen ? 'w-[256px]' : 'hidden md:flex'}`}
+            >
+              {/* Toggle Button (Desktop only) */}
+              <button 
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className={`hidden md:flex absolute -right-3 top-10 w-6 h-6 rounded-full border items-center justify-center z-10 transition-all ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-900 shadow-sm'}`}
+              >
+                {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
 
-        <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
-          <div className={`flex items-center px-2 ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
-            <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}
-            >
-              {theme === 'dark' ? <motion.div animate={{ rotate: 360 }}>☀️</motion.div> : <motion.div animate={{ rotate: 180 }}>🌙</motion.div>}
-            </button>
-            <button 
-              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-blue-400' : 'bg-gray-100 text-blue-600'}`}
-            >
-              {isSidebarCollapsed ? lang.toUpperCase() : (lang === 'en' ? 'ARABIC' : 'ENGLISH')}
-            </button>
-          </div>
-          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span className="font-medium">{t.signOut}</span>}
-          </button>
-        </div>
-      </motion.aside>
+              <div className={`p-6 flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex-shrink-0 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+                </div>
+                {!isSidebarCollapsed && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="font-bold text-xl tracking-tight whitespace-nowrap"
+                  >
+                    NEMU<span className="text-blue-500">ADMIN</span>
+                  </motion.span>
+                )}
+              </div>
+
+              <nav className="flex-1 px-4 py-4 space-y-2">
+                <button 
+                  onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'users' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  <Users className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.users}</motion.span>}
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('config'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  <Settings className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('tools'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'tools' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  <Bot className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.tools}</motion.span>}
+                </button>
+              </nav>
+
+              <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
+                <div className={`flex items-center px-2 ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'}`}>
+                  <button 
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                    className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-yellow-400' : 'bg-gray-100 text-gray-500'}`}
+                  >
+                    {theme === 'dark' ? <motion.div animate={{ rotate: 360 }}>☀️</motion.div> : <motion.div animate={{ rotate: 180 }}>🌙</motion.div>}
+                  </button>
+                  <button 
+                    onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${theme === 'dark' ? 'bg-white/5 text-blue-400' : 'bg-gray-100 text-blue-600'}`}
+                  >
+                    {isSidebarCollapsed ? lang.toUpperCase() : (lang === 'en' ? 'ARABIC' : 'ENGLISH')}
+                  </button>
+                </div>
+                <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
+                  <LogOut className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <span className="font-medium">{t.signOut}</span>}
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-8">
-        <header className="flex justify-between items-center mb-10">
+      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
               {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : t.toolsTitle}
             </h1>
-            <p className="text-gray-500">
+            <p className="text-gray-500 text-sm md:text-base">
               {activeTab === 'users' ? t.subtitle : activeTab === 'config' ? t.subtitle : t.toolsSubtitle}
             </p>
           </div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {activeTab !== 'tools' && (
               <>
                 <button 
@@ -600,7 +687,7 @@ export default function Dashboard() {
                 </button>
                 <button 
                   onClick={handleOpenAdd}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
                 >
                   <Plus className="w-5 h-5" />
                   <span>{activeTab === 'users' ? t.addNew : t.addConfig}</span>
@@ -624,8 +711,8 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Users Table */}
-            <div className={`rounded-3xl border overflow-hidden shadow-sm ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+            {/* Desktop Table View */}
+            <div className={`hidden md:block rounded-3xl border shadow-sm overflow-hidden ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
               <table className="w-full text-left">
                 <thead>
                   <tr className={`border-b ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
@@ -693,12 +780,68 @@ export default function Dashboard() {
                   </AnimatePresence>
                 </tbody>
               </table>
-              {filteredUsers.length === 0 && !loading && (
-                <div className="p-20 text-center text-gray-500">
-                  {t.noUsers}
-                </div>
-              )}
             </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {filteredUsers.map((user) => (
+                <motion.div 
+                  key={user.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`p-6 rounded-3xl border shadow-sm space-y-6 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white">
+                        {user.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className={`font-bold text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.username}</h3>
+                        <p className="text-gray-500 text-sm">{user.phone_number}</p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 border rounded-lg font-mono text-sm text-blue-400 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
+                      {user.pin}
+                    </span>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl space-y-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t.proxy}</p>
+                    <p className="flex items-center gap-2 text-sm">
+                      <Globe className="w-4 h-4 text-blue-500" />
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{user.proxy_ip}:{user.proxy_port}</span>
+                    </p>
+                    <p className="text-gray-500 text-xs flex items-center gap-2">
+                       <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleOpenEdit(user)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(user.id, user.username)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {filteredUsers.length === 0 && !loading && (
+              <div className="p-20 text-center text-gray-500">
+                {t.noUsers}
+              </div>
+            )}
           </div>
         ) : activeTab === 'config' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -729,8 +872,8 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-                <div className={`rounded-2xl p-4 font-mono text-sm overflow-x-auto max-h-60 overflow-y-auto ${theme === 'dark' ? 'bg-black/50' : 'bg-gray-50 border border-gray-100'}`}>
-                  <pre className="text-blue-400">{JSON.stringify(config.config_value, null, 2)}</pre>
+                <div className={`rounded-2xl p-4 font-mono overflow-x-auto max-h-60 overflow-y-auto ${theme === 'dark' ? 'bg-black/50' : 'bg-gray-50 border border-gray-100'}`}>
+                  <pre className={`text-blue-400 ${lang === 'ar' ? 'text-right' : 'text-left'} text-xs md:text-sm`}>{JSON.stringify(config.config_value, null, 2)}</pre>
                 </div>
               </div>
             ))}
@@ -738,6 +881,49 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-6 max-w-4xl">
 
+            {activeAITool === null ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Live Interview Assistant Card */}
+                <div 
+                  onClick={() => setActiveAITool('interview')}
+                  className={`p-6 rounded-3xl border cursor-pointer hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/10 hover:border-blue-500/50' : 'bg-white border-gray-200 hover:border-blue-500'}`}
+                >
+                  <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
+                    <Bot className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold">Live Interview Pilot</h3>
+                  <p className="text-sm text-gray-500">Real-time stealth teleprompter with AI to ace your mock interviews.</p>
+                </div>
+
+                {/* Cover Letter Generator (Coming Soon) */}
+                <div className={`p-6 rounded-3xl border opacity-60 cursor-not-allowed flex flex-col items-center justify-center text-center space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="w-16 h-16 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold">Cover Letter AI</h3>
+                  <p className="text-sm text-gray-500">Generate personalized cover letters instantly. (Coming Soon)</p>
+                </div>
+
+                {/* Resume Builder (Coming Soon) */}
+                <div className={`p-6 rounded-3xl border opacity-60 cursor-not-allowed flex flex-col items-center justify-center text-center space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="w-16 h-16 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold">Resume Builder</h3>
+                  <p className="text-sm text-gray-500">Optimize your CV layout for ATS scanning. (Coming Soon)</p>
+                </div>
+              </div>
+            ) : activeAITool === 'interview' ? (
+              <div className="space-y-6">
+                <button 
+                  onClick={() => {
+                    setActiveAITool(null);
+                    setIsSessionActive(false);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all w-fit ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}
+                >
+                  <ChevronLeft className="w-4 h-4" /> Back to Tools Grid
+                </button>
 
             {/* Interview Assistant Placeholder / Active Session */}
             {!isSessionActive ? (
@@ -750,148 +936,236 @@ export default function Dashboard() {
                   Upload your CV and start a live interview session. The AI will listen to the questions and provide real-time suggestions based on your experience.
                 </p>
                 
-                <div className="w-full max-w-md mt-4">
-                  <select 
-                    value={selectedProfileId}
-                    onChange={e => setSelectedProfileId(e.target.value)}
-                    className={`w-full p-4 rounded-xl border outline-none font-medium mb-4 ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-white' : 'bg-white border-gray-200'}`}
-                  >
-                    <option value="" disabled>Select a CV Profile...</option>
-                    {interviewProfiles.map(p => (
-                      <option key={p.id} value={p.id}>{p.profile_name}</option>
-                    ))}
-                  </select>
-                </div>
+                <div className="w-full max-w-2xl mt-8 bg-black/5 dark:bg-white/5 p-6 rounded-3xl border border-gray-200 dark:border-white/10 text-left">
+                  {isEditingProfile ? (
+                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-white/10 pb-4">
+                        <h3 className="text-xl font-bold">Edit Candidate Profile</h3>
+                        <button onClick={() => setIsEditingProfile(false)} className="text-gray-500 hover:text-gray-800 dark:hover:text-white font-bold">Cancel</button>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-500 mb-2">Candidate Name</label>
+                        <input type="text" value={editProfileData.name} onChange={e => setEditProfileData({...editProfileData, name: e.target.value})} className="w-full p-4 rounded-xl border outline-none bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 font-bold" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-500 mb-2">CV / Background Knowledge</label>
+                        <textarea rows={6} value={editProfileData.cv} onChange={e => setEditProfileData({...editProfileData, cv: e.target.value})} placeholder="Paste resume text or knowledge base here..." className="w-full p-4 rounded-xl border outline-none bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 font-mono text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-500 mb-2">System Prompt (AI Rules)</label>
+                        <textarea rows={4} value={editProfileData.prompt} onChange={e => setEditProfileData({...editProfileData, prompt: e.target.value})} placeholder="Optional: Leave empty for default human-like rules, or write specific instructions." className="w-full p-4 rounded-xl border outline-none bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 font-mono text-sm" />
+                      </div>
+                      <div className="flex gap-4 pt-4 mt-4 border-t border-gray-200 dark:border-white/10">
+                        <button onClick={handleSaveProfile} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all">Save Profile</button>
+                        <button onClick={handleDeleteProfile} className="px-6 py-4 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all">Delete</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <select 
+                          value={selectedProfileId}
+                          onChange={e => setSelectedProfileId(e.target.value)}
+                          className={`flex-1 p-4 rounded-xl border outline-none font-bold text-lg ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-white' : 'bg-white border-gray-200'}`}
+                        >
+                          <option value="" disabled>Select a Candidate...</option>
+                          {interviewProfiles.map(p => (
+                            <option key={p.id} value={p.id}>{p.profile_name}</option>
+                          ))}
+                        </select>
+                        
+                        <button 
+                          onClick={() => {
+                            const p = interviewProfiles.find(x => x.id === selectedProfileId);
+                            if(p) {
+                              setEditProfileData({ name: p.profile_name, cv: p.cv_text || '', prompt: p.system_prompt || '' });
+                              setIsEditingProfile(true);
+                            }
+                          }}
+                          disabled={!selectedProfileId}
+                          className="p-4 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-50 transition-all text-gray-500"
+                          title="Edit Candidate Profile"
+                        >
+                          <Edit2 className="w-6 h-6" />
+                        </button>
+                        
+                        <button 
+                          onClick={handleCreateProfile}
+                          className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-lg"
+                          title="Create New Candidate"
+                        >
+                          <Plus className="w-6 h-6" />
+                        </button>
+                      </div>
 
-                <div className="flex gap-4 w-full max-w-md mt-4">
-                  <input 
-                    type="file" 
-                    accept="application/pdf"
-                    id="cv-upload"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      
-                      try {
-                        const pdfjs = await import('pdfjs-dist');
-                        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-                        
-                        const arrayBuffer = await file.arrayBuffer();
-                        const pdf = await pdfjs.getDocument(arrayBuffer).promise;
-                        let fullText = '';
-                        
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                          const page = await pdf.getPage(i);
-                          const textContent = await page.getTextContent();
-                          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-                          fullText += pageText + '\n';
-                        }
-                        
-                        const { error } = await supabase.from('interview_profiles').insert([{
-                          profile_name: file.name.replace('.pdf', ''),
-                          cv_text: fullText
-                        }]);
-                        
-                        if (error) throw error;
-                        alert(lang === 'ar' ? 'تم استخراج النص وحفظه بنجاح!' : 'CV text extracted and saved successfully!');
-                        fetchProfiles(); // refresh list
-                      } catch (err: any) {
-                        console.error(err);
-                        alert(lang === 'ar' ? `حدث خطأ: ${err.message}` : `Error processing PDF: ${err.message}`);
-                      }
-                    }}
-                  />
-                  <button 
-                    onClick={() => document.getElementById('cv-upload')?.click()}
-                    className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'}`}
-                  >
-                    Upload CV (PDF)
-                  </button>
-
-                  {selectedProfileId && (
-                    <>
+                  {!isEditingProfile && (
+                    <div className="flex gap-4 w-full">
                       <input 
                         type="file" 
-                        accept="audio/mp3, audio/wav, audio/mpeg, audio/x-m4a, audio/mp4"
-                        id="voice-upload"
+                        accept="application/pdf"
+                        id="cv-upload"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file) handleVoiceUpload(file);
+                          if (!file) return;
+                          
+                          try {
+                            const pdfjs = await import('pdfjs-dist');
+                            pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+                            
+                            const arrayBuffer = await file.arrayBuffer();
+                            const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+                            let fullText = '';
+                            
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                              const page = await pdf.getPage(i);
+                              const textContent = await page.getTextContent();
+                              const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                              fullText += pageText + '\n';
+                            }
+                            
+                            const { error } = await supabase.from('interview_profiles').insert([{
+                              profile_name: file.name.replace('.pdf', ''),
+                              cv_text: fullText
+                            }]);
+                            
+                            if (error) throw error;
+                            alert(lang === 'ar' ? 'تم استخراج النص وحفظه كبروفايل جديد بنجاح!' : 'CV text extracted and saved as a new profile successfully!');
+                            fetchProfiles();
+                          } catch (err: any) {
+                            console.error(err);
+                            alert(lang === 'ar' ? `حدث خطأ: ${err.message}` : `Error processing PDF: ${err.message}`);
+                          }
                         }}
                       />
-                      <div className="flex gap-2 w-full max-w-md">
-                        <input 
-                          type="text"
-                          placeholder="Paste ElevenLabs Voice ID here..."
-                          defaultValue={interviewProfiles.find(p => p.id === selectedProfileId)?.voice_id || ''}
-                          id="manual-voice-id"
-                          className={`flex-1 p-4 rounded-xl border outline-none font-mono text-sm ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-blue-400' : 'bg-gray-50 border-gray-200 text-blue-600'}`}
+                      <button 
+                        onClick={() => document.getElementById('cv-upload')?.click()}
+                        className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all ${theme === 'dark' ? 'border-white/20 hover:border-blue-500 hover:bg-blue-500/10 text-gray-400' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-600'}`}
+                      >
+                        Upload CV PDF (Auto-Create)
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedProfileId && (
+                    <div className="w-full max-w-md space-y-6">
+                      {/* Voice Settings */}
+                      <div className="space-y-4">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            placeholder="Paste ElevenLabs Voice ID here..."
+                            defaultValue={interviewProfiles.find(p => p.id === selectedProfileId)?.voice_id || ''}
+                            id="manual-voice-id"
+                            className={`flex-1 p-4 rounded-xl border outline-none font-mono text-sm ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-blue-400' : 'bg-gray-50 border-gray-200 text-blue-600'}`}
+                          />
+                          <button 
+                            onClick={async () => {
+                              const val = (document.getElementById('manual-voice-id') as HTMLInputElement).value;
+                              try {
+                                const { error } = await supabase
+                                  .from('interview_profiles')
+                                  .update({ voice_id: val })
+                                  .eq('id', selectedProfileId);
+                                if (error) throw error;
+                                alert(lang === 'ar' ? 'تم تحديث معرف الصوت!' : 'Voice ID updated!');
+                                fetchProfiles();
+                              } catch (e: any) {
+                                alert(e.message);
+                              }
+                            }}
+                            className="px-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all"
+                          >
+                            Update
+                          </button>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input 
+                            type="file" 
+                            accept="audio/*"
+                            id="voice-upload"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleVoiceUpload(file);
+                            }}
+                          />
+                          <button 
+                            disabled={isCloningVoice || isRecordingVoice}
+                            onClick={() => document.getElementById('voice-upload')?.click()}
+                            className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${theme === 'dark' ? 'border-white/20 hover:border-purple-500 hover:bg-purple-500/10' : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'}`}
+                          >
+                            {isCloningVoice && !isRecordingVoice ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                            <span>Upload</span>
+                          </button>
+                          
+                          <button 
+                            disabled={isCloningVoice}
+                            onClick={isRecordingVoice ? stopRecordingVoice : startRecordingVoice}
+                            className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isRecordingVoice ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' : theme === 'dark' ? 'border-white/20 hover:border-red-500 hover:bg-red-500/10' : 'border-gray-300 hover:border-red-500 hover:bg-red-50'}`}
+                          >
+                            {isRecordingVoice ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                            <span>{isRecordingVoice ? 'Stop' : 'Record'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* AI Instructions (System Prompt) */}
+                      <div className="space-y-2 text-left pt-4 border-t border-white/5">
+                        <label className="text-sm font-bold text-gray-500 ml-1">
+                          {lang === 'ar' ? 'تعليمات الذكاء الاصطناعي (System Prompt):' : 'AI Instructions (System Prompt):'}
+                        </label>
+                        <textarea 
+                          rows={4}
+                          key={selectedProfileId} // Force re-render when profile changes to update defaultValue
+                          defaultValue={interviewProfiles.find(p => p.id === selectedProfileId)?.system_prompt || ''}
+                          id="manual-system-prompt"
+                          className={`w-full p-4 rounded-xl border outline-none text-sm ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
+                          placeholder="Tell the AI how to behave..."
                         />
                         <button 
                           onClick={async () => {
-                            const val = (document.getElementById('manual-voice-id') as HTMLInputElement).value;
-                            if(!val) return;
+                            const val = (document.getElementById('manual-system-prompt') as HTMLTextAreaElement).value;
                             try {
                               const { error } = await supabase
                                 .from('interview_profiles')
-                                .update({ voice_id: val })
+                                .update({ system_prompt: val })
                                 .eq('id', selectedProfileId);
                               if (error) throw error;
-                              alert(lang === 'ar' ? 'تم تحديث معرف الصوت!' : 'Voice ID updated!');
+                              alert(lang === 'ar' ? 'تم تحديث التعليمات بنجاح!' : 'Instructions updated successfully!');
                               fetchProfiles();
                             } catch (e: any) {
                               alert(e.message);
                             }
                           }}
-                          className="px-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all"
+                          className="w-full py-3 bg-blue-600/10 text-blue-500 border border-blue-500/20 rounded-xl font-bold hover:bg-blue-600/20 transition-all"
                         >
-                          Update
+                          {lang === 'ar' ? 'حفظ التعليمات' : 'Save Instructions'}
                         </button>
                       </div>
-
-                      <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <span>Tip: Get IDs from <a href="https://elevenlabs.io/app/voice-library" target="_blank" className="text-blue-500 underline">ElevenLabs Voice Library</a></span>
-                      </div>
-
-                      <div className="flex gap-2 w-full max-w-md">
-                        <button 
-                          disabled={isCloningVoice || isRecordingVoice}
-                          onClick={() => document.getElementById('voice-upload')?.click()}
-                          className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${theme === 'dark' ? 'border-white/20 hover:border-purple-500 hover:bg-purple-500/10' : 'border-gray-300 hover:border-purple-500 hover:bg-purple-50'}`}
-                        >
-                          {isCloningVoice && !isRecordingVoice ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                          <span>Upload Audio</span>
-                        </button>
-                        
-                        <button 
-                          disabled={isCloningVoice}
-                          onClick={isRecordingVoice ? stopRecordingVoice : startRecordingVoice}
-                          className={`flex-1 py-4 border border-dashed rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${isRecordingVoice ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' : theme === 'dark' ? 'border-white/20 hover:border-red-500 hover:bg-red-500/10' : 'border-gray-300 hover:border-red-500 hover:bg-red-50'}`}
-                        >
-                          {isRecordingVoice ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                          <span>{isRecordingVoice ? 'Stop & Clone' : 'Record Voice'}</span>
-                        </button>
-                      </div>
-                    </>
+                    </div>
                   )}
+                </div>
+              )}
+            </div>
 
+                {!isEditingProfile && (
                   <button 
                     onClick={() => {
-                      if(!selectedProfileId) return alert('Please select or upload a CV first!');
+                      if(!selectedProfileId) return alert('Please select a profile first!');
                       setIsSessionActive(true);
-                      setTranscript([{ role: 'system', text: 'Session started. Click the mic icon to start listening.' }]);
+                      setTranscript([{ role: 'system', text: 'Session started. Click the mic icon or type a question to begin.' }]);
                     }}
-                    className={`flex-1 py-4 text-white rounded-xl font-bold transition-all ${selectedProfileId ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-500 cursor-not-allowed opacity-50'}`}
+                    className={`w-full max-w-2xl py-5 mt-4 text-white rounded-2xl font-bold text-lg transition-all shadow-xl ${selectedProfileId ? 'bg-blue-600 hover:bg-blue-500 hover:scale-[1.02]' : 'bg-gray-500 cursor-not-allowed opacity-50'}`}
                   >
                     Start Session
                   </button>
-                </div>
+                )}
               </div>
             ) : (
-              <div className={`p-8 rounded-3xl border flex flex-col min-h-[600px] ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
-                <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+              <div className={`p-4 md:p-8 rounded-3xl border flex flex-col min-h-[600px] ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-6 pb-4 border-b border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center">
                       <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
@@ -903,10 +1177,10 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4">
                     <button 
                       onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
-                      className={`px-4 py-2 rounded-lg font-bold transition-all border ${
+                      className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm md:text-base font-bold transition-all border ${
                         isVoiceEnabled 
                         ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' 
                         : theme === 'dark' ? 'bg-white/5 text-gray-400 border-white/10' : 'bg-gray-100 text-gray-500 border-gray-200'
@@ -916,39 +1190,79 @@ export default function Dashboard() {
                     </button>
                     <button 
                       onClick={() => setIsSessionActive(false)}
-                      className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold hover:bg-red-500/20"
+                      className="flex-1 md:flex-none px-4 py-2 bg-red-500/10 text-red-500 rounded-lg text-sm md:text-base font-bold hover:bg-red-500/20"
                     >
                       End Session
                     </button>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-4 mb-6">
-                  {transcript.map((msg, i) => (
-                    <div key={i} className={`p-4 rounded-2xl max-w-[80%] ${
-                      msg.role === 'user' ? 'bg-gray-100 text-gray-800 self-start ml-0 mr-auto' : 
-                      msg.role === 'assistant' ? 'bg-blue-600 text-white self-end ml-auto mr-0' : 
-                      'bg-transparent border border-dashed border-gray-300 text-gray-500 text-center mx-auto text-sm w-full'
-                    }`}>
-                      {msg.role === 'assistant' && <strong className="block mb-1 text-blue-200">Suggested Answer:</strong>}
-                      {msg.role === 'user' && <strong className="block mb-1 text-gray-500">Question Heard:</strong>}
-                      {msg.text}
-                    </div>
-                  ))}
+                <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2 scroll-smooth">
+                  {transcript.map((msg, i) => {
+                    if (msg.role === 'assistant') {
+                      return (
+                        <div key={i} className={`w-full ${theme === 'dark' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-blue-50 border-blue-400'} border-l-4 p-5 md:p-8 rounded-r-2xl shadow-sm transition-all`}>
+                          <strong className={`block mb-3 text-xs md:text-sm tracking-wider uppercase font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                            💡 Suggested Answer
+                          </strong>
+                          <p className={`text-xl md:text-3xl font-medium leading-relaxed tracking-wide ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            {msg.text}
+                          </p>
+                        </div>
+                      );
+                    }
+                    if (msg.role === 'user') {
+                      return (
+                        <div key={i} className={`w-full p-4 md:p-5 rounded-xl border ${theme === 'dark' ? 'bg-white/5 border-white/10 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+                          <strong className="block mb-2 text-xs tracking-wider uppercase opacity-60">
+                            🎤 Question Heard
+                          </strong>
+                          <p className="text-sm md:text-lg italic">
+                            "{msg.text}"
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={i} className="w-full py-3 bg-transparent text-gray-500 text-center mx-auto text-sm border border-dashed border-gray-300/20 rounded-lg">
+                        {msg.text}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="flex justify-center mt-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
                   <button 
                     onClick={toggleListening}
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl transition-all ${
+                    title="Click to speak"
+                    className={`w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-full flex items-center justify-center text-white shadow-xl transition-all ${
                       isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-blue-600 hover:bg-blue-500'
                     }`}
                   >
-                    {isListening ? <div className="w-6 h-6 bg-white rounded-sm" /> : <Bot className="w-8 h-8" />}
+                    {isListening ? <div className="w-4 h-4 md:w-5 md:h-5 bg-white rounded-sm" /> : <Bot className="w-5 h-5 md:w-6 md:h-6" />}
                   </button>
+
+                  <form onSubmit={submitManualQuestion} className="flex-1 w-full flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={manualQuestion}
+                      onChange={(e) => setManualQuestion(e.target.value)}
+                      placeholder="Type a question here..."
+                      className="flex-1 bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/10 rounded-xl px-4 py-3 md:py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!manualQuestion.trim()}
+                      className="px-6 py-3 md:py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-white transition-all text-sm md:text-base"
+                    >
+                      Send
+                    </button>
+                  </form>
                 </div>
               </div>
             )}
+            </div>
+            ) : null}
           </div>
         )}
       </main>
