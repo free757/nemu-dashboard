@@ -1,3 +1,5 @@
+import { throttleAIRequest } from './pipelineDebounce';
+
 export interface CompletionResult {
   isComplete: boolean;
   confidence: number;
@@ -123,39 +125,30 @@ export async function analyzeQuestionCompletion(transcript: string): Promise<Com
   // --- 5. AI Fallback (Inconclusive Heuristics) ---
   console.log('[SemanticCompletion] Heuristics inconclusive. Falling back to LLM semantic analysis...');
   
-  const openRouterKey = process.env.OPENROUTER_API_KEY;
-  if (!openRouterKey) {
-    // If running in a client environment without access to environment variables,
-    // fetch the local endpoint instead.
-    try {
-      const res = await fetch('/api/check-completion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cleanText })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          isComplete: data.isComplete,
-          confidence: data.isComplete ? 0.8 : 0.2,
-          reason: 'LLM Evaluated (Client Fallback)'
-        };
+  const throttledResult = await throttleAIRequest<CompletionResult>(
+    'semantic',
+    cleanText,
+    async (signal) => {
+      const openRouterKey = process.env.OPENROUTER_API_KEY;
+      if (!openRouterKey) {
+        const res = await fetch('/api/check-completion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanText }),
+          signal
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            isComplete: data.isComplete,
+            confidence: data.isComplete ? 0.8 : 0.2,
+            reason: 'LLM Evaluated (Client Fallback)'
+          };
+        }
+        throw new Error('Client fallback failed');
       }
-    } catch (err) {
-      console.error('[SemanticCompletion] Client fallback fetch failed:', err);
-    }
-    
-    // Default fallback if key is missing and fetch fails
-    return {
-      isComplete: false,
-      confidence: 0.5,
-      reason: 'Inconclusive heuristics and API key unavailable'
-    };
-  }
 
-  // If running server-side, call OpenRouter directly to evaluate
-  try {
-    const systemPrompt = `You are an AI semantic evaluator for live speech.
+      const systemPrompt = `You are an AI semantic evaluator for live speech.
 Your job is to read an ongoing transcript from an interviewer and determine if they have finished their thought or question.
 Consider:
 - Does the sentence end abruptly? (e.g., "So I was thinking about...") -> FALSE
@@ -165,51 +158,55 @@ If it is complete, reply with EXACTLY the word "TRUE".
 If it is incomplete, reply with EXACTLY the word "FALSE".
 Do not add punctuation or any other words.`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openRouterKey}`,
-        'HTTP-Referer': 'https://nemu-dashboard-ten.vercel.app',
-        'X-Title': 'Nemu AI Interview Assistant',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-3b-instruct:free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Transcript:\n"${cleanText}"` },
-        ],
-        max_tokens: 5,
-        temperature: 0.1,
-      }),
-    });
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openRouterKey}`,
+          'HTTP-Referer': 'https://nemu-dashboard-ten.vercel.app',
+          'X-Title': 'Nemu AI Interview Assistant',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.2-3b-instruct:free',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Transcript:\n"${cleanText}"` },
+          ],
+          max_tokens: 5,
+          temperature: 0.1,
+        }),
+        signal
+      });
 
-    const data = await response.json();
-    if (!response.ok) {
-      console.error('[SemanticCompletion] OpenRouter Error:', data);
+      const data = await response.json();
+      if (!response.ok) {
+        console.error('[SemanticCompletion] OpenRouter Error:', data);
+        return {
+          isComplete: false,
+          confidence: 0.3,
+          reason: `LLM Error: ${data.error?.message || 'OpenRouter failure'}`
+        };
+      }
+
+      const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase();
+      const isComplete = answer?.includes('TRUE') || false;
+
+      console.log(`[SemanticCompletion] LLM Result: isComplete = ${isComplete} (Answer: "${answer}")`);
       return {
-        isComplete: false,
-        confidence: 0.3,
-        reason: `LLM Error: ${data.error?.message || 'OpenRouter failure'}`
+        isComplete,
+        confidence: isComplete ? 0.85 : 0.15,
+        reason: `LLM Evaluated (Answer: "${answer}")`
       };
     }
+  );
 
-    const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase();
-    const isComplete = answer?.includes('TRUE') || false;
-
-    console.log(`[SemanticCompletion] LLM Result: isComplete = ${isComplete} (Answer: "${answer}")`);
-    return {
-      isComplete,
-      confidence: isComplete ? 0.85 : 0.15,
-      reason: `LLM Evaluated (Answer: "${answer}")`
-    };
-
-  } catch (error: any) {
-    console.error('[SemanticCompletion] LLM Fallback exception:', error);
+  if (throttledResult === null) {
     return {
       isComplete: false,
-      confidence: 0.2,
-      reason: `Exception in LLM: ${error.message}`
+      confidence: 0.5,
+      reason: 'AI Request throttled/duplicated'
     };
   }
+
+  return throttledResult;
 }

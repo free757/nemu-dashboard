@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
 import { RealtimePipeline } from '@/lib/realtimePipeline';
+import { PipelineDebounce, resetThrottler } from '@/lib/pipelineDebounce';
 import { 
   Users, 
   Settings, 
@@ -405,9 +406,15 @@ export default function Dashboard() {
 
   const [draftPreview, setDraftPreview] = useState('');
   const pipelineRef = useRef<RealtimePipeline | null>(null);
+  const pipelineDebounceRef = useRef<PipelineDebounce | null>(null);
 
-  if (typeof window !== 'undefined' && !pipelineRef.current) {
-    pipelineRef.current = new RealtimePipeline();
+  if (typeof window !== 'undefined') {
+    if (!pipelineRef.current) {
+      pipelineRef.current = new RealtimePipeline();
+    }
+    if (!pipelineDebounceRef.current) {
+      pipelineDebounceRef.current = new PipelineDebounce();
+    }
   }
 
   // Sync pipeline events with React state and functions
@@ -538,11 +545,11 @@ export default function Dashboard() {
       const fullText = finalTranscriptRef.current + interim;
       setManualQuestion(fullText);
 
-      if (pipelineRef.current) {
+      if (pipelineRef.current && pipelineDebounceRef.current) {
         const profile = interviewProfiles.find(p => p.id === selectedProfileId);
         console.log('[UI] pipeline listening');
         
-        pipelineRef.current.processIncomingSpeech({
+        pipelineDebounceRef.current.debounceSpeech({
           chunk: fullText,
           isPartial: !event.results[event.results.length - 1]?.isFinal,
           incomingConfidence: event.results[event.results.length - 1]?.[0]?.confidence,
@@ -550,6 +557,8 @@ export default function Dashboard() {
           isUserSpeaking: true,
           cvText: profile?.cv_text || '',
           systemPrompt: profile?.system_prompt || ''
+        }, (approvedParams) => {
+          pipelineRef.current?.processIncomingSpeech(approvedParams);
         });
       }
     };
@@ -647,6 +656,10 @@ export default function Dashboard() {
       if (pipelineRef.current) {
         pipelineRef.current.reset();
       }
+      if (pipelineDebounceRef.current) {
+        pipelineDebounceRef.current.reset();
+      }
+      resetThrottler();
       setDraftPreview('');
 
       // Auto-send the accumulated text when manually closing the mic

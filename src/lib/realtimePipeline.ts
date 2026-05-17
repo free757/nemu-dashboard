@@ -1,6 +1,7 @@
 import { stabilizeTranscript, cleanTranscript, calculateTranscriptStability } from '@/lib/transcriptStabilizer';
 import { addChunk, getBufferedTranscript, clearBuffer } from '@/lib/incrementalBuffer';
 import { analyzeQuestionCompletion } from '@/lib/semanticCompletion';
+import { throttleAIRequest } from './pipelineDebounce';
 import { calculateDynamicThreshold, calculateStability, calculateNoise } from '@/lib/confidenceThreshold';
 import { shouldGenerateAnswer } from '@/lib/smartTriggerController';
 import { scheduleDelayedTrigger, cancelPendingTrigger, resetTriggerState } from '@/lib/delayedAutoTrigger';
@@ -271,30 +272,43 @@ export class RealtimePipeline {
 
     // Fallback: If no draft was prepared (e.g. question finished too quickly), call API immediately
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          question: questionText,
-          cvText,
-          systemPrompt: systemPrompt || undefined
-        })
-      });
+      const throttledAnswer = await throttleAIRequest<string | null>(
+        'final',
+        questionText,
+        async (signal) => {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              question: questionText,
+              cvText,
+              systemPrompt: systemPrompt || undefined
+            }),
+            signal
+          });
 
-      if (!res.ok) {
-        throw new Error(`Chat API status: ${res.status}`);
-      }
+          if (!res.ok) {
+            throw new Error(`Chat API status: ${res.status}`);
+          }
 
-      const data = await res.json();
-      if (data.answer) {
-        this.events.onAnswerGenerated?.(data.answer);
+          const data = await res.json();
+          return data.answer || null;
+        }
+      );
+
+      if (throttledAnswer) {
+        this.events.onAnswerGenerated?.(throttledAnswer);
       } else {
-        throw new Error('Chat API returned empty response');
+        throw new Error('Chat API returned empty response or request was throttled');
       }
 
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('[Pipeline] Final answer request aborted');
+        return;
+      }
       console.error('[Pipeline] Final answer generation failed:', error);
       this.state = PipelineState.ERROR;
       this.events.onPipelineError?.(error);

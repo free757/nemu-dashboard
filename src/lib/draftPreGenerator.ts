@@ -1,3 +1,5 @@
+import { throttleAIRequest } from './pipelineDebounce';
+
 export enum DraftState {
   IDLE,
   ANALYZING,
@@ -121,35 +123,50 @@ export async function startDraftPreGeneration({
   currentState = DraftState.PREPARING_DRAFT;
   console.log('[Draft] preparing answer');
 
-  // Create abort controller for request invalidation
-  activeAbortController = new AbortController();
-  const { signal } = activeAbortController;
-
   try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        question: cleanTranscript,
-        cvText,
-        systemPrompt: systemPrompt || undefined
-      }),
-      signal
-    });
+    const draftResult = await throttleAIRequest<string | null>(
+      'draft',
+      cleanTranscript,
+      async (signal) => {
+        // Also register active AbortController so cancelDraftGeneration() can trigger it
+        activeAbortController = {
+          abort: () => {
+            // Aborts the signal passed to fetch
+            controller.abort();
+          }
+        } as any;
 
-    if (!res.ok) {
-      throw new Error(`Chat API status: ${res.status}`);
-    }
+        const controller = new AbortController();
 
-    const data = await res.json();
-    
-    if (data.answer) {
-      currentDraft = data.answer;
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            question: cleanTranscript,
+            cvText,
+            systemPrompt: systemPrompt || undefined
+          }),
+          signal: signal || controller.signal
+        });
+
+        if (!res.ok) {
+          throw new Error(`Chat API status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        return data.answer || null;
+      }
+    );
+
+    if (draftResult) {
+      currentDraft = draftResult;
       currentState = DraftState.READY;
       console.log('[Draft] ready for instant response');
       onDraftUpdate(currentDraft);
+    } else {
+      currentState = DraftState.IDLE;
     }
   } catch (err: any) {
     if (err.name === 'AbortError') {
