@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
+import { RealtimePipeline } from '@/lib/realtimePipeline';
 import { 
   Users, 
   Settings, 
@@ -402,6 +403,90 @@ export default function Dashboard() {
   const finalTranscriptRef = useRef<string>('');
   const isCheckingRef = useRef<boolean>(false);
 
+  const [draftPreview, setDraftPreview] = useState('');
+  const pipelineRef = useRef<RealtimePipeline | null>(null);
+
+  if (typeof window !== 'undefined' && !pipelineRef.current) {
+    pipelineRef.current = new RealtimePipeline();
+  }
+
+  // Sync pipeline events with React state and functions
+  useEffect(() => {
+    if (pipelineRef.current) {
+      pipelineRef.current.registerEvents({
+        onTranscriptUpdate: (newTranscript) => {
+          console.log('[UI] transcript updated');
+          setManualQuestion(newTranscript);
+        },
+        onDraftReady: (draft) => {
+          console.log('[UI] draft received');
+          setDraftPreview(draft);
+        },
+        onTriggerScheduled: (delayMs) => {
+          console.log(`[UI] trigger scheduled: ${delayMs}ms`);
+        },
+        onTriggerCancelled: (reason) => {
+          console.log(`[UI] trigger cancelled: ${reason}`);
+        },
+        onAnswerGenerated: async (answer) => {
+          console.log('[UI] answer generated');
+          const currentQ = manualQuestion.trim() || pipelineRef.current?.getTranscript() || 'Voice Question';
+          
+          setTranscript(prev => [...prev, { role: 'user', text: currentQ }]);
+          setTranscript(prev => [...prev, { role: 'assistant', text: answer }]);
+          setDraftPreview('');
+          setManualQuestion('');
+
+          try {
+            if (recognitionRef.current) recognitionRef.current.stop();
+          } catch (e) {}
+
+          const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+          if (profile && isVoiceEnabled) {
+            const playBrowserTTS = (textToSpeak: string) => {
+              if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.95;
+                utterance.pitch = 1;
+                window.speechSynthesis.speak(utterance);
+              }
+            };
+
+            if (profile.voice_id) {
+              try {
+                const ttsRes = await fetch('/api/tts', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    text: answer,
+                    voiceId: profile.voice_id
+                  })
+                });
+                if (ttsRes.ok) {
+                  const audioBlob = await ttsRes.blob();
+                  const audioUrl = URL.createObjectURL(audioBlob);
+                  const audio = new Audio(audioUrl);
+                  audio.play();
+                } else {
+                  playBrowserTTS(answer);
+                }
+              } catch (ttsErr) {
+                playBrowserTTS(answer);
+              }
+            } else {
+              playBrowserTTS(answer);
+            }
+          }
+        },
+        onPipelineError: (err) => {
+          console.error('[UI] Pipeline Error:', err);
+        }
+      });
+    }
+  }, [selectedProfileId, isVoiceEnabled, interviewProfiles, manualQuestion]);
+
   const startListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -451,54 +536,22 @@ export default function Dashboard() {
       }
       
       const fullText = finalTranscriptRef.current + interim;
-      setManualQuestion(fullText); // Display the live dictation in the input box
+      setManualQuestion(fullText);
 
-      // Smart Silence Debounce (2 seconds)
-      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-      
-      pauseTimerRef.current = setTimeout(async () => {
-        if (isCheckingRef.current) return;
-        const rawTextToCheck = finalTranscriptRef.current + interim;
-        const textToCheck = sanitizeTranscript(rawTextToCheck);
+      if (pipelineRef.current) {
+        const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+        console.log('[UI] pipeline listening');
         
-        // Ignore very short noise, but allow short Arabic questions (e.g. "من أنت؟")
-        if (textToCheck.length < 3) {
-          console.log('Text too short to check:', textToCheck);
-          return; 
-        }
-
-        isCheckingRef.current = true;
-        try {
-          console.log('⏳ Checking semantic completion for:', textToCheck);
-          const res = await fetch('/api/check-completion', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: textToCheck })
-          });
-          
-          if (!res.ok) {
-            console.error('Check completion failed with status', res.status);
-            return;
-          }
-          
-          const data = await res.json();
-          console.log('🤖 Semantic AI Response:', data);
-          
-          if (data.isComplete) {
-             console.log('✅ COMPLETE! Stopping mic and sending to AI...');
-             try { recognitionRef.current.stop(); } catch(e) {}
-             finalTranscriptRef.current = '';
-             setManualQuestion('');
-             await processQuestion(textToCheck);
-          } else {
-             console.log('❌ INCOMPLETE! Keeping mic open...');
-          }
-        } catch (e) {
-          console.error('Semantic check failed exception', e);
-        } finally {
-          isCheckingRef.current = false;
-        }
-      }, 2000); // 2s of silence triggers the semantic check
+        pipelineRef.current.processIncomingSpeech({
+          chunk: fullText,
+          isPartial: !event.results[event.results.length - 1]?.isFinal,
+          incomingConfidence: event.results[event.results.length - 1]?.[0]?.confidence,
+          silenceDuration: 0,
+          isUserSpeaking: true,
+          cvText: profile?.cv_text || '',
+          systemPrompt: profile?.system_prompt || ''
+        });
+      }
     };
 
     recognition.start();
@@ -590,6 +643,12 @@ export default function Dashboard() {
       setIsListening(false);
       if (recognitionRef.current) recognitionRef.current.stop();
       
+      // Reset the pipeline and clear drafts upon manual stop
+      if (pipelineRef.current) {
+        pipelineRef.current.reset();
+      }
+      setDraftPreview('');
+
       // Auto-send the accumulated text when manually closing the mic
       if (manualQuestion.trim()) {
         const q = sanitizeTranscript(manualQuestion);
@@ -1352,6 +1411,16 @@ export default function Dashboard() {
                       </div>
                     );
                   })}
+                  {draftPreview && (
+                    <div className="w-full bg-blue-500/5 border-l-4 border-blue-500/40 p-4 md:p-6 rounded-r-2xl animate-pulse">
+                      <strong className="block mb-2 text-xs tracking-wider uppercase font-bold text-blue-500">
+                        ⚡ Draft Answer Preparing...
+                      </strong>
+                      <p className="text-lg md:text-xl font-medium text-gray-400">
+                        {draftPreview}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-2 mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
