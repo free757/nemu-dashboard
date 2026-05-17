@@ -653,7 +653,15 @@ export default function Dashboard() {
     if (!manualQuestion.trim()) return;
     const q = manualQuestion;
     setManualQuestion('');
-    await processQuestion(q);
+    
+    if (pipelineRef.current) {
+      const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+      await pipelineRef.current.requestFinalization(
+        profile?.cv_text || '',
+        profile?.system_prompt || '',
+        q
+      );
+    }
   };
 
   const toggleListening = () => {
@@ -661,17 +669,19 @@ export default function Dashboard() {
       setIsListening(false);
       if (recognitionRef.current) recognitionRef.current.stop();
       
-      // Reset the pipeline and clear drafts upon manual stop
-      if (pipelineRef.current) {
-        pipelineRef.current.reset();
-      }
+      // Reset drafting UI preview immediately
       setDraftPreview('');
 
-      // Auto-send the accumulated text when manually closing the mic
-      if (manualQuestion.trim()) {
+      // Validate accumulated text and finalize through the realtime pipeline on mic stop
+      if (manualQuestion.trim() && pipelineRef.current) {
         const q = sanitizeTranscript(manualQuestion);
         setManualQuestion('');
-        processQuestion(q);
+        const profile = interviewProfiles.find(p => p.id === selectedProfileId);
+        pipelineRef.current.requestFinalization(profile?.cv_text || '', profile?.system_prompt || '', q);
+      } else {
+        if (pipelineRef.current) {
+          pipelineRef.current.reset();
+        }
       }
     } else {
       startListening();

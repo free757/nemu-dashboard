@@ -268,6 +268,10 @@ export class RealtimePipeline {
    * Finalizes the response generation, utilizing the background pre-generated draft if available
    * to guarantee zero-latency execution, or falling back to a direct, secure api call.
    */
+  /**
+   * Finalizes the response generation, utilizing the background pre-generated draft if available
+   * to guarantee zero-latency execution, or falling back to a direct, secure api call.
+   */
   private async triggerAnswerGeneration(
     questionText: string,
     cvText: string,
@@ -275,6 +279,25 @@ export class RealtimePipeline {
   ): Promise<void> {
     // Prevent overlapping trigger executions (race condition protection)
     if (this.state === PipelineState.GENERATING_ANSWER) {
+      return;
+    }
+
+    // Call validation before ANY final request
+    const stability = calculateStability(questionText);
+    const noise = calculateNoise(questionText);
+    const words = questionText.trim().split(/\s+/).filter(Boolean);
+    const semanticResult = await analyzeQuestionCompletion(questionText, this.sessionId);
+    const thresholdResult = calculateDynamicThreshold({
+      transcriptLength: words.length,
+      semanticConfidence: semanticResult.confidence,
+      silenceDuration: 2000,
+      transcriptStability: stability,
+      noiseLevel: noise,
+      speakingSpeed: 0.5
+    });
+
+    if (!this.canFinalizeTranscript(questionText, semanticResult.isComplete, stability, thresholdResult.adjustedConfidence)) {
+      this.reset();
       return;
     }
 
@@ -341,5 +364,100 @@ export class RealtimePipeline {
     } finally {
       this.reset();
     }
+  }
+
+  /**
+   * Explicit validation check before any final answer generation request.
+   */
+  public canFinalizeTranscript(
+    transcript: string,
+    isComplete: boolean,
+    stability: number,
+    adjustedConfidence: number
+  ): boolean {
+    const words = transcript.trim().split(/\s+/).filter(Boolean);
+
+    // Emergency protection: absolutely block final answer generation if transcript length < 5 words
+    if (words.length < 5 || !isComplete || stability < 0.6 || adjustedConfidence < 0.75) {
+      console.log('[ManualSubmit] validation failed');
+      console.log('[ManualSubmit] transcript incomplete');
+      console.log('[ManualSubmit] final generation blocked');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Manually requests final response generation (e.g. on manual mic stop or manual submit),
+   * ensuring that the transcript passes all semantic, stability, and length validations.
+   */
+  public async requestFinalization(
+    cvText: string = '', 
+    systemPrompt: string = '',
+    overrideText?: string
+  ): Promise<void> {
+    if (overrideText !== undefined) {
+      clearBuffer();
+      addChunk(overrideText);
+    }
+
+    const bufferedTranscript = getBufferedTranscript();
+    console.log(`[Pipeline] Manual requestFinalization received for: "${bufferedTranscript}"`);
+
+    const stability = calculateStability(bufferedTranscript);
+    const noise = calculateNoise(bufferedTranscript);
+    const words = bufferedTranscript.trim().split(/\s+/).filter(Boolean);
+
+    // Call analyzeQuestionCompletion to get latest semantic results
+    const semanticResult = await analyzeQuestionCompletion(bufferedTranscript, this.sessionId);
+
+    const thresholdResult = calculateDynamicThreshold({
+      transcriptLength: words.length,
+      semanticConfidence: semanticResult.confidence,
+      silenceDuration: 2000,
+      transcriptStability: stability,
+      noiseLevel: noise,
+      speakingSpeed: 0.5
+    });
+
+    const isComplete = semanticResult.isComplete;
+    const adjustedConfidence = thresholdResult.adjustedConfidence;
+
+    // Validate using the explicit canFinalizeTranscript validation check
+    const isValid = this.canFinalizeTranscript(
+      bufferedTranscript,
+      isComplete,
+      stability,
+      adjustedConfidence
+    );
+
+    if (!isValid) {
+      this.reset();
+      return;
+    }
+
+    // Now run smart trigger decision
+    const triggerResult = await shouldGenerateAnswer({
+      transcript: bufferedTranscript,
+      semanticResult: {
+        isComplete,
+        confidence: adjustedConfidence,
+        reason: thresholdResult.reason
+      },
+      silenceDuration: 2000,
+      isUserSpeaking: false
+    });
+
+    if (!triggerResult.shouldTrigger) {
+      console.log('[ManualSubmit] validation failed');
+      console.log('[ManualSubmit] transcript incomplete');
+      console.log('[ManualSubmit] final generation blocked');
+      this.reset();
+      return;
+    }
+
+    console.log('[Pipeline] Manual finalization approved.');
+    await this.triggerAnswerGeneration(bufferedTranscript, cvText, systemPrompt);
   }
 }
