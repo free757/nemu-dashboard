@@ -18,18 +18,33 @@ export async function POST(req: Request) {
   try {
     const { question, cvText, systemPrompt } = await req.json();
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    const openRouterKeyEnv = process.env.OPENROUTER_API_KEY;
 
     console.log('=== CHAT API REQUEST ===');
-    console.log('OPENROUTER_API_KEY present:', !!openRouterKey);
+    console.log('OPENROUTER_API_KEY present:', !!openRouterKeyEnv);
 
-    if (!openRouterKey) {
+    if (!openRouterKeyEnv) {
       console.error('Chat API Error: No API key found.');
       return NextResponse.json(
         { error: 'No API key configured. Please set OPENROUTER_API_KEY in Vercel.' },
         { status: 400 }
       );
     }
+
+    // Split keys by comma to support multiple keys pool & rotation
+    const apiKeys = openRouterKeyEnv
+      .split(',')
+      .map(k => k.trim())
+      .filter(Boolean);
+
+    if (apiKeys.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid API keys found in OPENROUTER_API_KEY configuration.' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`[API] Loaded API Key Pool: ${apiKeys.length} keys configured.`);
 
     const safeCvText = cvText ? cvText.substring(0, 20000) : '';
 
@@ -45,83 +60,94 @@ CRITICAL RULES:
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
     const userMessage = `CV Content:\n${safeCvText}\n\nInterview Question:\n"${question}"`;
 
-    // Try each model in the chain; on 429 rotate to the next one
+    // Try each model in the chain
     for (let modelIdx = 0; modelIdx < MODEL_CHAIN.length; modelIdx++) {
       const model = MODEL_CHAIN[modelIdx];
 
-      if (modelIdx > 0) {
-        console.log(`[API] fallback activated — trying model: ${model}`);
-      } else {
-        console.log(`Using OpenRouter (${model})...`);
-      }
+      // Try each API key in the list for the current model
+      for (let keyIdx = 0; keyIdx < apiKeys.length; keyIdx++) {
+        const apiKey = apiKeys[keyIdx];
+        
+        // Hide most of the key for security in logs
+        const maskedKey = apiKey.length > 12 
+          ? `${apiKey.substring(0, 6)}...${apiKey.substring(apiKey.length - 6)}` 
+          : 'invalid_key';
 
-      let response: Response | null = null;
+        console.log(`[API] Trying model ${model} with Key #${keyIdx + 1}/${apiKeys.length} (${maskedKey})`);
+        
+        let response: Response | null = null;
+        let isRateLimited = false;
 
-      // Per-model retry loop for transient errors (not 429)
-      for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-        try {
-          response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${openRouterKey}`,
-              'HTTP-Referer': 'https://nemu-dashboard-ten.vercel.app',
-              'X-Title': 'Nemu AI Interview Assistant',
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: 'system', content: finalSystemPrompt },
-                { role: 'user', content: userMessage },
-              ],
-              max_tokens: 300,
-            }),
-          });
-        } catch (fetchErr: any) {
-          console.warn(`[API] network error on attempt ${attempt + 1}:`, fetchErr.message);
-          if (attempt < RETRY_DELAYS_MS.length) {
-            await sleep(RETRY_DELAYS_MS[attempt]);
-            continue;
+        // Per-key retry loop for transient errors (not 429)
+        for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+          try {
+            response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'https://nemu-dashboard-ten.vercel.app',
+                'X-Title': 'Nemu AI Interview Assistant',
+              },
+              body: JSON.stringify({
+                model,
+                messages: [
+                  { role: 'system', content: finalSystemPrompt },
+                  { role: 'user', content: userMessage },
+                ],
+                max_tokens: 300,
+              }),
+            });
+          } catch (fetchErr: any) {
+            console.warn(`[API] network error on model=${model} Key=#${keyIdx + 1} attempt=${attempt + 1}:`, fetchErr.message);
+            if (attempt < RETRY_DELAYS_MS.length) {
+              await sleep(RETRY_DELAYS_MS[attempt]);
+              continue;
+            }
+            break;
           }
-          break;
-        }
 
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('retry-after');
-          console.warn(`[API] 429 from OpenRouter — model=${model} attempt=${attempt + 1} retry-after=${retryAfter ?? 'none'}`);
-          // Break out of per-model retry loop and try next model
-          break;
-        }
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          console.error(`[API] OpenRouter error: status=${response.status}`, JSON.stringify(data));
-
-          if (attempt < RETRY_DELAYS_MS.length) {
-            await sleep(RETRY_DELAYS_MS[attempt]);
-            continue;
+          if (response.status === 429) {
+            console.warn(`[API] 429 (Rate Limit) on model=${model} with Key #${keyIdx + 1}/${apiKeys.length}`);
+            isRateLimited = true;
+            break; // Break retry loop, try next API key
           }
-          break;
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            console.error(`[API] OpenRouter error: status=${response.status}`, JSON.stringify(data));
+
+            if (attempt < RETRY_DELAYS_MS.length) {
+              await sleep(RETRY_DELAYS_MS[attempt]);
+              continue;
+            }
+            break;
+          }
+
+          // Success
+          const data = await response.json();
+          const answer = data.choices?.[0]?.message?.content;
+
+          if (!answer) {
+            console.error('[API] OpenRouter returned empty answer');
+            return NextResponse.json({ error: 'No answer from OpenRouter.' }, { status: 500 });
+          }
+
+          console.log(`[API] Success! answer received from model=${model} using Key #${keyIdx + 1}`);
+          return NextResponse.json({ answer });
         }
-
-        // Success
-        const data = await response.json();
-        const answer = data.choices?.[0]?.message?.content;
-
-        if (!answer) {
-          console.error('[API] OpenRouter returned empty answer');
-          return NextResponse.json({ error: 'No answer from OpenRouter.' }, { status: 500 });
+        
+        // If we broke out due to rate limit, we will try the next key for this model
+        if (isRateLimited) {
+          continue;
         }
-
-        console.log(`[API] answer received from model=${model}`);
-        return NextResponse.json({ answer });
       }
     }
 
-    // All models exhausted
-    console.error('[API] All models returned 429 or failed — rate limit exceeded');
+    // All keys and models exhausted
+    console.error('[API] All keys and models returned 429 or failed — rate limit exceeded');
     return NextResponse.json(
-      { error: 'AI provider is currently rate limited. Please wait a few seconds and try again.' },
+      { error: 'All configured AI keys are currently rate limited. Please wait a few seconds and try again.' },
       { status: 429 }
     );
 
