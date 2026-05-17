@@ -1,4 +1,4 @@
-import { stabilizeTranscript, calculateTranscriptStability } from '@/lib/transcriptStabilizer';
+import { stabilizeTranscript } from '@/lib/transcriptStabilizer';
 import { addChunk, getBufferedTranscript, clearBuffer } from '@/lib/incrementalBuffer';
 import { analyzeQuestionCompletion } from '@/lib/semanticCompletion';
 import { throttleAIRequest, PipelineDebounce, abortAllActiveRequests } from './pipelineDebounce';
@@ -6,6 +6,7 @@ import { calculateDynamicThreshold, calculateStability, calculateNoise } from '@
 import { shouldGenerateAnswer } from '@/lib/smartTriggerController';
 import { scheduleDelayedTrigger, cancelPendingTrigger, resetTriggerState } from '@/lib/delayedAutoTrigger';
 import { startDraftPreGeneration, cancelDraftGeneration, clearDraft } from '@/lib/draftPreGenerator';
+import { evaluateFinalization } from '@/lib/finalizationDecisionEngine';
 
 export enum PipelineState {
   IDLE,
@@ -305,7 +306,7 @@ export class RealtimePipeline {
       return;
     }
 
-    // Validate before committing to generation
+    // Validate via the unified FinalizationDecisionEngine before committing to generation
     const stability = calculateStability(questionText);
     const noise = calculateNoise(questionText);
     const words = questionText.trim().split(/\s+/).filter(Boolean);
@@ -319,8 +320,13 @@ export class RealtimePipeline {
       speakingSpeed: 0.5
     });
 
-    if (!this.canFinalizeTranscript(questionText, semanticResult.isComplete, stability, thresholdResult.adjustedConfidence)) {
-      // Validation failed — do NOT abort in-flight throttler, just clean up the pipeline itself
+    const preflightDecision = evaluateFinalization({
+      transcript: questionText,
+      isComplete: semanticResult.isComplete,
+      confidence: thresholdResult.adjustedConfidence,
+    });
+
+    if (!preflightDecision.shouldGenerate) {
       this.gracefulCleanup();
       return;
     }
@@ -397,30 +403,17 @@ export class RealtimePipeline {
     this.gracefulCleanup();
   }
 
-  public canFinalizeTranscript(
-    transcript: string,
-    isComplete: boolean,
-    stability: number,
-    adjustedConfidence: number
-  ): boolean {
-    const words = transcript.trim().split(/\s+/).filter(Boolean);
-
-    if (words.length < 5 || !isComplete || stability < 0.6 || adjustedConfidence < 0.75) {
-      console.log('[ManualSubmit] validation failed');
-      console.log('[ManualSubmit] transcript incomplete');
-      console.log('[ManualSubmit] final generation blocked');
-      return false;
-    }
-
-    return true;
-  }
-
+  /**
+   * Manually requests final response generation.
+   * Uses the unified FinalizationDecisionEngine as the single validation authority.
+   * Does NOT call shouldGenerateAnswer separately — the engine already covers all those checks.
+   */
   public async requestFinalization(
     cvText: string = '',
     systemPrompt: string = '',
     overrideText?: string
   ): Promise<void> {
-    // If already generating, do not stack another finalization
+    // Guard: do not stack another finalization while one is active
     if (this.isFinalGenerationActive || this.state === PipelineState.GENERATING_ANSWER) {
       console.log('[Pipeline] requestFinalization skipped — final generation already active');
       return;
@@ -434,12 +427,11 @@ export class RealtimePipeline {
     const bufferedTranscript = getBufferedTranscript();
     console.log(`[Pipeline] Manual requestFinalization received for: "${bufferedTranscript}"`);
 
+    // Run semantic analysis + dynamic threshold
     const stability = calculateStability(bufferedTranscript);
     const noise = calculateNoise(bufferedTranscript);
     const words = bufferedTranscript.trim().split(/\s+/).filter(Boolean);
-
     const semanticResult = await analyzeQuestionCompletion(bufferedTranscript, this.sessionId);
-
     const thresholdResult = calculateDynamicThreshold({
       transcriptLength: words.length,
       semanticConfidence: semanticResult.confidence,
@@ -449,37 +441,16 @@ export class RealtimePipeline {
       speakingSpeed: 0.5
     });
 
-    const isComplete = semanticResult.isComplete;
-    const adjustedConfidence = thresholdResult.adjustedConfidence;
-
-    const isValid = this.canFinalizeTranscript(
-      bufferedTranscript,
-      isComplete,
-      stability,
-      adjustedConfidence
-    );
-
-    if (!isValid) {
-      // Validation failed — graceful cleanup, no throttler abort
-      this.gracefulCleanup();
-      return;
-    }
-
-    const triggerResult = await shouldGenerateAnswer({
+    // Single unified decision — no separate canFinalizeTranscript or shouldGenerateAnswer call
+    const decision = evaluateFinalization({
       transcript: bufferedTranscript,
-      semanticResult: {
-        isComplete,
-        confidence: adjustedConfidence,
-        reason: thresholdResult.reason
-      },
-      silenceDuration: 2000,
-      isUserSpeaking: false
+      isComplete: semanticResult.isComplete,
+      confidence: thresholdResult.adjustedConfidence,
+      // Manual triggers: no silence / speaking gates needed
     });
 
-    if (!triggerResult.shouldTrigger) {
-      console.log('[ManualSubmit] validation failed');
-      console.log('[ManualSubmit] transcript incomplete');
-      console.log('[ManualSubmit] final generation blocked');
+    if (!decision.shouldGenerate) {
+      console.log(`[ManualSubmit] final generation blocked — ${decision.reason}`);
       this.gracefulCleanup();
       return;
     }
