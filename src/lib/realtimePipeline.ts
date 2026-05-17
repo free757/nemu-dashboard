@@ -1,7 +1,7 @@
-import { stabilizeTranscript, cleanTranscript, calculateTranscriptStability } from '@/lib/transcriptStabilizer';
+import { stabilizeTranscript, calculateTranscriptStability } from '@/lib/transcriptStabilizer';
 import { addChunk, getBufferedTranscript, clearBuffer } from '@/lib/incrementalBuffer';
 import { analyzeQuestionCompletion } from '@/lib/semanticCompletion';
-import { throttleAIRequest, PipelineDebounce, resetThrottler } from './pipelineDebounce';
+import { throttleAIRequest, PipelineDebounce, abortAllActiveRequests } from './pipelineDebounce';
 import { calculateDynamicThreshold, calculateStability, calculateNoise } from '@/lib/confidenceThreshold';
 import { shouldGenerateAnswer } from '@/lib/smartTriggerController';
 import { scheduleDelayedTrigger, cancelPendingTrigger, resetTriggerState } from '@/lib/delayedAutoTrigger';
@@ -14,7 +14,9 @@ export enum PipelineState {
   PREPARING_DRAFT,
   WAITING_TRIGGER,
   GENERATING_ANSWER,
+  ANSWER_COMPLETED,
   SPEAKING,
+  CLEANUP,
   ERROR
 }
 
@@ -54,18 +56,15 @@ export class RealtimePipeline {
   private debouncer = new PipelineDebounce();
   private sessionId = '';
 
+  // Tracks whether a final answer generation is currently protected from reset/abort
+  private isFinalGenerationActive = false;
+
   constructor(private events: PipelineEvents = {}) {}
 
-  /**
-   * Registers or updates the pipeline event listeners.
-   */
   public registerEvents(events: PipelineEvents) {
     this.events = { ...this.events, ...events };
   }
 
-  /**
-   * Main entrypoint with debouncing built-in.
-   */
   public debounceAndProcess(params: ProcessSpeechParams) {
     this.debouncer.debounceSpeech(params, (approvedParams) => {
       this.processIncomingSpeech(approvedParams);
@@ -73,9 +72,18 @@ export class RealtimePipeline {
   }
 
   /**
-   * Resets the entire pipeline state, buffers, timers, and pre-generators.
+   * Resets the pipeline. If a final generation is active and this is NOT an explicit
+   * user-initiated cancellation, it will wait and skip throttler abort to preserve the answer.
    */
-  public reset() {
+  public reset(explicit: boolean = false) {
+    // PROTECTED STATE: if a final answer is actively generating, do not abort it
+    // unless the user explicitly cancels (new mic session, user cancels button, etc.)
+    if (this.isFinalGenerationActive && !explicit) {
+      console.log('[Pipeline] waiting for final completion before reset');
+      console.log('[Pipeline] protected final request preserved');
+      return;
+    }
+
     console.log('[Pipeline] Resetting entire pipeline orchestrator');
     this.state = PipelineState.IDLE;
     this.currentStabilizedTranscript = '';
@@ -83,36 +91,58 @@ export class RealtimePipeline {
     this.latestSemanticConfidence = 0.0;
     this.latestDraft = '';
     this.isProcessing = false;
+    this.isFinalGenerationActive = false;
     this.sessionId = '';
-    
+
     clearBuffer();
     resetTriggerState();
     clearDraft();
     cancelDraftGeneration();
     cancelPendingTrigger('manual');
     this.debouncer.reset();
-    resetThrottler();
+
+    // Only abort active requests on explicit user-initiated reset,
+    // NOT on automatic post-answer cleanup (to avoid aborting the final answer mid-flight)
+    if (explicit) {
+      abortAllActiveRequests('explicit_reset');
+    }
 
     console.log('[Pipeline] full reset completed');
   }
 
   /**
-   * Gets the current pipeline state.
+   * Graceful cleanup after answer completion — transitions through the
+   * ANSWER_COMPLETED → CLEANUP → IDLE state machine without aborting anything.
    */
+  private gracefulCleanup() {
+    console.log('[Pipeline] graceful cleanup started');
+    this.state = PipelineState.CLEANUP;
+    this.isFinalGenerationActive = false;
+    this.currentStabilizedTranscript = '';
+    this.currentConfidenceScore = 1.0;
+    this.latestSemanticConfidence = 0.0;
+    this.latestDraft = '';
+    this.isProcessing = false;
+    this.sessionId = '';
+
+    clearBuffer();
+    resetTriggerState();
+    clearDraft();
+    // NOTE: do NOT call abortAllActiveRequests here — the final request already completed
+    cancelPendingTrigger('manual');
+    this.debouncer.reset();
+
+    this.state = PipelineState.IDLE;
+  }
+
   public getState(): PipelineState {
     return this.state;
   }
 
-  /**
-   * Gets the active stabilized transcript.
-   */
   public getTranscript(): string {
     return this.currentStabilizedTranscript;
   }
 
-  /**
-   * Processing entry point for new incoming microphone speech segments.
-   */
   public async processIncomingSpeech({
     chunk,
     isPartial,
@@ -123,14 +153,13 @@ export class RealtimePipeline {
     systemPrompt = '',
     sessionId = ''
   }: ProcessSpeechParams): Promise<void> {
-    
-    // Protect against overlapping speech processing loops (race condition check)
+
     if (this.isProcessing) {
       return;
     }
-    
-    // Protect against stale processing if we are actively generating the final answer
-    if (this.state === PipelineState.GENERATING_ANSWER) {
+
+    // Protect against new speech interrupting an active final generation
+    if (this.state === PipelineState.GENERATING_ANSWER || this.isFinalGenerationActive) {
       return;
     }
 
@@ -155,7 +184,6 @@ export class RealtimePipeline {
         semanticConfidence: this.latestSemanticConfidence
       });
 
-      // If no change or stability was recorded, stop early to optimize cycles
       if (!stabResult.changesDetected && this.currentStabilizedTranscript.length > 0) {
         this.isProcessing = false;
         return;
@@ -171,8 +199,7 @@ export class RealtimePipeline {
       addChunk(this.currentStabilizedTranscript);
       const bufferedTranscript = getBufferedTranscript();
 
-      // --- 3. Parallel Execution: Semantic Analysis & Draft Pre-generation ---
-      // We run both tasks in parallel to optimize latency and minimize post-completion delay!
+      // --- 3. Parallel: Semantic Analysis & Draft Pre-generation ---
       this.state = PipelineState.ANALYZING;
 
       const [semanticResult] = await Promise.all([
@@ -180,7 +207,7 @@ export class RealtimePipeline {
         startDraftPreGeneration({
           transcript: bufferedTranscript,
           semanticResult: {
-            isComplete: false, // dummy for early pre-generation check
+            isComplete: false,
             confidence: 0.7,
             reason: 'Parallel background run'
           },
@@ -212,7 +239,7 @@ export class RealtimePipeline {
         silenceDuration,
         transcriptStability: stability,
         noiseLevel: noise,
-        speakingSpeed: 0.5 // Normal default speaking speed index
+        speakingSpeed: 0.5
       });
 
       // --- 5. Smart Trigger Decision ---
@@ -232,12 +259,10 @@ export class RealtimePipeline {
         console.log('[Pipeline] trigger approved');
         this.state = PipelineState.WAITING_TRIGGER;
 
-        // Schedule confidence-based delayed trigger
         scheduleDelayedTrigger({
           transcript: bufferedTranscript,
           confidenceResult: thresholdResult,
           onTrigger: () => {
-            // --- 7. Final Answer Generation Triggered ---
             this.triggerAnswerGeneration(bufferedTranscript, cvText, systemPrompt);
           },
           onCancel: (reason) => {
@@ -247,15 +272,18 @@ export class RealtimePipeline {
           }
         });
 
-        // Broadcast scheduled delay event (e.g. 600ms, 1000ms, 1400ms)
         const delayMs = thresholdResult.adjustedConfidence >= 0.90 ? 600 : thresholdResult.adjustedConfidence >= 0.80 ? 1000 : 1400;
         this.events.onTriggerScheduled?.(delayMs);
       } else {
-        // If not triggering, keep state in listening or preparing draft
         this.state = this.latestDraft ? PipelineState.PREPARING_DRAFT : PipelineState.LISTENING;
       }
 
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        // Suppress UI error for intentional aborts
+        console.log('[Pipeline] processIncomingSpeech aborted (intentional)');
+        return;
+      }
       console.error('[Pipeline] Orchestrator processing error:', error);
       this.state = PipelineState.ERROR;
       this.events.onPipelineError?.(error);
@@ -265,24 +293,19 @@ export class RealtimePipeline {
   }
 
   /**
-   * Finalizes the response generation, utilizing the background pre-generated draft if available
-   * to guarantee zero-latency execution, or falling back to a direct, secure api call.
-   */
-  /**
-   * Finalizes the response generation, utilizing the background pre-generated draft if available
-   * to guarantee zero-latency execution, or falling back to a direct, secure api call.
+   * Finalizes the response generation. Uses pre-generated draft or falls back to API.
+   * Protects the final request from being reset/aborted mid-flight via isFinalGenerationActive.
    */
   private async triggerAnswerGeneration(
     questionText: string,
     cvText: string,
     systemPrompt: string
   ): Promise<void> {
-    // Prevent overlapping trigger executions (race condition protection)
-    if (this.state === PipelineState.GENERATING_ANSWER) {
+    if (this.state === PipelineState.GENERATING_ANSWER || this.isFinalGenerationActive) {
       return;
     }
 
-    // Call validation before ANY final request
+    // Validate before committing to generation
     const stability = calculateStability(questionText);
     const noise = calculateNoise(questionText);
     const words = questionText.trim().split(/\s+/).filter(Boolean);
@@ -297,28 +320,30 @@ export class RealtimePipeline {
     });
 
     if (!this.canFinalizeTranscript(questionText, semanticResult.isComplete, stability, thresholdResult.adjustedConfidence)) {
-      this.reset();
+      // Validation failed — do NOT abort in-flight throttler, just clean up the pipeline itself
+      this.gracefulCleanup();
       return;
     }
 
+    // Mark as protected BEFORE any async work
+    this.isFinalGenerationActive = true;
     this.state = PipelineState.GENERATING_ANSWER;
     console.log('[Pipeline] answer generation started');
 
-    // Clean up resources immediately to prepare for the next round
+    // Cancel only pre-generation and pending trigger — NOT the throttler (it owns the final request)
     cancelDraftGeneration();
     cancelPendingTrigger('manual');
 
-    // LATENCY OPTIMIZATION WIN:
-    // If our background Pre-Generator already successfully prepared a draft response,
-    // we bypass making another API call entirely and serve it instantly!
+    // Serve pre-generated draft instantly if available
     if (this.latestDraft) {
       console.log('[Pipeline] Serving pre-generated draft instantly!');
+      this.state = PipelineState.ANSWER_COMPLETED;
       this.events.onAnswerGenerated?.(this.latestDraft);
-      this.reset();
+      this.gracefulCleanup();
       return;
     }
 
-    // Fallback: If no draft was prepared (e.g. question finished too quickly), call API immediately
+    // Fallback: make a fresh API call
     try {
       const throttledAnswer = await throttleAIRequest<string | null>(
         'final',
@@ -326,9 +351,7 @@ export class RealtimePipeline {
         async (signal) => {
           const res = await fetch('/api/chat', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               question: questionText,
               cvText,
@@ -348,27 +371,32 @@ export class RealtimePipeline {
       );
 
       if (throttledAnswer) {
+        this.state = PipelineState.ANSWER_COMPLETED;
         this.events.onAnswerGenerated?.(throttledAnswer);
       } else {
-        throw new Error('Chat API returned empty response or request was throttled');
+        // Throttled or empty — not an error, just skip cleanly
+        console.log('[Pipeline] Final answer skipped (throttled or empty)');
       }
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        console.log('[Pipeline] Final answer request aborted');
+        // Intentional abort — suppress UI error, clean up silently
+        console.log('[Pipeline] Final answer request aborted (intentional)');
+        this.isFinalGenerationActive = false;
+        this.state = PipelineState.IDLE;
         return;
       }
       console.error('[Pipeline] Final answer generation failed:', error);
+      this.isFinalGenerationActive = false;
       this.state = PipelineState.ERROR;
       this.events.onPipelineError?.(error);
-    } finally {
-      this.reset();
+      return;
     }
+
+    // Graceful teardown — runs only after successful answer delivery
+    this.gracefulCleanup();
   }
 
-  /**
-   * Explicit validation check before any final answer generation request.
-   */
   public canFinalizeTranscript(
     transcript: string,
     isComplete: boolean,
@@ -377,7 +405,6 @@ export class RealtimePipeline {
   ): boolean {
     const words = transcript.trim().split(/\s+/).filter(Boolean);
 
-    // Emergency protection: absolutely block final answer generation if transcript length < 5 words
     if (words.length < 5 || !isComplete || stability < 0.6 || adjustedConfidence < 0.75) {
       console.log('[ManualSubmit] validation failed');
       console.log('[ManualSubmit] transcript incomplete');
@@ -388,15 +415,17 @@ export class RealtimePipeline {
     return true;
   }
 
-  /**
-   * Manually requests final response generation (e.g. on manual mic stop or manual submit),
-   * ensuring that the transcript passes all semantic, stability, and length validations.
-   */
   public async requestFinalization(
-    cvText: string = '', 
+    cvText: string = '',
     systemPrompt: string = '',
     overrideText?: string
   ): Promise<void> {
+    // If already generating, do not stack another finalization
+    if (this.isFinalGenerationActive || this.state === PipelineState.GENERATING_ANSWER) {
+      console.log('[Pipeline] requestFinalization skipped — final generation already active');
+      return;
+    }
+
     if (overrideText !== undefined) {
       clearBuffer();
       addChunk(overrideText);
@@ -409,7 +438,6 @@ export class RealtimePipeline {
     const noise = calculateNoise(bufferedTranscript);
     const words = bufferedTranscript.trim().split(/\s+/).filter(Boolean);
 
-    // Call analyzeQuestionCompletion to get latest semantic results
     const semanticResult = await analyzeQuestionCompletion(bufferedTranscript, this.sessionId);
 
     const thresholdResult = calculateDynamicThreshold({
@@ -424,7 +452,6 @@ export class RealtimePipeline {
     const isComplete = semanticResult.isComplete;
     const adjustedConfidence = thresholdResult.adjustedConfidence;
 
-    // Validate using the explicit canFinalizeTranscript validation check
     const isValid = this.canFinalizeTranscript(
       bufferedTranscript,
       isComplete,
@@ -433,11 +460,11 @@ export class RealtimePipeline {
     );
 
     if (!isValid) {
-      this.reset();
+      // Validation failed — graceful cleanup, no throttler abort
+      this.gracefulCleanup();
       return;
     }
 
-    // Now run smart trigger decision
     const triggerResult = await shouldGenerateAnswer({
       transcript: bufferedTranscript,
       semanticResult: {
@@ -453,7 +480,7 @@ export class RealtimePipeline {
       console.log('[ManualSubmit] validation failed');
       console.log('[ManualSubmit] transcript incomplete');
       console.log('[ManualSubmit] final generation blocked');
-      this.reset();
+      this.gracefulCleanup();
       return;
     }
 

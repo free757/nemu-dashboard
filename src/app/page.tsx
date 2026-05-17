@@ -487,6 +487,11 @@ export default function Dashboard() {
           }
         },
         onPipelineError: (err) => {
+          // Suppress AbortErrors — these are intentional pipeline cancellations, not real errors
+          if (err.name === 'AbortError') {
+            console.log('[UI] Pipeline request aborted (intentional — suppressing UI error)');
+            return;
+          }
           console.error('[UI] Pipeline Error:', err);
         }
       });
@@ -686,7 +691,7 @@ export default function Dashboard() {
         pipelineRef.current.requestFinalization(profile?.cv_text || '', profile?.system_prompt || '', q);
       } else {
         if (pipelineRef.current) {
-          pipelineRef.current.reset();
+          pipelineRef.current.reset(true);
         }
       }
     } else {
