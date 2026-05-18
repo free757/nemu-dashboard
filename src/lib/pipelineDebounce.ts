@@ -293,12 +293,14 @@ export async function throttleAIRequest<T>(
     }
   }
 
-  // 5. Minimum interval protection (2 seconds between AI requests)
+  // 5. Minimum interval protection (2 seconds between consecutive 'final' AI requests)
   const now = Date.now();
-  const timeSinceLast = now - lastAIRequestTimestamp;
-  if (timeSinceLast < 2000) {
-    console.log('[Throttle] request blocked');
-    return null;
+  if (type === 'final') {
+    const timeSinceLast = now - lastAIRequestTimestamp;
+    if (timeSinceLast < 2000) {
+      console.log('[Throttle] request blocked');
+      return null;
+    }
   }
 
   // 6. Cooldown check
@@ -321,7 +323,9 @@ export async function throttleAIRequest<T>(
     startedAt: now,
   });
 
-  lastAIRequestTimestamp = now;
+  if (type === 'final') {
+    lastAIRequestTimestamp = now;
+  }
   lastProcessedAIHash[type] = hash;
 
   console.log(`[Request] started | requestId=${requestId} type=${type} sessionId=${sessionId ?? 'none'} hash=${hash} ts=${now}`);
