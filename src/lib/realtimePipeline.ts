@@ -459,7 +459,7 @@ export class RealtimePipeline {
       transcript: bufferedTranscript,
       isComplete: semanticResult.isComplete,
       confidence: thresholdResult.adjustedConfidence,
-      // Manual triggers: no silence / speaking gates needed
+      isManual: true, // Bypass completeness checks since user manually triggered this!
     });
 
     if (!decision.shouldGenerate) {

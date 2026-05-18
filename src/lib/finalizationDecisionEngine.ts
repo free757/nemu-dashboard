@@ -257,6 +257,7 @@ export interface DecisionParams {
   confidence: number;           // From SemanticCompletion + dynamic threshold
   silenceDuration?: number;     // ms — optional for manual triggers
   isUserSpeaking?: boolean;     // optional — assumed false for manual triggers
+  isManual?: boolean;           // optional — set true to bypass completeness checks for manual clicks
 }
 
 // ---------------------------------------------------------------------------
@@ -278,6 +279,7 @@ export function evaluateFinalization({
   confidence,
   silenceDuration,
   isUserSpeaking = false,
+  isManual = false,
 }: DecisionParams): FinalizationDecision {
 
   // Run local multi-signal evaluation
@@ -290,6 +292,17 @@ export function evaluateFinalization({
       isComplete: false,
       confidence: 0.0,
       reason: localEval.reason,
+    };
+  }
+
+  // If this is a manual submission (user explicitly pressed Send / finalized), bypass completeness checks!
+  if (isManual) {
+    console.log('[DecisionEngine] Approved manual request override');
+    return {
+      shouldGenerate: true,
+      isComplete: true,
+      confidence: 1.0,
+      reason: 'Approved: Manual request override',
     };
   }
 
