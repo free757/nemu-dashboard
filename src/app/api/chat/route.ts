@@ -18,16 +18,41 @@ export async function POST(req: Request) {
   try {
     const { question, cvText, systemPrompt } = await req.json();
 
-    // Dynamically collect all environment variables starting with OPENROUTER_API_KEY
     const apiKeys: string[] = [];
     
+    // Explicit list for next.js bundler static analysis safety
+    const explicitVars = [
+      process.env.OPENROUTER_API_KEY,
+      process.env.OPENROUTER_API_KEY_1,
+      process.env.OPENROUTER_API_KEY_2,
+      process.env.OPENROUTER_API_KEY_3,
+      process.env.OPENROUTER_API_KEY_4,
+      process.env.OPENROUTER_API_KEY_5,
+      process.env.OPENROUTER_API_KEY_6,
+      process.env.OPENROUTER_API_KEY_7,
+      process.env.OPENROUTER_API_KEY_8,
+      process.env.OPENROUTER_API_KEY_9,
+      process.env.OPENROUTER_API_KEY_10,
+    ];
+
+    for (const val of explicitVars) {
+      if (val) {
+        const splitKeys = val.split(',').map(k => k.trim()).filter(Boolean);
+        apiKeys.push(...splitKeys);
+      }
+    }
+
+    // Dynamic fallback to catch any custom ones
     for (const key in process.env) {
       if (key.startsWith('OPENROUTER_API_KEY')) {
         const val = process.env[key];
         if (val) {
-          // Support both comma-separated and individual lines
           const splitKeys = val.split(',').map(k => k.trim()).filter(Boolean);
-          apiKeys.push(...splitKeys);
+          for (const k of splitKeys) {
+            if (!apiKeys.includes(k)) {
+              apiKeys.push(k);
+            }
+          }
         }
       }
     }
