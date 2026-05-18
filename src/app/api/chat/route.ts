@@ -84,6 +84,53 @@ CRITICAL RULES:
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
     const userMessage = `CV Content:\n${safeCvText}\n\nInterview Question:\n"${question}"`;
 
+    // Try Groq first if key is configured (extremely fast, high rate limits, immune to shared IP issues)
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (groqApiKey) {
+      console.log('[API] Groq API Key detected. Trying Groq first!');
+      const GROQ_MODELS = [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+        'llama-3.2-3b-preview',
+      ];
+
+      for (const groqModel of GROQ_MODELS) {
+        console.log(`[API] Trying Groq model: ${groqModel}`);
+        try {
+          const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${groqApiKey}`,
+            },
+            body: JSON.stringify({
+              model: groqModel,
+              messages: [
+                { role: 'system', content: finalSystemPrompt },
+                { role: 'user', content: userMessage },
+              ],
+              max_tokens: 300,
+            }),
+          });
+
+          if (groqResponse.ok) {
+            const groqData = await groqResponse.json();
+            const groqAnswer = groqData.choices?.[0]?.message?.content;
+            if (groqAnswer) {
+              console.log(`[API] Groq Success! Answer received from model=${groqModel}`);
+              return NextResponse.json({ answer: groqAnswer });
+            }
+          } else {
+            const errBody = await groqResponse.json().catch(() => ({}));
+            console.warn(`[API] Groq model ${groqModel} failed. Status: ${groqResponse.status}`, JSON.stringify(errBody));
+          }
+        } catch (groqErr: any) {
+          console.error(`[API] Groq fetch error for model ${groqModel}:`, groqErr.message);
+        }
+      }
+      console.warn('[API] Groq failed or was exhausted. Falling back to OpenRouter key pool...');
+    }
+
     // Try each model in the chain
     for (let modelIdx = 0; modelIdx < MODEL_CHAIN.length; modelIdx++) {
       const model = MODEL_CHAIN[modelIdx];
