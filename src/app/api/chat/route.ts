@@ -18,28 +18,27 @@ export async function POST(req: Request) {
   try {
     const { question, cvText, systemPrompt } = await req.json();
 
-    const openRouterKeyEnv = process.env.OPENROUTER_API_KEY;
-
-    console.log('=== CHAT API REQUEST ===');
-    console.log('OPENROUTER_API_KEY present:', !!openRouterKeyEnv);
-
-    if (!openRouterKeyEnv) {
-      console.error('Chat API Error: No API key found.');
-      return NextResponse.json(
-        { error: 'No API key configured. Please set OPENROUTER_API_KEY in Vercel.' },
-        { status: 400 }
-      );
+    // Dynamically collect all environment variables starting with OPENROUTER_API_KEY
+    const apiKeys: string[] = [];
+    
+    for (const key in process.env) {
+      if (key.startsWith('OPENROUTER_API_KEY')) {
+        const val = process.env[key];
+        if (val) {
+          // Support both comma-separated and individual lines
+          const splitKeys = val.split(',').map(k => k.trim()).filter(Boolean);
+          apiKeys.push(...splitKeys);
+        }
+      }
     }
 
-    // Split keys by comma to support multiple keys pool & rotation
-    const apiKeys = openRouterKeyEnv
-      .split(',')
-      .map(k => k.trim())
-      .filter(Boolean);
+    console.log('=== CHAT API REQUEST ===');
+    console.log(`[API] Total environment variables detected: ${Object.keys(process.env).filter(k => k.startsWith('OPENROUTER_API_KEY')).length}`);
 
     if (apiKeys.length === 0) {
+      console.error('Chat API Error: No API keys found starting with OPENROUTER_API_KEY.');
       return NextResponse.json(
-        { error: 'No valid API keys found in OPENROUTER_API_KEY configuration.' },
+        { error: 'No API keys configured. Please set OPENROUTER_API_KEY (or OPENROUTER_API_KEY_1, _2, etc.) in Vercel.' },
         { status: 400 }
       );
     }
