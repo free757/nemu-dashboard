@@ -29,7 +29,8 @@ import {
   Mic,
   MicOff,
   Ban,
-  Bell
+  Bell,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -72,6 +73,31 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setCurrentTime(new Date());
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTimeForTimezone = (timezone: string) => {
+    if (!currentTime) return '';
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone.trim(),
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }).format(currentTime);
+    } catch (e) {
+      return '';
+    }
+  };
   
 
 
@@ -1252,6 +1278,12 @@ export default function Dashboard() {
                             <p className="text-gray-500 text-xs flex items-center gap-1">
                                <MapPin className="w-3 h-3" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                             </p>
+                            {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
+                              <div className="flex items-center gap-1 mt-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
+                                <Clock className="w-2.5 h-2.5 animate-pulse" />
+                                <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-5 text-right">
@@ -1334,6 +1366,12 @@ export default function Dashboard() {
                     <p className="text-gray-500 text-xs flex items-center gap-2">
                        <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                     </p>
+                    {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
+                      <div className="flex items-center gap-1.5 mt-1 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
+                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                        <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
