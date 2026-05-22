@@ -4,6 +4,7 @@
 const DEBUG_PIPELINE_LOGS = false;
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
 import { RealtimePipeline } from '@/lib/realtimePipeline';
@@ -31,11 +32,25 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboard() {
+  const router = useRouter();
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [remoteConfigs, setRemoteConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // ── Auth Guard ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const auth = sessionStorage.getItem('dashboard_auth');
+    if (!auth) {
+      router.replace('/login');
+    } else {
+      setIsAuthChecked(true);
+    }
+  }, [router]);
+
+
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -832,6 +847,15 @@ export default function Dashboard() {
     user.pin?.includes(searchQuery)
   );
 
+  // ── Auth Guard (placed after all hooks) ──────────────────────────────────
+  if (!isAuthChecked) return (
+    <div className="w-screen h-screen flex items-center justify-center"
+         style={{ background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)' }}>
+      <div className="w-8 h-8 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+    </div>
+  );
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <div className={`flex flex-col md:flex-row h-screen ${theme === 'dark' ? 'bg-[#0a0a0a] text-white' : 'bg-[#f8f9fa] text-gray-900'} ${lang === 'ar' ? 'font-arabic' : ''}`} dir="ltr">
       {/* Mobile Header */}
@@ -933,7 +957,13 @@ export default function Dashboard() {
                     {isSidebarCollapsed ? lang.toUpperCase() : (lang === 'en' ? 'ARABIC' : 'ENGLISH')}
                   </button>
                 </div>
-                <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}>
+                <button
+                  onClick={() => {
+                    sessionStorage.removeItem('dashboard_auth');
+                    router.replace('/login');
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
                   <LogOut className="w-5 h-5 flex-shrink-0" />
                   {!isSidebarCollapsed && <span className="font-medium">{t.signOut}</span>}
                 </button>
