@@ -2072,6 +2072,20 @@ export default function Dashboard() {
                                     placeholder=".header-banner, .footer-links"
                                   />
                                 </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs text-gray-500 font-medium">{lang === 'ar' ? 'كود جافاسكريبت مخصص (لتجاوز وتحديث السلوك)' : 'Custom JavaScript Override (for future updates)'}</label>
+                                  <textarea
+                                    value={proj.custom_js || ''}
+                                    onChange={e => {
+                                      const newList = [...visualProjects];
+                                      newList[idx].custom_js = e.target.value;
+                                      setVisualProjects(newList);
+                                    }}
+                                    rows={4}
+                                    className={`w-full text-sm border rounded-xl p-3 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200'}`}
+                                    placeholder="e.g. document.querySelector('[data-testid=\"auth-button-ms\"]').click();"
+                                  />
+                                </div>
                               </div>
                             ) : (
                               <div className="space-y-3 animate-in fade-in duration-150">
