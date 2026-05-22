@@ -2083,7 +2083,7 @@ export default function Dashboard() {
                                     }}
                                     rows={4}
                                     className={`w-full text-sm border rounded-xl p-3 outline-none focus:border-blue-500 transition-all font-mono ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200'}`}
-                                    placeholder="e.g. document.querySelector('[data-testid=\"auth-button-ms\"]').click();"
+                                    placeholder="e.g. document.querySelector('.auth-button-ms').click();"
                                   />
                                 </div>
                               </div>
