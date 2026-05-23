@@ -209,7 +209,8 @@ export default function Dashboard() {
     proxy_timezone: '',
     is_manager: false,
     email: '',
-    password: ''
+    password: '',
+    verification_code: ''
   });
 
   const [quickPaste, setQuickPaste] = useState('');
@@ -302,7 +303,8 @@ export default function Dashboard() {
       send: 'Send Message',
       microsoftCreds: 'Microsoft Auto-Login Credentials',
       microsoftEmail: 'Microsoft Email',
-      microsoftPassword: 'Microsoft Password'
+      microsoftPassword: 'Microsoft Password',
+      verificationCode: 'Verification Code (OTP)'
     },
     ar: {
       users: 'إدارة المستخدمين',
@@ -362,7 +364,8 @@ export default function Dashboard() {
       send: 'إرسال الرسالة',
       microsoftCreds: 'بيانات تسجيل الدخول التلقائي لمايكروسوفت',
       microsoftEmail: 'بريد مايكروسوفت الإلكتروني',
-      microsoftPassword: 'كلمة سر مايكروسوفت'
+      microsoftPassword: 'كلمة سر مايكروسوفت',
+      verificationCode: 'رمز التحقق (OTP)'
     }
   }[lang];
 
@@ -497,7 +500,8 @@ export default function Dashboard() {
       proxy_timezone: user.proxy_timezone || '',
       is_manager: user.is_manager || false,
       email: user.email || '',
-      password: user.password || ''
+      password: user.password || '',
+      verification_code: user.verification_code || ''
     });
     setIsModalOpen(true);
   };
@@ -537,7 +541,7 @@ export default function Dashboard() {
         pin: '', username: '', phone_number: '',
         proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
         proxy_location: '', proxy_timezone: '', is_manager: false,
-        email: '', password: ''
+        email: '', password: '', verification_code: ''
       });
       setIsModalOpen(true);
     } else {
@@ -652,7 +656,8 @@ export default function Dashboard() {
       proxy_timezone: formData.proxy_timezone?.trim() || null,
       phone_number: formData.phone_number?.trim() || null,
       email: formData.email?.trim() || null,
-      password: formData.password?.trim() || null
+      password: formData.password?.trim() || null,
+      verification_code: formData.verification_code?.trim() || null
     };
 
     let error;
@@ -1300,6 +1305,16 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <p className="text-gray-500 text-sm">{user.phone_number}</p>
+                              {user.email && (
+                                <p className="text-xs text-gray-400 mt-1 flex items-center flex-wrap gap-1 font-mono">
+                                  <span>📧 {user.email}</span>
+                                  {user.verification_code && (
+                                    <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 font-sans text-[10px]">
+                                      OTP: {user.verification_code}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -1409,6 +1424,16 @@ export default function Dashboard() {
                           )}
                         </div>
                         <p className="text-gray-500 text-sm">{user.phone_number}</p>
+                        {user.email && (
+                          <p className="text-xs text-gray-400 mt-1 flex items-center flex-wrap gap-1 font-mono">
+                            <span>📧 {user.email}</span>
+                            {user.verification_code && (
+                              <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 font-sans text-[10px]">
+                                OTP: {user.verification_code}
+                              </span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <span className={`px-3 py-1 border rounded-lg font-mono text-sm text-blue-400 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
@@ -2441,7 +2466,7 @@ export default function Dashboard() {
                     <ShieldCheck className="w-4 h-4" /> {t.microsoftCreds}
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
                         {t.microsoftEmail}
@@ -2464,6 +2489,18 @@ export default function Dashboard() {
                         onChange={e => setFormData({...formData, password: e.target.value})}
                         className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                         placeholder="••••••••••••"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                        {t.verificationCode}
+                      </label>
+                      <input 
+                        type="text"
+                        value={formData.verification_code}
+                        onChange={e => setFormData({...formData, verification_code: e.target.value})}
+                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                        placeholder="e.g. 123 456"
                       />
                     </div>
                   </div>
