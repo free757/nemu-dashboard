@@ -99,6 +99,17 @@ export default function Dashboard() {
     }
   };
   
+  const isProxyOnline = (user: any) => {
+    if (user.proxy_status !== 'active' || !user.proxy_last_seen) return false;
+    try {
+      const lastSeen = new Date(user.proxy_last_seen).getTime();
+      const now = new Date().getTime();
+      return now - lastSeen < 120000; // 2 minutes
+    } catch (e) {
+      return false;
+    }
+  };
+  
 
 
   // Interview Assistant State
@@ -405,6 +416,30 @@ export default function Dashboard() {
     fetchUsers();
     fetchConfigs();
     fetchNotifications();
+
+    // Realtime channel for app_users updates
+    const channel = supabase
+      .channel('app_users_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_users' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setUsers((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setUsers((prev) =>
+              prev.map((user) => (user.id === payload.new.id ? { ...user, ...payload.new } : user))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setUsers((prev) => prev.filter((user) => user.id === payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleDeleteClick = (id: string, name: string, type: 'user' | 'config' = 'user') => {
@@ -1278,12 +1313,25 @@ export default function Dashboard() {
                             <p className="text-gray-500 text-xs flex items-center gap-1">
                                <MapPin className="w-3 h-3" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                             </p>
-                            {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
-                              <div className="flex items-center gap-1 mt-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
-                                <Clock className="w-2.5 h-2.5 animate-pulse" />
-                                <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
+                                <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
+                                  <Clock className="w-2.5 h-2.5 animate-pulse" />
+                                  <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
+                                </div>
+                              )}
+                              {isProxyOnline(user) ? (
+                                <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full w-max font-semibold text-[10px] border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span>ONLINE</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded-full w-max font-medium text-[10px] border border-gray-500/10">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                  <span>OFFLINE</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-5 text-right">
@@ -1366,12 +1414,25 @@ export default function Dashboard() {
                     <p className="text-gray-500 text-xs flex items-center gap-2">
                        <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                     </p>
-                    {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
-                      <div className="flex items-center gap-1.5 mt-1 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
-                        <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
+                        <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
+                          <Clock className="w-3.5 h-3.5 animate-pulse" />
+                          <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
+                        </div>
+                      )}
+                      {isProxyOnline(user) ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl w-max font-semibold text-xs border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>ONLINE</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-3 py-1 rounded-xl w-max font-medium text-xs border border-gray-500/10">
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          <span>OFFLINE</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
