@@ -1068,7 +1068,11 @@ export default function Dashboard() {
   const filteredUsers = users.filter(user => 
     user.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     user.pin?.includes(searchQuery)
-  );
+  ).sort((a, b) => {
+    if (a.is_manager && !b.is_manager) return -1;
+    if (!a.is_manager && b.is_manager) return 1;
+    return 0;
+  });
 
   // ── Auth Guard (placed after all hooks) ──────────────────────────────────
   if (!isAuthChecked) return (
