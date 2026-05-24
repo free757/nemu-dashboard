@@ -2808,6 +2808,77 @@ export default function Dashboard() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Add/Edit Misc Modal */}
+      {isMiscModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`w-full max-w-lg rounded-[2rem] p-8 shadow-2xl border ${theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'}`}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-purple-600/20 text-purple-500 rounded-xl flex items-center justify-center">
+                {editingMisc ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              </div>
+              <h2 className="text-2xl font-bold">{editingMisc ? (lang === 'ar' ? 'تعديل العنصر' : 'Edit Misc Item') : t.addMisc}</h2>
+            </div>
+
+            <form onSubmit={handleMiscSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">{lang === 'ar' ? 'العنوان' : 'Title'}</label>
+                <input
+                  required
+                  type="text"
+                  value={miscFormData.title}
+                  onChange={(e) => setMiscFormData({...miscFormData, title: e.target.value})}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-purple-500 outline-none transition-all ${theme === 'dark' ? 'bg-black/50 border-white/10 focus:border-purple-500/50' : 'bg-gray-50 border-gray-200 focus:border-purple-500'}`}
+                  placeholder={lang === 'ar' ? 'مثال: رقم الحساب البنكي' : 'e.g., Bank Account'}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">{lang === 'ar' ? 'المحتوى (الذي سيتم نسخه)' : 'Content (to be copied)'}</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={miscFormData.content}
+                  onChange={(e) => setMiscFormData({...miscFormData, content: e.target.value})}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-purple-500 outline-none transition-all resize-none ${theme === 'dark' ? 'bg-black/50 border-white/10 focus:border-purple-500/50' : 'bg-gray-50 border-gray-200 focus:border-purple-500'}`}
+                  placeholder={lang === 'ar' ? 'أدخل النص هنا...' : 'Enter text here...'}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2">{lang === 'ar' ? 'ترتيب العرض (0 هو الأول)' : 'Display Order (0 is first)'}</label>
+                <input
+                  type="number"
+                  value={miscFormData.display_order}
+                  onChange={(e) => setMiscFormData({...miscFormData, display_order: parseInt(e.target.value) || 0})}
+                  className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-purple-500 outline-none transition-all ${theme === 'dark' ? 'bg-black/50 border-white/10 focus:border-purple-500/50' : 'bg-gray-50 border-gray-200 focus:border-purple-500'}`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsMiscModalOpen(false)}
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold shadow-lg shadow-purple-600/20 transition-all"
+                >
+                  {t.save}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }
