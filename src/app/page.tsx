@@ -1394,6 +1394,35 @@ export default function Dashboard() {
 
         {activeTab === 'users' ? (
           <div className="space-y-6">
+            {/* Stats Summary */}
+            {(() => {
+              const nonManagerUsers = users.filter(u => !u.is_manager);
+              const onlineCount = nonManagerUsers.filter(u => isProxyOnline(u)).length;
+              const offlineCount = nonManagerUsers.length - onlineCount;
+              return (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className={`rounded-2xl border p-4 flex flex-col gap-1 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+                    <span className="text-xs text-gray-500 font-semibold uppercase tracking-widest">{lang === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}</span>
+                    <span className="text-3xl font-bold">{nonManagerUsers.length}</span>
+                  </div>
+                  <div className={`rounded-2xl border p-4 flex flex-col gap-1 ${theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
+                    <span className="text-xs text-emerald-500 font-semibold uppercase tracking-widest">{lang === 'ar' ? 'متصل الآن' : 'Online'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                      <span className="text-3xl font-bold text-emerald-400">{onlineCount}</span>
+                    </div>
+                  </div>
+                  <div className={`rounded-2xl border p-4 flex flex-col gap-1 ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                    <span className="text-xs text-gray-500 font-semibold uppercase tracking-widest">{lang === 'ar' ? 'غير متصل' : 'Offline'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" />
+                      <span className="text-3xl font-bold text-gray-400">{offlineCount}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Search Bar */}
             <div className="relative max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
