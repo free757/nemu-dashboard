@@ -1498,7 +1498,7 @@ export default function Dashboard() {
                         <td className="px-6 py-5">
                           {user.is_manager ? (
                             <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-xl w-max font-bold text-xs border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.1)]">
-                              <ShieldCheck className="w-4 h-4 text-amber-400 animate-pulse" strokeWidth={2.5} />
+                              <ShieldCheck className="w-4 h-4 text-amber-400" strokeWidth={2.5} />
                               <span>{lang === 'ar' ? 'مدير النظام (صلاحيات كاملة)' : 'System Administrator'}</span>
                             </div>
                           ) : (
@@ -1513,13 +1513,13 @@ export default function Dashboard() {
                               <div className="flex items-center gap-2 mt-1.5">
                                 {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
                                   <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
-                                    <Clock className="w-2.5 h-2.5 animate-pulse" />
+                                    <Clock className="w-2.5 h-2.5" />
                                     <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
                                   </div>
                                 )}
                                 {isProxyOnline(user) ? (
                                   <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full w-max font-semibold text-[10px] border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                     <span>ONLINE</span>
                                   </div>
                                 ) : (
@@ -1623,7 +1623,7 @@ export default function Dashboard() {
                   {user.is_manager ? (
                     <div className={`p-5 rounded-2xl border flex flex-col items-center text-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.05)] ${theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50/50 border-amber-200'}`}>
                       <div className="p-3 bg-amber-500/10 rounded-full text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-                        <ShieldCheck className="w-6 h-6 animate-pulse" strokeWidth={2.5} />
+                        <ShieldCheck className="w-6 h-6" strokeWidth={2.5} />
                       </div>
                       <p className="text-sm font-bold text-amber-500">{lang === 'ar' ? 'مدير النظام (صلاحيات كاملة)' : 'System Administrator'}</p>
                       <p className="text-xs text-gray-500 max-w-[240px]">
@@ -1643,13 +1643,13 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 mt-1">
                         {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
                           <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
-                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                            <Clock className="w-3.5 h-3.5" />
                             <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
                           </div>
                         )}
                         {isProxyOnline(user) ? (
                           <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl w-max font-semibold text-xs border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
                             <span>ONLINE</span>
                           </div>
                         ) : (
@@ -1699,7 +1699,7 @@ export default function Dashboard() {
           <div>
             {remoteConfigs.length === 0 ? (
               <div className={`p-16 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
-                <Settings className="w-12 h-12 text-gray-500 animate-pulse" />
+                <Settings className="w-12 h-12 text-gray-500" />
                 <h3 className="text-xl font-bold">{lang === 'ar' ? 'لا توجد إعدادات مضافة' : 'No Configurations Found'}</h3>
                 <p className="text-sm text-gray-500 max-w-sm">
                   {lang === 'ar' 
@@ -1924,7 +1924,7 @@ export default function Dashboard() {
             {/* Interview Assistant Placeholder / Active Session */}
             {!isSessionActive ? (
               <div className={`p-8 rounded-3xl border flex flex-col items-center justify-center text-center space-y-6 min-h-[400px] ${theme === 'dark' ? 'bg-gradient-to-b from-[#111] to-black border-white/5' : 'bg-gradient-to-b from-white to-gray-50 border-gray-200'}`}>
-                <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                <div className="w-20 h-20 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center">
                   <Bot className="w-10 h-10" />
                 </div>
                 <h2 className="text-3xl font-bold">Interview Pilot</h2>
