@@ -497,22 +497,7 @@ export default function Dashboard() {
     if (error) alert(error.message);
   };
 
-  const toggleProjectVisibility = async (configId: string, projects: any[], projectIndex: number) => {
-    const updatedProjects = [...projects];
-    updatedProjects[projectIndex] = {
-      ...updatedProjects[projectIndex],
-      is_visible: updatedProjects[projectIndex].is_visible === false ? true : false
-    };
-
-    // Optimistic UI update
-    setRemoteConfigs(prev => prev.map(c => c.id === configId ? { ...c, config_value: updatedProjects } : c));
-
-    const { error } = await supabase.from('remote_configs').update({ config_value: updatedProjects }).eq('id', configId);
-    if (error) {
-      alert(error.message);
-      fetchConfigs(); // Revert on error
-    }
-  };  const handleMiscSubmit = async (e: React.FormEvent) => {
+  const handleMiscSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!miscFormData.title || !miscFormData.content) {
       alert(lang === 'ar' ? 'يرجى ملء جميع الحقول!' : 'Please fill all fields!');
@@ -1733,28 +1718,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                     </div>
-                    {config.config_key === 'projects' && Array.isArray(config.config_value) && (
-                      <div className="space-y-3 pb-2">
-                        {config.config_value.map((project: any, index: number) => {
-                          const isVisible = project.is_visible !== false;
-                          return (
-                            <div key={index} className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.02] ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-sm" style={{ backgroundColor: project.color ? project.color.replace('0xFF', '#') : '#1E3A8A' }}>
-                                  {project.name?.charAt(0)?.toUpperCase()}
-                                </div>
-                                <span className="font-bold">{project.name}</span>
-                              </div>
-                              <label className="flex items-center cursor-pointer relative">
-                                <input type="checkbox" className="sr-only" checked={isVisible} onChange={() => toggleProjectVisibility(config.id, config.config_value, index)} />
-                                <div className={`block w-14 h-8 rounded-full transition-colors ${isVisible ? 'bg-blue-500' : theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}></div>
-                                <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isVisible ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                              </label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+
                     {config.config_key !== 'overlay_ui_settings' && (
                       <div className={`rounded-2xl p-4 font-mono overflow-x-auto max-h-60 overflow-y-auto ${theme === 'dark' ? 'bg-black/50' : 'bg-gray-50 border border-gray-100'}`}>
                         <pre className={`text-blue-400 ${lang === 'ar' ? 'text-right' : 'text-left'} text-xs md:text-sm`}>{JSON.stringify(config.config_value, null, 2)}</pre>
