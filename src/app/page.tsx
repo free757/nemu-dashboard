@@ -30,7 +30,8 @@ import {
   MicOff,
   Ban,
   Bell,
-  Clock
+  Clock,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,6 +48,12 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [notificationFormData, setNotificationFormData] = useState({ title: '', content: '' });
+
+  // Misc items state
+  const [miscItems, setMiscItems] = useState<any[]>([]);
+  const [isMiscModalOpen, setIsMiscModalOpen] = useState(false);
+  const [editingMisc, setEditingMisc] = useState<any>(null);
+  const [miscFormData, setMiscFormData] = useState({ title: '', content: '', display_order: 0 });
 
   // ── Auth Guard ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -193,6 +200,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (activeTab === 'tools') fetchProfiles();
     if (activeTab === 'notifications') fetchNotifications();
+    if (activeTab === 'misc') fetchMiscItems();
   }, [activeTab]);
 
 
@@ -250,17 +258,21 @@ export default function Dashboard() {
       config: 'Remote Config',
       tools: 'AI Tools',
       notifications: 'Notification Center',
+      misc: 'Misc Items',
       signOut: 'Sign Out',
       title: 'Manage Users',
       configTitle: 'Remote Configuration',
       toolsTitle: 'AI Tools Suite',
       notificationsTitle: 'Global Notifications',
+      miscTitle: 'Misc Overlay Items',
       subtitle: 'Control everything in real-time from one place.',
       toolsSubtitle: 'Your personal AI productivity and career suite.',
       notificationsSubtitle: 'Send messages and instructions to all mobile employees instantly.',
+      miscSubtitle: 'Manage quick copy items shown in the floating mobile overlay.',
       addNew: 'Add New User',
       addConfig: 'Add New Config',
       addNotification: 'Send Notification',
+      addMisc: 'Add Misc Item',
       search: 'Search users by name or PIN...',
       profile: 'User Profile',
       pin: 'PIN',
@@ -311,17 +323,21 @@ export default function Dashboard() {
       config: 'الإعدادات عن بعد',
       tools: 'أدوات الذكاء الاصطناعي',
       notifications: 'مركز الإشعارات',
+      misc: 'عناصر منوعة (Misc)',
       signOut: 'تسجيل الخروج',
       title: 'إدارة المستخدمين',
       configTitle: 'الإعدادات عن بعد',
       toolsTitle: 'حزمة أدوات الذكاء الاصطناعي',
       notificationsTitle: 'الإشعارات العامة',
+      miscTitle: 'عناصر القائمة العائمة',
       subtitle: 'تحكم في كل شيء في الوقت الفعلي من مكان واحد.',
       toolsSubtitle: 'حزمة أدواتك الشخصية للإنتاجية والمسار المهني.',
       notificationsSubtitle: 'أرسل رسائل وتوجيهات لجميع الموظفين على الهواتف فوراً.',
+      miscSubtitle: 'أدر العناصر السريعة التي تظهر في القائمة العائمة للنسخ السريع.',
       addNew: 'إضافة مستخدم جديد',
       addConfig: 'إضافة إعداد جديد',
       addNotification: 'إرسال إشعار جديد',
+      addMisc: 'إضافة عنصر جديد',
       search: 'ابحث عن المستخدمين بالاسم أو الـ PIN...',
       profile: 'ملف المستخدم',
       pin: 'كود الدخول',
@@ -409,6 +425,50 @@ export default function Dashboard() {
       const { error } = await supabase.from('notifications').delete().eq('id', id);
       if (!error) {
         fetchNotifications();
+      } else {
+        alert(error.message);
+      }
+    }
+  };
+
+  const fetchMiscItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('misc_items').select('*').order('display_order', { ascending: true });
+    if (!error) setMiscItems(data);
+    setLoading(false);
+  };
+
+  const handleMiscSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!miscFormData.title || !miscFormData.content) {
+      alert(lang === 'ar' ? 'يرجى ملء جميع الحقول!' : 'Please fill all fields!');
+      return;
+    }
+    
+    let error;
+    if (editingMisc) {
+      const { error: err } = await supabase.from('misc_items').update(miscFormData).eq('id', editingMisc.id);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from('misc_items').insert([miscFormData]);
+      error = err;
+    }
+
+    if (!error) {
+      setIsMiscModalOpen(false);
+      setEditingMisc(null);
+      setMiscFormData({ title: '', content: '', display_order: 0 });
+      fetchMiscItems();
+    } else {
+      alert(error.message);
+    }
+  };
+
+  const handleDeleteMisc = async (id: string) => {
+    if (confirm(lang === 'ar' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete this?')) {
+      const { error } = await supabase.from('misc_items').delete().eq('id', id);
+      if (!error) {
+        fetchMiscItems();
       } else {
         alert(error.message);
       }
@@ -1179,6 +1239,13 @@ export default function Dashboard() {
                   <Bell className="w-5 h-5 flex-shrink-0" />
                   {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.notifications}</motion.span>}
                 </button>
+                <button 
+                  onClick={() => { setActiveTab('misc'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'misc' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  <Layers className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.misc}</motion.span>}
+                </button>
               </nav>
 
               <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
@@ -1217,10 +1284,10 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
-              {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : t.toolsTitle}
+              {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
             </h1>
             <p className="text-gray-500 text-sm md:text-base">
-              {activeTab === 'users' ? t.subtitle : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : t.toolsSubtitle}
+              {activeTab === 'users' ? t.subtitle : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
             </p>
           </div>
           
@@ -1228,17 +1295,17 @@ export default function Dashboard() {
             {activeTab !== 'tools' && (
               <>
                 <button 
-                  onClick={activeTab === 'users' ? fetchUsers : activeTab === 'config' ? fetchConfigs : fetchNotifications}
+                  onClick={activeTab === 'users' ? fetchUsers : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
                   className={`p-3 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                 >
                   <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
                 <button 
-                  onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : handleOpenAdd}
+                  onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : activeTab === 'misc' ? () => { setEditingMisc(null); setMiscFormData({ title: '', content: '', display_order: 0 }); setIsMiscModalOpen(true); } : handleOpenAdd}
                   className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20"
                 >
                   <Plus className="w-5 h-5" />
-                  <span>{activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : t.addNotification}</span>
+                  <span>{activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : activeTab === 'misc' ? t.addMisc : t.addNotification}</span>
                 </button>
               </>
             )}
@@ -1613,6 +1680,59 @@ export default function Dashboard() {
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'misc' ? (
+          <div className="space-y-6 max-w-5xl">
+            {miscItems.length === 0 ? (
+              <div className={`p-16 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
+                <Layers className="w-12 h-12 text-gray-500 animate-bounce" />
+                <h3 className="text-xl font-bold">No Misc Items Yet</h3>
+                <p className="text-sm text-gray-500 max-w-sm">
+                  {lang === 'ar' 
+                    ? 'لم تقم بإضافة أي عناصر منوعة للنسخ السريع بعد.' 
+                    : 'Get started by creating quick copy items for your overlay.'}
+                </p>
+                <button
+                  onClick={() => setIsMiscModalOpen(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20"
+                >
+                  <Plus className="w-5 h-5" />
+                  {t.addMisc}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {miscItems.map((item) => (
+                  <div key={item.id} className={`p-6 rounded-3xl border flex flex-col gap-4 transition-all hover:scale-[1.01] ${theme === 'dark' ? 'bg-[#111] border-white/5 hover:border-white/10' : 'bg-white border-gray-200 hover:shadow-lg'}`}>
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-600/10 text-purple-500 rounded-lg flex items-center justify-center">
+                          <Layers className="w-4 h-4" />
+                        </div>
+                        <h4 className="text-lg font-bold">{item.title}</h4>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => { setEditingMisc(item); setMiscFormData({ title: item.title, content: item.content, display_order: item.display_order }); setIsMiscModalOpen(true); }}
+                          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMisc(item.id)}
+                          className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className={`p-3 rounded-xl font-mono text-sm max-h-32 overflow-y-auto ${theme === 'dark' ? 'bg-black/50 text-gray-300' : 'bg-gray-50 text-gray-700 border border-gray-100'}`}>
+                      {item.content}
+                    </div>
                   </div>
                 ))}
               </div>
