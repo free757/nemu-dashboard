@@ -90,16 +90,6 @@ export default function Dashboard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setCurrentTime(new Date());
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const saved = localStorage.getItem('isSidebarCollapsed');
     if (saved !== null) {
@@ -107,21 +97,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  const formatTimeForTimezone = (timezone: string) => {
-    if (!currentTime) return '';
-    try {
-      return new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone.trim(),
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      }).format(currentTime);
-    } catch (e) {
-      return '';
-    }
-  };
-  
   const isProxyOnline = (user: any) => {
     if (user.proxy_status !== 'active' || !user.proxy_last_seen) return false;
     try {
@@ -1511,12 +1486,7 @@ export default function Dashboard() {
                                  <MapPin className="w-3 h-3" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                               </p>
                               <div className="flex items-center gap-2 mt-1.5">
-                                {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
-                                  <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
-                                    <Clock className="w-2.5 h-2.5" />
-                                    <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
-                                  </div>
-                                )}
+                                {user.proxy_timezone && <UserTimezoneDisplay timezone={user.proxy_timezone} small />}
                                 {isProxyOnline(user) ? (
                                   <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full w-max font-semibold text-[10px] border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -1641,12 +1611,7 @@ export default function Dashboard() {
                          <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        {user.proxy_timezone && formatTimeForTimezone(user.proxy_timezone) && (
-                          <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{formatTimeForTimezone(user.proxy_timezone)}</span>
-                          </div>
-                        )}
+                        {user.proxy_timezone && <UserTimezoneDisplay timezone={user.proxy_timezone} />}
                         {isProxyOnline(user) ? (
                           <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl w-max font-semibold text-xs border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
                             <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -3113,3 +3078,42 @@ export default function Dashboard() {
   );
 }
 
+// ─── Isolated clock component — renders independently every second ───────────
+function UserTimezoneDisplay({ timezone, small = false }: { timezone: string; small?: boolean }) {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const tick = () => {
+      try {
+        setTime(new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone.trim(),
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }).format(new Date()));
+      } catch { setTime(''); }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [timezone]);
+
+  if (!time) return null;
+
+  if (small) {
+    return (
+      <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full w-max font-mono text-[10px] border border-blue-500/10">
+        <Clock className="w-2.5 h-2.5" />
+        <span>{time}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
+      <Clock className="w-3.5 h-3.5" />
+      <span>{time}</span>
+    </div>
+  );
+}
