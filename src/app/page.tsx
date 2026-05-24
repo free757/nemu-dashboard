@@ -1361,7 +1361,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <header className={`sticky top-0 z-30 px-4 md:px-8 py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a]/95 border-white/5 backdrop-blur-sm' : 'bg-[#f8f9fa]/95 border-gray-200 backdrop-blur-sm'}`}>
+        <header className={`sticky top-0 z-30 px-4 md:px-8 py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#f8f9fa] border-gray-200'}`}>
           <div>
             <h1 className="text-2xl font-bold mb-1">
               {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
@@ -1383,7 +1383,7 @@ export default function Dashboard() {
                     <span className="font-bold ml-1">{nm.length}</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-xs font-semibold text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                     <span>{lang === 'ar' ? 'متصل' : 'Online'}</span>
                     <span className="font-bold ml-1">{on}</span>
                   </div>
@@ -1769,7 +1769,7 @@ export default function Dashboard() {
           <div className="space-y-6 max-w-5xl">
             {notifications.length === 0 ? (
               <div className={`p-16 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
-                <Bell className="w-12 h-12 text-gray-500 animate-bounce" />
+                <Bell className="w-12 h-12 text-gray-500" />
                 <h3 className="text-xl font-bold">{t.noNotifications}</h3>
                 <p className="text-sm text-gray-500 max-w-sm">
                   {lang === 'ar' 
@@ -1815,7 +1815,7 @@ export default function Dashboard() {
           <div className="space-y-6 max-w-5xl">
             {miscItems.length === 0 ? (
               <div className={`p-16 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
-                <Layers className="w-12 h-12 text-gray-500 animate-bounce" />
+                <Layers className="w-12 h-12 text-gray-500" />
                 <h3 className="text-xl font-bold">No Misc Items Yet</h3>
                 <p className="text-sm text-gray-500 max-w-sm">
                   {lang === 'ar' 
