@@ -100,6 +100,13 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('isSidebarCollapsed');
+    if (saved !== null) {
+      setIsSidebarCollapsed(saved === 'true');
+    }
+  }, []);
+
   const formatTimeForTimezone = (timezone: string) => {
     if (!currentTime) return '';
     try {
@@ -1283,7 +1290,11 @@ export default function Dashboard() {
             >
               {/* Toggle Button (Desktop only) */}
               <button 
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                onClick={() => {
+                  const val = !isSidebarCollapsed;
+                  setIsSidebarCollapsed(val);
+                  localStorage.setItem('isSidebarCollapsed', String(val));
+                }}
                 className={`hidden md:flex absolute -right-3 top-10 w-6 h-6 rounded-full border items-center justify-center z-10 transition-all ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-900 shadow-sm'}`}
               >
                 {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
