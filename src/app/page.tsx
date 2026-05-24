@@ -31,7 +31,8 @@ import {
   Ban,
   Bell,
   Clock,
-  Layers
+  Layers,
+  SlidersHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -58,6 +59,10 @@ export default function Dashboard() {
   // Overlay UI Settings state
   const [overlayUiSettings, setOverlayUiSettings] = useState({ show_open_app: true, show_misc: true });
   const [overlayUiConfigId, setOverlayUiConfigId] = useState<string | null>(null);
+
+  // Per-user settings modal
+  const [isUserSettingsOpen, setIsUserSettingsOpen] = useState(false);
+  const [selectedUserForSettings, setSelectedUserForSettings] = useState<any>(null);
 
   // ── Auth Guard ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -470,6 +475,44 @@ export default function Dashboard() {
     if (overlayUiConfigId) {
       await supabase.from('remote_configs').update({ config_value: newSettings }).eq('id', overlayUiConfigId);
     }
+  };
+
+  const handleOpenUserSettings = (user: any) => {
+    setSelectedUserForSettings(user);
+    setIsUserSettingsOpen(true);
+  };
+
+  const toggleUserProjectVisibility = async (projectId: string) => {
+    if (!selectedUserForSettings) return;
+    const currentSettings = selectedUserForSettings.ui_settings || {};
+    const currentProjects = currentSettings.projects || {};
+    const currentValue = currentProjects[projectId];
+    // undefined/true => visible, false => hidden. Toggle it.
+    const newValue = currentValue === false ? true : false;
+    const newSettings = {
+      ...currentSettings,
+      projects: { ...currentProjects, [projectId]: newValue }
+    };
+    // Optimistic UI
+    setSelectedUserForSettings({ ...selectedUserForSettings, ui_settings: newSettings });
+    setUsers((prev: any[]) => prev.map((u: any) => u.id === selectedUserForSettings.id ? { ...u, ui_settings: newSettings } : u));
+    const { error } = await supabase.from('app_users').update({ ui_settings: newSettings }).eq('id', selectedUserForSettings.id);
+    if (error) alert(error.message);
+  };
+
+  const toggleUserOverlayBtn = async (key: 'show_open_app' | 'show_misc') => {
+    if (!selectedUserForSettings) return;
+    const currentSettings = selectedUserForSettings.ui_settings || {};
+    const currentOverlay = currentSettings.overlay || {};
+    const newValue = currentOverlay[key] === false ? true : false;
+    const newSettings = {
+      ...currentSettings,
+      overlay: { ...currentOverlay, [key]: newValue }
+    };
+    setSelectedUserForSettings({ ...selectedUserForSettings, ui_settings: newSettings });
+    setUsers((prev: any[]) => prev.map((u: any) => u.id === selectedUserForSettings.id ? { ...u, ui_settings: newSettings } : u));
+    const { error } = await supabase.from('app_users').update({ ui_settings: newSettings }).eq('id', selectedUserForSettings.id);
+    if (error) alert(error.message);
   };
 
   const toggleProjectVisibility = async (configId: string, projects: any[], projectIndex: number) => {
@@ -1480,6 +1523,13 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => handleOpenUserSettings(user)}
+                              className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all"
+                              title="User Button Settings"
+                            >
+                              <SlidersHorizontal className="w-4 h-4" />
+                            </button>
                             <button 
                               onClick={() => handleToggleBlock(user)}
                               className={`p-2 rounded-lg transition-all ${user.is_blocked ? 'text-red-500 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-400 hover:bg-red-500/5'}`}
@@ -2819,6 +2869,100 @@ export default function Dashboard() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Per-User Button Settings Modal */}
+      <AnimatePresence>
+        {isUserSettingsOpen && selectedUserForSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsUserSettingsOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-md rounded-[2.5rem] border p-8 shadow-2xl ${theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'}`}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-purple-600/30">
+                  {selectedUserForSettings.username?.charAt(0)?.toUpperCase()}
+                </div>
+                <div>
+                  <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{selectedUserForSettings.username}</h2>
+                  <p className="text-gray-500 text-sm">{lang === 'ar' ? 'إعدادات الأزرار الخاصة بالمستخدم' : 'Per-User Button Visibility'}</p>
+                </div>
+              </div>
+
+              {/* Overlay Buttons Section */}
+              <div className="space-y-4 mb-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{lang === 'ar' ? 'أزرار النافذة العائمة' : 'Floating Overlay Buttons'}</h3>
+                {([
+                  { key: 'show_open_app' as const, label: lang === 'ar' ? 'زر فتح التطبيق' : 'Open App Button', color: '#1E3A8A' },
+                  { key: 'show_misc' as const, label: lang === 'ar' ? 'زر المتنوعات' : 'Misc Button', color: '#6D28D9' }
+                ]).map(({ key, label, color }) => {
+                  const overlaySettings = selectedUserForSettings.ui_settings?.overlay || {};
+                  const isOn = overlaySettings[key] !== false;
+                  return (
+                    <div key={key} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '30' }}>
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                        </div>
+                        <span className="font-semibold text-sm">{label}</span>
+                      </div>
+                      <label className="flex items-center cursor-pointer relative">
+                        <input type="checkbox" className="sr-only" checked={isOn} onChange={() => toggleUserOverlayBtn(key)} />
+                        <div className={`block w-12 h-7 rounded-full transition-colors ${isOn ? 'bg-blue-500' : theme === 'dark' ? 'bg-white/10' : 'bg-gray-300'}`} />
+                        <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow transition-transform ${isOn ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Projects Section */}
+              {remoteConfigs.find((c: any) => c.config_key === 'projects') && (
+                <div className="space-y-4 mb-6">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{lang === 'ar' ? 'أزرار المشاريع' : 'Project Buttons'}</h3>
+                  {(remoteConfigs.find((c: any) => c.config_key === 'projects')?.config_value || []).map((project: any) => {
+                    const userProjects = selectedUserForSettings.ui_settings?.projects || {};
+                    // default is the project's global is_visible (defaults to true)
+                    const globalVisible = project.is_visible !== false;
+                    const isOn = userProjects[project.id] !== undefined ? userProjects[project.id] !== false : globalVisible;
+                    return (
+                      <div key={project.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: project.color ? project.color.replace('0xFF', '#') : '#1E3A8A' }}>
+                            {project.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <span className="font-semibold text-sm">{project.name}</span>
+                        </div>
+                        <label className="flex items-center cursor-pointer relative">
+                          <input type="checkbox" className="sr-only" checked={isOn} onChange={() => toggleUserProjectVisibility(project.id)} />
+                          <div className={`block w-12 h-7 rounded-full transition-colors ${isOn ? 'bg-blue-500' : theme === 'dark' ? 'bg-white/10' : 'bg-gray-300'}`} />
+                          <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow transition-transform ${isOn ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsUserSettingsOpen(false)}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all"
+              >
+                {lang === 'ar' ? 'حفظ وإغلاق' : 'Done'}
+              </button>
             </motion.div>
           </div>
         )}
