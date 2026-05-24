@@ -55,6 +55,10 @@ export default function Dashboard() {
   const [editingMisc, setEditingMisc] = useState<any>(null);
   const [miscFormData, setMiscFormData] = useState({ title: '', content: '', display_order: 0 });
 
+  // Overlay UI Settings state
+  const [overlayUiSettings, setOverlayUiSettings] = useState({ show_open_app: true, show_misc: true });
+  const [overlayUiConfigId, setOverlayUiConfigId] = useState<string | null>(null);
+
   // ── Auth Guard ────────────────────────────────────────────────────────────
   useEffect(() => {
     const auth = sessionStorage.getItem('dashboard_auth');
@@ -438,6 +442,37 @@ export default function Dashboard() {
     setLoading(false);
   };
 
+  const fetchOverlayUiSettings = async () => {
+    const { data, error } = await supabase.from('remote_configs').select('*').eq('config_key', 'overlay_ui_settings').maybeSingle();
+    if (data) {
+      setOverlayUiConfigId(data.id);
+      setOverlayUiSettings(data.config_value);
+    } else if (!error || error.code === 'PGRST116') {
+      // Create it if it doesn't exist
+      const defaultSettings = { show_open_app: true, show_misc: true };
+      const { data: newData, error: insertError } = await supabase.from('remote_configs').insert([{
+        config_key: 'overlay_ui_settings',
+        config_value: defaultSettings,
+        is_enabled: true
+      }]).select().single();
+      
+      if (!insertError && newData) {
+        setOverlayUiConfigId(newData.id);
+        setOverlayUiSettings(newData.config_value);
+      }
+    }
+  };
+
+  const toggleOverlayUiSetting = async (key: 'show_open_app' | 'show_misc') => {
+    const newSettings = { ...overlayUiSettings, [key]: !overlayUiSettings[key] };
+    setOverlayUiSettings(newSettings);
+    
+    if (overlayUiConfigId) {
+      await supabase.from('remote_configs').update({ config_value: newSettings }).eq('id', overlayUiConfigId);
+    }
+  };
+
+
   const handleMiscSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!miscFormData.title || !miscFormData.content) {
@@ -479,6 +514,8 @@ export default function Dashboard() {
     fetchUsers();
     fetchConfigs();
     fetchNotifications();
+    fetchMiscItems();
+    fetchOverlayUiSettings();
 
     // Realtime channel for app_users updates
     const channel = supabase
@@ -1687,6 +1724,40 @@ export default function Dashboard() {
           </div>
         ) : activeTab === 'misc' ? (
           <div className="space-y-6 max-w-5xl">
+            {/* Overlay Button Settings */}
+            <div className={`p-6 rounded-[2rem] border flex flex-col md:flex-row gap-6 items-center justify-between transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-blue-500" />
+                  {lang === 'ar' ? 'إعدادات أزرار النافذة العائمة' : 'Overlay Button Settings'}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {lang === 'ar' 
+                    ? 'اختر الأزرار التي تريد إظهارها أو إخفائها في النافذة العائمة الخاصة بالتطبيق.'
+                    : 'Choose which buttons to show or hide in the floating overlay app.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Open Nemu App</span>
+                  <div className="relative">
+                    <input type="checkbox" className="sr-only" checked={overlayUiSettings.show_open_app} onChange={() => toggleOverlayUiSetting('show_open_app')} />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${overlayUiSettings.show_open_app ? 'bg-blue-500' : theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${overlayUiSettings.show_open_app ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>Misc</span>
+                  <div className="relative">
+                    <input type="checkbox" className="sr-only" checked={overlayUiSettings.show_misc} onChange={() => toggleOverlayUiSetting('show_misc')} />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${overlayUiSettings.show_misc ? 'bg-purple-500' : theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${overlayUiSettings.show_misc ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             {miscItems.length === 0 ? (
               <div className={`p-16 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
                 <Layers className="w-12 h-12 text-gray-500 animate-bounce" />
