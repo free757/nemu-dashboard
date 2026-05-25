@@ -3181,6 +3181,8 @@ interface RentAHumanProfile {
     completed: number;
     cancelled: number;
   } | null;
+  totalDeposited?: number;
+  walletBalance?: number;
 }
 
 function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any; theme: string; lang: 'en' | 'ar'; isMobile?: boolean }) {
@@ -3267,7 +3269,11 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
   const reviews = profile.reviewCount || 0;
   const rate = profile.hourlyRate || 0;
   const currency = profile.currency || 'USD';
-  const activeHours = bookings * 4;
+  
+  // Calculate exact hours based on lifetime deposits/earnings, or fallback to booking estimation
+  const earnings = (profile.totalDeposited || 0) / 100;
+  const calculatedHours = rate > 0 ? Number((earnings / rate).toFixed(1)) : 0;
+  const activeHours = calculatedHours > 0 ? calculatedHours : bookings * 4;
 
   const badgeClass = theme === 'dark' 
     ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
