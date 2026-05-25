@@ -33,7 +33,12 @@ import {
   Clock,
   Layers,
   SlidersHorizontal,
-  Sparkles
+  Sparkles,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -212,7 +217,12 @@ export default function Dashboard() {
     password: '',
     verification_code: '',
     rah_human_id: '',
-    rah_api_key: ''
+    rah_api_key: '',
+    rah_hours_offset: '',
+    rah_earnings_offset: '',
+    rah_rate_override: '',
+    rah_egp_rate: '',
+    rah_exchange_rate: ''
   });
 
   const [quickPaste, setQuickPaste] = useState('');
@@ -633,7 +643,12 @@ export default function Dashboard() {
       password: user.password || '',
       verification_code: user.verification_code || '',
       rah_human_id: user.rah_human_id || '',
-      rah_api_key: user.rah_api_key || ''
+      rah_api_key: user.rah_api_key || '',
+      rah_hours_offset: user.ui_settings?.rah?.hours_offset?.toString() || '',
+      rah_earnings_offset: user.ui_settings?.rah?.earnings_offset?.toString() || '',
+      rah_rate_override: user.ui_settings?.rah?.rate_override?.toString() || '',
+      rah_egp_rate: user.ui_settings?.rah?.egp_rate?.toString() || '',
+      rah_exchange_rate: user.ui_settings?.rah?.exchange_rate?.toString() || ''
     });
     setIsModalOpen(true);
   };
@@ -674,7 +689,9 @@ export default function Dashboard() {
         proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
         proxy_location: '', proxy_timezone: '', is_manager: false,
         email: '', password: '', verification_code: '',
-        rah_human_id: '', rah_api_key: ''
+        rah_human_id: '', rah_api_key: '',
+        rah_hours_offset: '', rah_earnings_offset: '', rah_rate_override: '',
+        rah_egp_rate: '', rah_exchange_rate: ''
       });
       setIsModalOpen(true);
     } else {
@@ -779,8 +796,22 @@ export default function Dashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const originalUiSettings = editingUser?.ui_settings || {};
+    const ui_settings = {
+      ...originalUiSettings,
+      rah: {
+        hours_offset: formData.rah_hours_offset ? parseFloat(formData.rah_hours_offset) : 0,
+        earnings_offset: formData.rah_earnings_offset ? parseFloat(formData.rah_earnings_offset) : 0,
+        rate_override: formData.rah_rate_override ? parseFloat(formData.rah_rate_override) : null,
+        egp_rate: formData.rah_egp_rate ? parseFloat(formData.rah_egp_rate) : null,
+        exchange_rate: formData.rah_exchange_rate ? parseFloat(formData.rah_exchange_rate) : null,
+      }
+    };
+
     const payload = {
-      ...formData,
+      pin: formData.pin,
+      username: formData.username,
       proxy_ip: formData.proxy_ip?.trim() || null,
       proxy_port: formData.proxy_port ? parseInt(formData.proxy_port) : null,
       proxy_user: formData.proxy_user?.trim() || null,
@@ -792,7 +823,8 @@ export default function Dashboard() {
       password: formData.password?.trim() || null,
       verification_code: formData.verification_code?.trim() || null,
       rah_human_id: formData.rah_human_id?.trim() || null,
-      rah_api_key: formData.rah_api_key?.trim() || null
+      rah_api_key: formData.rah_api_key?.trim() || null,
+      ui_settings
     };
 
     let error;
@@ -2769,6 +2801,87 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
+
+                  <div className="border-t border-dashed border-white/10 pt-4 space-y-4">
+                    <span className="text-xs font-bold text-purple-400 block uppercase tracking-wider">
+                      {lang === 'ar' ? 'تصحيح المقاييس اليدوي (للأعمال المعلقة)' : 'Manual Metrics Adjustments (Pending Work)'}
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {lang === 'ar' ? 'ساعات معلقة إضافية' : 'Pending Hours Offset'}
+                        </label>
+                        <input 
+                          type="number"
+                          step="any"
+                          value={formData.rah_hours_offset}
+                          onChange={e => setFormData({...formData, rah_hours_offset: e.target.value})}
+                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                          placeholder="e.g. 11.9"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {lang === 'ar' ? 'أرباح معلقة إضافية ($)' : 'Pending Earnings Offset ($)'}
+                        </label>
+                        <input 
+                          type="number"
+                          step="any"
+                          value={formData.rah_earnings_offset}
+                          onChange={e => setFormData({...formData, rah_earnings_offset: e.target.value})}
+                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                          placeholder="e.g. 124.27"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {lang === 'ar' ? 'تجاوز أجر الساعة ($)' : 'Hourly Rate Override ($)'}
+                        </label>
+                        <input 
+                          type="number"
+                          step="any"
+                          value={formData.rah_rate_override}
+                          onChange={e => setFormData({...formData, rah_rate_override: e.target.value})}
+                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                          placeholder="e.g. 10.0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-dashed border-white/10 pt-4 space-y-4">
+                    <span className="text-xs font-bold text-emerald-400 block uppercase tracking-wider">
+                      {lang === 'ar' ? 'حسابات الدفع والربح بالجنيه المصري (EGP Payout Accounting)' : 'EGP Payout Accounting & Exchange Rate'}
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {lang === 'ar' ? 'سعر ساعة الموظف بالجنيه المصري (EGP/hr)' : 'Employee Hourly Rate in EGP'}
+                        </label>
+                        <input 
+                          type="number"
+                          step="any"
+                          value={formData.rah_egp_rate}
+                          onChange={e => setFormData({...formData, rah_egp_rate: e.target.value})}
+                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                          placeholder="e.g. 100"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {lang === 'ar' ? 'سعر صرف الدولار مقابل الجنيه (EGP/$)' : 'USD to EGP Exchange Rate'}
+                        </label>
+                        <input 
+                          type="number"
+                          step="any"
+                          value={formData.rah_exchange_rate}
+                          onChange={e => setFormData({...formData, rah_exchange_rate: e.target.value})}
+                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                          placeholder="e.g. 48.5"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
@@ -3163,6 +3276,7 @@ function UserTimezoneDisplay({ timezone, small = false }: { timezone: string; sm
 }
 
 // ─── RentAHuman Integration Display Component ──────────────────────────────
+
 interface RentAHumanProfile {
   id: string;
   name: string;
@@ -3183,12 +3297,21 @@ interface RentAHumanProfile {
   } | null;
   totalDeposited?: number;
   walletBalance?: number;
+  transactions?: Array<{
+    id: string;
+    type: string;
+    amount: number;
+    balanceAfter: number;
+    description: string;
+    createdAt: string;
+  }>;
 }
 
 function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any; theme: string; lang: 'en' | 'ar'; isMobile?: boolean }) {
   const [profile, setProfile] = useState<RentAHumanProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!user.rah_human_id) {
@@ -3267,23 +3390,80 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
   const bookings = profile.totalBookings || 0;
   const rating = profile.rating || 0;
   const reviews = profile.reviewCount || 0;
-  const rate = profile.hourlyRate || 0;
   const currency = profile.currency || 'USD';
   
-  // Calculate exact hours based on lifetime deposits/earnings, or fallback to booking estimation
-  const earnings = (profile.totalDeposited || 0) / 100;
-  const calculatedHours = rate > 0 ? Number((earnings / rate).toFixed(1)) : 0;
-  const activeHours = calculatedHours > 0 ? calculatedHours : bookings * 4;
+  // ─── Fintech Metrics Calculations from Wallet Transaction History ───
+  // 1. Determine hourly rate (Manager override or RentAHuman profile rate, fallback to $10/hr)
+  const customRate = Number(user.ui_settings?.rah?.rate_override || profile.hourlyRate || 10);
+  
+  // 2. Fetch transactions and aggregate bounty earnings
+  const transactions = profile.transactions || [];
+  let paidEarnings = 0;
+  if (transactions.length > 0) {
+    paidEarnings = transactions
+      .filter((tx: any) => 
+        tx.type === 'figure_ongoing_payout' || 
+        tx.type === 'admin_credit' || 
+        tx.description?.toLowerCase().includes('payout') || 
+        tx.description?.toLowerCase().includes('bonus') ||
+        tx.description?.toLowerCase().includes('ongoing_')
+      )
+      .reduce((sum: number, tx: any) => sum + Math.abs(tx.amount), 0) / 100;
+  } else {
+    // Safety fallback to lifetime deposited
+    paidEarnings = (profile.totalDeposited || 0) / 100;
+  }
+
+  // 3. Calculate automated paid hours
+  const paidHours = customRate > 0 ? Number((paidEarnings / customRate).toFixed(1)) : 0;
+
+  // 4. Load manual offset adjustments (for unpaid/pending program work)
+  const hoursOffset = Number(user.ui_settings?.rah?.hours_offset || 0);
+  const earningsOffset = Number(user.ui_settings?.rah?.earnings_offset || 0);
+
+  // 5. Final aggregate figures (exact summation)
+  const totalEarnings = paidEarnings + earningsOffset;
+  const totalHours = Number((paidHours + hoursOffset).toFixed(1));
+
+  // 6. EGP Worker Payout and Net Profit calculations
+  const egpRate = Number(user.ui_settings?.rah?.egp_rate || 0);
+  const exchangeRate = Number(user.ui_settings?.rah?.exchange_rate || 48.5); // Fallback to current EGP exchange rate if not overridden
+  const platformRevenueEGP = totalEarnings * exchangeRate;
+  const workerPayoutEGP = totalHours * egpRate;
+  const netProfitEGP = platformRevenueEGP - workerPayoutEGP;
+  const profitMarginPct = platformRevenueEGP > 0 ? (netProfitEGP / platformRevenueEGP) * 100 : 0;
+
 
   const badgeClass = theme === 'dark' 
-    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
-    : 'bg-purple-50 text-purple-600 border border-purple-100';
+    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20' 
+    : 'bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-100/50';
+
+  const formatTxDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handleOpenDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDetailsOpen(true);
+  };
 
   if (isMobile) {
     return (
-      <div className={`p-4 rounded-2xl border space-y-3 ${
-        theme === 'dark' ? 'bg-purple-500/[0.02] border-purple-500/10' : 'bg-purple-50/20 border-purple-100/50'
-      }`}>
+      <div 
+        onClick={handleOpenDetails}
+        className={`p-4 rounded-2xl border space-y-3 cursor-pointer transition-all hover:scale-[1.01] ${
+          theme === 'dark' ? 'bg-purple-500/[0.02] border-purple-500/10 hover:border-purple-500/30' : 'bg-purple-50/20 border-purple-100/50 hover:border-purple-200'
+        }`}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-purple-500" />
@@ -3314,40 +3494,147 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
             <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
-              {lang === 'ar' ? 'ساعات العمل' : 'Active Hours'}
+              {lang === 'ar' ? 'ساعات العمل' : 'Total Hours'}
             </span>
             <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {activeHours} hrs
+              {totalHours} hrs
             </span>
           </div>
           
           <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
             <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
-              {lang === 'ar' ? 'أجر الساعة' : 'Hourly Rate'}
+              {lang === 'ar' ? 'إجمالي الأرباح' : 'Total Earnings'}
             </span>
-            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {rate > 0 ? `${rate} ${currency}` : 'N/A'}
-            </span>
-          </div>
-          
-          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
-            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
-              {lang === 'ar' ? 'المهام المنفذة' : 'Total Bookings'}
-            </span>
-            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {bookings} bookings
-            </span>
-          </div>
-          
-          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
-            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
-              {lang === 'ar' ? 'التقييم' : 'Rating'}
-            </span>
-            <span className={`font-bold flex items-center gap-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              ★ {rating > 0 ? rating.toFixed(1) : 'N/A'} <span className="text-gray-500 font-normal">({reviews})</span>
+            <span className={`font-bold text-purple-400`}>
+              ${totalEarnings.toFixed(2)}
             </span>
           </div>
         </div>
+
+        {/* Details Dialog / Portal Rendering inside component */}
+        <AnimatePresence>
+          {detailsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={(e) => { e.stopPropagation(); setDetailsOpen(false); }}
+                className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className={`relative w-full max-w-lg rounded-[2.5rem] border p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] ${
+                  theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'
+                }`}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold text-xl">
+                      {profile.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{profile.name}</h3>
+                      <p className="text-xs text-gray-500 font-medium">RentAHuman integration stats</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setDetailsOpen(false)}
+                    className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                      theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Fintech Performance Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إجمالي الساعات' : 'Total Hours'}</span>
+                      <TrendingUp className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div className="text-2xl font-black mb-1">{totalHours} hrs</div>
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      {paidHours}h paid + {hoursOffset}h pending
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إجمالي الأرباح' : 'Total Earnings'}</span>
+                      <DollarSign className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div className="text-2xl font-black mb-1 text-emerald-400">${totalEarnings.toFixed(2)}</div>
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      ${paidEarnings.toFixed(2)} paid + ${earningsOffset.toFixed(2)} pending
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center mb-6">
+                  <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                    <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'أجر الساعة' : 'Rate'}</span>
+                    <span className="font-bold">${customRate}/hr</span>
+                  </div>
+                  <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                    <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'الحجوزات' : 'Bookings'}</span>
+                    <span className="font-bold">{bookings}</span>
+                  </div>
+                  <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                    <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'التقييم' : 'Rating'}</span>
+                    <span className="font-bold flex justify-center items-center gap-0.5">★ {rating.toFixed(1)}</span>
+                  </div>
+                </div>
+
+                {/* Financial Ledger Section */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
+                    {lang === 'ar' ? 'دفتر المعاملات المالية (المحفظة)' : 'Financial Transaction Ledger'}
+                  </h4>
+
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    {transactions.map((tx: any) => {
+                      const isCredit = tx.amount > 0;
+                      return (
+                        <div key={tx.id} className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                          theme === 'dark' ? 'bg-white/[0.01] border-white/5 hover:bg-white/[0.03]' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
+                        } transition-all`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                              isCredit ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                            }`}>
+                              {isCredit ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{tx.description}</p>
+                              <span className="text-[9px] text-gray-500 font-medium block mt-0.5">{formatTxDate(tx.createdAt)}</span>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-black shrink-0 ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
+                            {isCredit ? '+' : '-'}${Math.abs(tx.amount / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+
+                    {transactions.length === 0 && (
+                      <div className="py-8 text-center text-xs text-gray-500 border border-dashed border-white/5 rounded-2xl">
+                        No transactions registered yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -3355,22 +3642,26 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
   return (
     <div className="flex flex-col gap-1 px-1 min-w-[130px]">
       <div className="flex items-center gap-1.5">
-        <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${badgeClass}`}>
-          <Bot className="w-3.5 h-3.5" />
-          <span>{activeHours} hrs</span>
-        </div>
+        <button 
+          onClick={handleOpenDetails}
+          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border transition-all ${badgeClass}`}
+          title="Click to view detailed metrics & financial ledger"
+        >
+          <Bot className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+          <span>{totalHours} hrs</span>
+        </button>
         {profile.isVerified && (
-          <span className="p-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md" title="Verified Human">
+          <span className="p-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md shrink-0" title="Verified Human">
             <ShieldCheck className="w-3 h-3" />
           </span>
         )}
         {profile.activeRentalsCount && profile.activeRentalsCount > 0 ? (
-          <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold animate-pulse" title={`${profile.activeRentalsCount} active rental(s)`}>
+          <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold animate-pulse shrink-0" title={`${profile.activeRentalsCount} active rental(s)`}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             {lang === 'ar' ? 'نشط' : 'Active'}
           </span>
         ) : (
-          <span className="flex items-center gap-1 bg-gray-500/10 text-gray-400 border border-gray-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold" title="Connected">
+          <span className="flex items-center gap-1 bg-gray-500/10 text-gray-400 border border-gray-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0" title="Connected">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
             {lang === 'ar' ? 'متصل' : 'Connected'}
           </span>
@@ -3379,14 +3670,190 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
       
       <div className="text-[10px] text-gray-400 flex flex-col gap-0.5 font-medium ml-1">
         <span className="flex items-center gap-1">
-          💼 {bookings} bookings • {rate > 0 ? `${rate} ${currency}` : 'N/A'}
+          💼 {bookings} bookings • <span className="text-purple-400 font-bold">${totalEarnings.toFixed(1)}</span>
         </span>
         {rating > 0 && (
           <span className="flex items-center gap-1 text-amber-400 font-bold">
             ★ {rating.toFixed(1)} <span className="text-gray-500 font-normal">({reviews})</span>
           </span>
         )}
+        {egpRate > 0 && (
+          <div className="flex flex-col border-t border-white/5 mt-1 pt-1 space-y-0.5">
+            <span className="text-emerald-400 font-semibold flex items-center gap-1" title={`EGP Payout: ${totalHours} hrs * ${egpRate} EGP/hr`}>
+              🇪🇬 {workerPayoutEGP.toLocaleString(undefined, {maximumFractionDigits:0})} EGP Pay
+            </span>
+            <span className={`text-[9px] font-bold ${netProfitEGP >= 0 ? 'text-blue-400' : 'text-red-400'}`} title={`Net Profit: Platform EGP (${platformRevenueEGP.toFixed(0)}) - Worker Payout EGP (${workerPayoutEGP.toFixed(0)})`}>
+              Profit: {netProfitEGP.toLocaleString(undefined, {maximumFractionDigits:0})} EGP ({profitMarginPct.toFixed(0)}%)
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Details Dialog / Portal Rendering inside desktop view */}
+      <AnimatePresence>
+        {detailsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => { e.stopPropagation(); setDetailsOpen(false); }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full max-w-lg rounded-[2.5rem] border p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh] ${
+                theme === 'dark' ? 'bg-[#111] border-white/10' : 'bg-white border-gray-200'
+              }`}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold text-xl">
+                    {profile.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{profile.name}</h3>
+                    <p className="text-xs text-gray-500 font-medium">RentAHuman Integration Performance</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setDetailsOpen(false)}
+                  className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                    theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Fintech Performance Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إجمالي الساعات' : 'Total Hours'}</span>
+                    <TrendingUp className="w-4 h-4 text-purple-500" />
+                  </div>
+                  <div className="text-2xl font-black mb-1">{totalHours} hrs</div>
+                  <div className="text-[10px] text-gray-500 font-medium">
+                    {paidHours}h paid + {hoursOffset}h pending
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إجمالي الأرباح' : 'Total Earnings'}</span>
+                    <DollarSign className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="text-2xl font-black mb-1 text-emerald-400">${totalEarnings.toFixed(2)}</div>
+                  <div className="text-[10px] text-gray-500 font-medium">
+                    ${paidEarnings.toFixed(2)} paid + ${earningsOffset.toFixed(2)} pending
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center mb-6">
+                <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'أجر الساعة' : 'Rate'}</span>
+                  <span className="font-bold">${customRate}/hr</span>
+                </div>
+                <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'الحجوزات' : 'Bookings'}</span>
+                  <span className="font-bold">{bookings}</span>
+                </div>
+                <div className={`p-3 rounded-2xl border text-xs ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-100'}`}>
+                  <span className="text-gray-400 block text-[9px] uppercase font-bold mb-0.5">{lang === 'ar' ? 'التقييم' : 'Rating'}</span>
+                  <span className="font-bold flex justify-center items-center gap-0.5 font-sans">★ {rating.toFixed(1)}</span>
+                </div>
+              </div>
+
+              {/* EGP Accounting & Net Profit Calculator */}
+              {egpRate > 0 && (
+                <div className={`p-5 rounded-3xl border mb-6 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 ${theme === 'dark' ? 'border-emerald-500/20' : 'border-emerald-200'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                      🇪🇬 {lang === 'ar' ? 'حسابات الدفع بالجنيه المصري والربح الصافي' : 'EGP Payout & Net Profit'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Exchange: {exchangeRate} EGP/$
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-gray-400 block font-medium">{lang === 'ar' ? 'مستحقات العامل بالجنيه' : 'Worker Share (EGP)'}</span>
+                      <div className="text-xl font-bold text-white">
+                        {workerPayoutEGP.toLocaleString(undefined, {maximumFractionDigits:0})} EGP
+                      </div>
+                      <span className="text-[9px] text-gray-500 block">
+                        {totalHours} hrs × {egpRate} EGP/hr
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-1 text-right">
+                      <span className="text-[10px] text-gray-400 block font-medium">{lang === 'ar' ? 'ربحك الصافي بالجنيه' : 'Manager Net Profit (EGP)'}</span>
+                      <div className={`text-xl font-black ${netProfitEGP >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {netProfitEGP >= 0 ? '+' : ''}{netProfitEGP.toLocaleString(undefined, {maximumFractionDigits:0})} EGP
+                      </div>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block ${netProfitEGP >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                        Margin: {profitMarginPct.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t border-dashed border-white/10 flex justify-between text-[10px] text-gray-500 font-medium">
+                    <span>{lang === 'ar' ? 'إيراد المنصة بالدولار:' : 'Platform Revenue:'} <strong className="text-gray-300">${totalEarnings.toFixed(2)}</strong></span>
+                    <span>{lang === 'ar' ? 'بالجنيه المصري:' : 'EGP Equivalent:'} <strong className="text-gray-300">{platformRevenueEGP.toLocaleString(undefined, {maximumFractionDigits:0})} EGP</strong></span>
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Ledger Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
+                  {lang === 'ar' ? 'دفتر المعاملات المالية (المحفظة)' : 'Financial Transaction Ledger'}
+                </h4>
+
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {transactions.map((tx: any) => {
+                    const isCredit = tx.amount > 0;
+                    return (
+                      <div key={tx.id} className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                        theme === 'dark' ? 'bg-white/[0.01] border-white/5 hover:bg-white/[0.03]' : 'bg-gray-50 border-gray-100 hover:bg-gray-100/50'
+                      } transition-all`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            isCredit ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                          }`}>
+                            {isCredit ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{tx.description}</p>
+                            <span className="text-[9px] text-gray-500 font-medium block mt-0.5">{formatTxDate(tx.createdAt)}</span>
+                          </div>
+                        </div>
+                        <span className={`text-xs font-black shrink-0 ${isCredit ? 'text-green-400' : 'text-red-400'}`}>
+                          {isCredit ? '+' : '-'}${Math.abs(tx.amount / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {transactions.length === 0 && (
+                    <div className="py-8 text-center text-xs text-gray-500 border border-dashed border-white/5 rounded-2xl">
+                      No transactions registered yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

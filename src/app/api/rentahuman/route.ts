@@ -78,6 +78,25 @@ export async function GET(req: Request) {
       } catch (err) {
         console.error('[RentAHuman Proxy] Error fetching wallet balance:', err);
       }
+
+      try {
+        console.log(`[RentAHuman Proxy] Fetching wallet transactions for detailed earnings sync...`);
+        const txResponse = await fetch('https://rentahuman.ai/api/wallet/transactions', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey,
+          },
+        });
+        if (txResponse.ok) {
+          const txData = await txResponse.json();
+          if (txData && txData.success) {
+            data.human.transactions = txData.transactions || [];
+          }
+        }
+      } catch (err) {
+        console.error('[RentAHuman Proxy] Error fetching wallet transactions:', err);
+      }
     }
 
     return NextResponse.json(data);
