@@ -35,6 +35,31 @@ export async function GET(req: Request) {
     }
 
     const data = await response.json();
+
+    // Fetch active agent rentals if an API key is provided
+    if (apiKey && data.success && data.human) {
+      try {
+        console.log(`[RentAHuman Proxy] Fetching agent rentals for active status check...`);
+        const rentalsResponse = await fetch('https://rentahuman.ai/api/escrow/agent-rentals', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey,
+          },
+        });
+        if (rentalsResponse.ok) {
+          const rentalsData = await rentalsResponse.json();
+          if (rentalsData && rentalsData.success) {
+            data.human.rentalsSummary = rentalsData.summary || null;
+            data.human.activeRentalsCount = rentalsData.summary?.active || 0;
+            data.human.rentals = rentalsData.rentals || [];
+          }
+        }
+      } catch (err) {
+        console.error('[RentAHuman Proxy] Error fetching agent rentals:', err);
+      }
+    }
+
     return NextResponse.json(data);
 
   } catch (error: any) {

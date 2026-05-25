@@ -3175,6 +3175,12 @@ interface RentAHumanProfile {
   isAvailable?: boolean;
   isVerified?: boolean;
   avatarUrl?: string;
+  activeRentalsCount?: number;
+  rentalsSummary?: {
+    active: number;
+    completed: number;
+    cancelled: number;
+  } | null;
 }
 
 function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any; theme: string; lang: 'en' | 'ar'; isMobile?: boolean }) {
@@ -3209,10 +3215,10 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
       } catch (err: any) {
         if (isMounted) {
           setError(err.message || 'API Error');
+          setProfile(null);
         }
       } finally {
         if (isMounted) {
-          setProfile(null); // Clear loading state or show raw error
           setLoading(false);
         }
       }
@@ -3279,11 +3285,24 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
               RentAHuman Profile
             </span>
           </div>
-          {profile.isVerified && (
-            <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
-              <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {profile.activeRentalsCount && profile.activeRentalsCount > 0 ? (
+              <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {lang === 'ar' ? 'يعمل حالياً' : 'Active Now'} ({profile.activeRentalsCount})
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 bg-gray-500/10 text-gray-400 border border-gray-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                {lang === 'ar' ? 'متصل' : 'Connected'}
+              </span>
+            )}
+            {profile.isVerified && (
+              <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="grid grid-cols-2 gap-3 text-xs">
@@ -3337,6 +3356,17 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
         {profile.isVerified && (
           <span className="p-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md" title="Verified Human">
             <ShieldCheck className="w-3 h-3" />
+          </span>
+        )}
+        {profile.activeRentalsCount && profile.activeRentalsCount > 0 ? (
+          <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold animate-pulse" title={`${profile.activeRentalsCount} active rental(s)`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            {lang === 'ar' ? 'نشط' : 'Active'}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 bg-gray-500/10 text-gray-400 border border-gray-500/20 px-1.5 py-0.5 rounded-md text-[9px] font-bold" title="Connected">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+            {lang === 'ar' ? 'متصل' : 'Connected'}
           </span>
         )}
       </div>
