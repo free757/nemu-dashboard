@@ -73,6 +73,7 @@ export async function GET(req: Request) {
           if (balanceData && balanceData.success) {
             data.human.totalDeposited = balanceData.totalDeposited || 0;
             data.human.walletBalance = balanceData.balance || 0;
+            data.human.currentlyDue = balanceData.currentlyDue ?? balanceData.currently_due ?? balanceData.pending ?? 0;
           }
         }
       } catch (err) {

@@ -3297,6 +3297,7 @@ interface RentAHumanProfile {
   } | null;
   totalDeposited?: number;
   walletBalance?: number;
+  currentlyDue?: number;
   transactions?: Array<{
     id: string;
     type: string;
@@ -3553,7 +3554,7 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
                 </div>
 
                 {/* Fintech Performance Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إجمالي الساعات' : 'Total Hours'}</span>
@@ -3573,6 +3574,17 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
                     <div className="text-2xl font-black mb-1 text-emerald-400">${totalEarnings.toFixed(2)}</div>
                     <div className="text-[10px] text-gray-500 font-medium">
                       ${paidEarnings.toFixed(2)} paid + ${earningsOffset.toFixed(2)} pending
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-3xl border ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'المستحق حالياً' : 'Currently Due'}</span>
+                      <Clock className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <div className="text-2xl font-black mb-1 text-amber-400">${((profile.currentlyDue || 0) / 100).toFixed(2)}</div>
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      {lang === 'ar' ? 'بانتظار الإفراج من الضمان' : 'Awaiting escrow release'}
                     </div>
                   </div>
                 </div>
