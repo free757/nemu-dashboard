@@ -4,6 +4,7 @@
 const DEBUG_PIPELINE_LOGS = false;
 
 import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { sanitizeTranscript } from '@/lib/speechManager';
@@ -3313,6 +3314,11 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!user.rah_human_id) {
@@ -3513,9 +3519,10 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
         </div>
 
         {/* Details Dialog / Portal Rendering inside component */}
-        <AnimatePresence>
-          {detailsOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {mounted && typeof window !== 'undefined' && createPortal(
+          <AnimatePresence>
+            {detailsOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -3646,7 +3653,9 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
               </motion.div>
             </div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
       </div>
     );
   }
@@ -3702,9 +3711,10 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
       </div>
 
       {/* Details Dialog / Portal Rendering inside desktop view */}
-      <AnimatePresence>
-        {detailsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {mounted && typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {detailsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -3865,7 +3875,9 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   );
 }
