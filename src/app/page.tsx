@@ -32,7 +32,8 @@ import {
   Bell,
   Clock,
   Layers,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -209,7 +210,9 @@ export default function Dashboard() {
     is_manager: false,
     email: '',
     password: '',
-    verification_code: ''
+    verification_code: '',
+    rah_human_id: '',
+    rah_api_key: ''
   });
 
   const [quickPaste, setQuickPaste] = useState('');
@@ -307,7 +310,10 @@ export default function Dashboard() {
       microsoftCreds: 'Microsoft Auto-Login Credentials',
       microsoftEmail: 'Microsoft Email',
       microsoftPassword: 'Microsoft Password',
-      verificationCode: 'Verification Code (OTP)'
+      verificationCode: 'Verification Code (OTP)',
+      rahTitle: 'RentAHuman Integration',
+      rahHumanId: 'RentAHuman Human ID',
+      rahApiKey: 'RentAHuman API Key (Optional)'
     },
     ar: {
       users: 'إدارة المستخدمين',
@@ -372,7 +378,10 @@ export default function Dashboard() {
       microsoftCreds: 'بيانات تسجيل الدخول التلقائي لمايكروسوفت',
       microsoftEmail: 'بريد مايكروسوفت الإلكتروني',
       microsoftPassword: 'كلمة سر مايكروسوفت',
-      verificationCode: 'رمز التحقق (OTP)'
+      verificationCode: 'رمز التحقق (OTP)',
+      rahTitle: 'إعدادات RentAHuman',
+      rahHumanId: 'معرف المستخدم (Human ID)',
+      rahApiKey: 'مفتاح الـ API (اختياري)'
     }
   }[lang];
 
@@ -622,7 +631,9 @@ export default function Dashboard() {
       is_manager: user.is_manager || false,
       email: user.email || '',
       password: user.password || '',
-      verification_code: user.verification_code || ''
+      verification_code: user.verification_code || '',
+      rah_human_id: user.rah_human_id || '',
+      rah_api_key: user.rah_api_key || ''
     });
     setIsModalOpen(true);
   };
@@ -662,7 +673,8 @@ export default function Dashboard() {
         pin: '', username: '', phone_number: '',
         proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
         proxy_location: '', proxy_timezone: '', is_manager: false,
-        email: '', password: '', verification_code: ''
+        email: '', password: '', verification_code: '',
+        rah_human_id: '', rah_api_key: ''
       });
       setIsModalOpen(true);
     } else {
@@ -778,7 +790,9 @@ export default function Dashboard() {
       phone_number: formData.phone_number?.trim() || null,
       email: formData.email?.trim() || null,
       password: formData.password?.trim() || null,
-      verification_code: formData.verification_code?.trim() || null
+      verification_code: formData.verification_code?.trim() || null,
+      rah_human_id: formData.rah_human_id?.trim() || null,
+      rah_api_key: formData.rah_api_key?.trim() || null
     };
 
     let error;
@@ -1424,6 +1438,7 @@ export default function Dashboard() {
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.profile}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.pin}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.proxy}</th>
+                    <th className="px-6 py-5 text-gray-400 font-medium">RentAHuman</th>
                     <th className="px-6 py-5 text-gray-400 font-medium text-right">{t.actions}</th>
                   </tr>
                 </thead>
@@ -1512,6 +1527,9 @@ export default function Dashboard() {
                             </div>
                           )}
                         </td>
+                        <td className="px-6 py-5">
+                          <RentAHumanDisplay user={user} theme={theme} lang={lang} />
+                        </td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
@@ -1599,6 +1617,8 @@ export default function Dashboard() {
                       {user.pin}
                     </span>
                   </div>
+
+                  <RentAHumanDisplay user={user} theme={theme} lang={lang} isMobile />
 
                   {user.is_manager ? (
                     <div className={`p-5 rounded-2xl border flex flex-col items-center text-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.05)] ${theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50/50 border-amber-200'}`}>
@@ -2717,6 +2737,40 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* RentAHuman Integration Section */}
+                <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                  <h3 className="text-sm font-bold text-purple-500 flex items-center gap-2 uppercase tracking-widest">
+                    <Bot className="w-4 h-4" /> {t.rahTitle}
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                        {t.rahHumanId}
+                      </label>
+                      <input 
+                        type="text"
+                        value={formData.rah_human_id}
+                        onChange={e => setFormData({...formData, rah_human_id: e.target.value})}
+                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                        placeholder="e.g. secretboss001 or Pt4Z1msFXpnKAZvTtPbL"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                        {t.rahApiKey}
+                      </label>
+                      <input 
+                        type="text"
+                        value={formData.rah_api_key}
+                        onChange={e => setFormData({...formData, rah_api_key: e.target.value})}
+                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                        placeholder="rah_live_..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                   <h3 className="text-sm font-bold text-blue-500 flex items-center gap-2 uppercase tracking-widest">
                     <Globe className="w-4 h-4" /> {t.proxyConfig}
@@ -3104,6 +3158,199 @@ function UserTimezoneDisplay({ timezone, small = false }: { timezone: string; sm
     <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl w-max font-mono text-xs border border-blue-500/10">
       <Clock className="w-3.5 h-3.5" />
       <span>{time}</span>
+    </div>
+  );
+}
+
+// ─── RentAHuman Integration Display Component ──────────────────────────────
+interface RentAHumanProfile {
+  id: string;
+  name: string;
+  headline?: string;
+  hourlyRate?: number;
+  currency?: string;
+  rating?: number;
+  reviewCount?: number;
+  totalBookings?: number;
+  isAvailable?: boolean;
+  isVerified?: boolean;
+  avatarUrl?: string;
+}
+
+function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any; theme: string; lang: 'en' | 'ar'; isMobile?: boolean }) {
+  const [profile, setProfile] = useState<RentAHumanProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user.rah_human_id) {
+      setProfile(null);
+      setError(null);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/rentahuman?humanId=${encodeURIComponent(user.rah_human_id)}&apiKey=${encodeURIComponent(user.rah_api_key || '')}`);
+        if (!res.ok) {
+          throw new Error('Not Found');
+        }
+        const data = await res.json();
+        if (isMounted) {
+          if (data.success && data.human) {
+            setProfile(data.human);
+          } else {
+            throw new Error('Invalid response');
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err.message || 'API Error');
+        }
+      } finally {
+        if (isMounted) {
+          setProfile(null); // Clear loading state or show raw error
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user.rah_human_id, user.rah_api_key]);
+
+  if (!user.rah_human_id) {
+    return (
+      <div className={`text-xs py-2 px-3 rounded-2xl border border-dashed flex items-center justify-center gap-1.5 font-medium ${
+        theme === 'dark' ? 'border-white/10 text-gray-500 bg-white/[0.01]' : 'border-gray-200 text-gray-400 bg-gray-50/50'
+      }`}>
+        <Sparkles className="w-3.5 h-3.5 opacity-60" />
+        <span>{lang === 'ar' ? 'غير متصل بـ RentAHuman' : 'Not Connected'}</span>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-gray-400 py-1 font-medium">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
+        <span>{lang === 'ar' ? 'جاري التحميل...' : 'Loading metrics...'}</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-red-400 bg-red-500/10 border border-red-500/20 py-1.5 px-3 rounded-2xl w-max font-medium">
+        <Ban className="w-3.5 h-3.5" />
+        <span>{lang === 'ar' ? 'خطأ في الربط' : 'API Connection Error'}</span>
+      </div>
+    );
+  }
+
+  if (!profile) return null;
+
+  const bookings = profile.totalBookings || 0;
+  const rating = profile.rating || 0;
+  const reviews = profile.reviewCount || 0;
+  const rate = profile.hourlyRate || 0;
+  const currency = profile.currency || 'USD';
+  const activeHours = bookings * 4;
+
+  const badgeClass = theme === 'dark' 
+    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+    : 'bg-purple-50 text-purple-600 border border-purple-100';
+
+  if (isMobile) {
+    return (
+      <div className={`p-4 rounded-2xl border space-y-3 ${
+        theme === 'dark' ? 'bg-purple-500/[0.02] border-purple-500/10' : 'bg-purple-50/20 border-purple-100/50'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-purple-500" />
+            <span className={`text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
+              RentAHuman Profile
+            </span>
+          </div>
+          {profile.isVerified && (
+            <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+              <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED
+            </span>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
+            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              {lang === 'ar' ? 'ساعات العمل' : 'Active Hours'}
+            </span>
+            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {activeHours} hrs
+            </span>
+          </div>
+          
+          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
+            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              {lang === 'ar' ? 'أجر الساعة' : 'Hourly Rate'}
+            </span>
+            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {rate > 0 ? `${rate} ${currency}` : 'N/A'}
+            </span>
+          </div>
+          
+          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
+            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              {lang === 'ar' ? 'المهام المنفذة' : 'Total Bookings'}
+            </span>
+            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {bookings} bookings
+            </span>
+          </div>
+          
+          <div className={`p-2.5 rounded-xl border ${theme === 'dark' ? 'bg-black/25 border-white/5' : 'bg-white border-gray-100'}`}>
+            <span className="text-gray-400 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              {lang === 'ar' ? 'التقييم' : 'Rating'}
+            </span>
+            <span className={`font-bold flex items-center gap-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              ★ {rating > 0 ? rating.toFixed(1) : 'N/A'} <span className="text-gray-500 font-normal">({reviews})</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 px-1 min-w-[130px]">
+      <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${badgeClass}`}>
+          <Bot className="w-3.5 h-3.5" />
+          <span>{activeHours} hrs</span>
+        </div>
+        {profile.isVerified && (
+          <span className="p-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md" title="Verified Human">
+            <ShieldCheck className="w-3 h-3" />
+          </span>
+        )}
+      </div>
+      
+      <div className="text-[10px] text-gray-400 flex flex-col gap-0.5 font-medium ml-1">
+        <span className="flex items-center gap-1">
+          💼 {bookings} bookings • {rate > 0 ? `${rate} ${currency}` : 'N/A'}
+        </span>
+        {rating > 0 && (
+          <span className="flex items-center gap-1 text-amber-400 font-bold">
+            ★ {rating.toFixed(1)} <span className="text-gray-500 font-normal">({reviews})</span>
+          </span>
+        )}
+      </div>
     </div>
   );
 }
