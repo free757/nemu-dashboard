@@ -136,7 +136,7 @@ export default function Dashboard() {
           if (diffMins <= 10) return `منذ ${diffMins} دقائق`;
           return `منذ ${diffMins} دقيقة`;
         }
-        return `${diffMins}m ago`;
+        return `${diffMins}m`;
       }
 
       const diffHours = Math.floor(diffMins / 60);
@@ -147,7 +147,7 @@ export default function Dashboard() {
           if (diffHours <= 10) return `منذ ${diffHours} ساعات`;
           return `منذ ${diffHours} ساعة`;
         }
-        return `${diffHours}h ago`;
+        return `${diffHours}h`;
       }
 
       const diffDays = Math.floor(diffHours / 24);
@@ -159,7 +159,7 @@ export default function Dashboard() {
         if (diffDays <= 10) return `منذ ${diffDays} أيام`;
         return `منذ ${diffDays} يوم`;
       }
-      return `${diffDays}d ago`;
+      return `${diffDays}d`;
     } catch (e) {
       return lang === 'ar' ? 'غير معروف' : 'unknown';
     }
