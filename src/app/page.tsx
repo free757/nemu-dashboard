@@ -114,6 +114,56 @@ export default function Dashboard() {
       return false;
     }
   };
+
+  const formatLastSeen = (lastSeenStr: string, lang: string) => {
+    if (!lastSeenStr) return lang === 'ar' ? 'لم يتصل بعد' : 'Never';
+    try {
+      const lastSeen = new Date(lastSeenStr).getTime();
+      const now = new Date().getTime();
+      const diffMs = now - lastSeen;
+      if (diffMs < 0) return lang === 'ar' ? 'منذ ثوانٍ' : 'just now';
+
+      const diffSecs = Math.floor(diffMs / 1000);
+      if (diffSecs < 60) {
+        return lang === 'ar' ? 'منذ ثوانٍ' : 'just now';
+      }
+
+      const diffMins = Math.floor(diffSecs / 60);
+      if (diffMins < 60) {
+        if (lang === 'ar') {
+          if (diffMins === 1) return 'منذ دقيقة';
+          if (diffMins === 2) return 'منذ دقيقتين';
+          if (diffMins <= 10) return `منذ ${diffMins} دقائق`;
+          return `منذ ${diffMins} دقيقة`;
+        }
+        return `${diffMins}m ago`;
+      }
+
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) {
+        if (lang === 'ar') {
+          if (diffHours === 1) return 'منذ ساعة';
+          if (diffHours === 2) return 'منذ ساعتين';
+          if (diffHours <= 10) return `منذ ${diffHours} ساعات`;
+          return `منذ ${diffHours} ساعة`;
+        }
+        return `${diffHours}h ago`;
+      }
+
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) {
+        return lang === 'ar' ? 'أمس' : 'yesterday';
+      }
+      if (lang === 'ar') {
+        if (diffDays === 2) return 'منذ يومين';
+        if (diffDays <= 10) return `منذ ${diffDays} أيام`;
+        return `منذ ${diffDays} يوم`;
+      }
+      return `${diffDays}d ago`;
+    } catch (e) {
+      return lang === 'ar' ? 'غير معروف' : 'unknown';
+    }
+  };
   
 
 
@@ -1551,9 +1601,12 @@ export default function Dashboard() {
                                     <span>ONLINE</span>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-1 bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded-full w-max font-medium text-[10px] border border-gray-500/10">
+                                  <div 
+                                    className="flex items-center gap-1 bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded-full w-max font-medium text-[10px] border border-gray-500/10 cursor-help"
+                                    title={user.proxy_last_seen ? new Date(user.proxy_last_seen).toLocaleString() : undefined}
+                                  >
                                     <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                    <span>OFFLINE</span>
+                                    <span>{lang === 'ar' ? `آخر ظهور: ${formatLastSeen(user.proxy_last_seen, 'ar')}` : `LAST SEEN: ${formatLastSeen(user.proxy_last_seen, 'en').toUpperCase()}`}</span>
                                   </div>
                                 )}
                               </div>
@@ -1681,9 +1734,12 @@ export default function Dashboard() {
                             <span>ONLINE</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-3 py-1 rounded-xl w-max font-medium text-xs border border-gray-500/10">
+                          <div 
+                            className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-3 py-1 rounded-xl w-max font-medium text-xs border border-gray-500/10 cursor-help"
+                            title={user.proxy_last_seen ? new Date(user.proxy_last_seen).toLocaleString() : undefined}
+                          >
                             <span className="w-2 h-2 rounded-full bg-gray-400" />
-                            <span>OFFLINE</span>
+                            <span>{lang === 'ar' ? `آخر ظهور: ${formatLastSeen(user.proxy_last_seen, 'ar')}` : `LAST SEEN: ${formatLastSeen(user.proxy_last_seen, 'en').toUpperCase()}`}</span>
                           </div>
                         )}
                       </div>
