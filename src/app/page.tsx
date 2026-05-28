@@ -1292,9 +1292,18 @@ export default function Dashboard() {
     user.username?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     user.pin?.includes(searchQuery)
   ).sort((a, b) => {
+    // 1. Manager check: managers always first
     if (a.is_manager && !b.is_manager) return -1;
     if (!a.is_manager && b.is_manager) return 1;
-    return 0;
+
+    // 2. Online check: online users first
+    const aOnline = isProxyOnline(a);
+    const bOnline = isProxyOnline(b);
+    if (aOnline && !bOnline) return -1;
+    if (!aOnline && bOnline) return 1;
+
+    // 3. Fallback: alphabetical sorting by username
+    return (a.username || '').localeCompare(b.username || '');
   });
 
   // ── Auth Guard (placed after all hooks) ──────────────────────────────────
