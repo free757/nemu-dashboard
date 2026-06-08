@@ -102,6 +102,20 @@ export default function Dashboard() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const saved = localStorage.getItem('isSidebarCollapsed');
@@ -707,8 +721,15 @@ export default function Dashboard() {
       .eq('id', forceLogoutTargetUser.id);
 
     if (error) {
-      alert(error.message);
+      showToast(error.message, 'error');
       fetchUsers();
+    } else {
+      showToast(
+        lang === 'ar'
+          ? 'تم إرسال أمر تسجيل الخروج بنجاح.'
+          : 'Force logout command sent successfully.',
+        'success'
+      );
     }
     setForceLogoutTargetUser(null);
   };
@@ -3434,6 +3455,29 @@ export default function Dashboard() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border text-sm backdrop-blur-md max-w-sm ${
+              toast.type === 'error'
+                ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                : toast.type === 'info'
+                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full animate-pulse ${
+              toast.type === 'error' ? 'bg-red-400' : toast.type === 'info' ? 'bg-blue-400' : 'bg-emerald-400'
+            }`} />
+            <span className="font-semibold">{toast.message}</span>
+          </motion.div>
         )}
       </AnimatePresence>
 
