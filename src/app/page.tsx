@@ -93,6 +93,8 @@ export default function Dashboard() {
   const [confirmAction, setConfirmAction] = useState<{id: string, name: string} | null>(null);
   const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
   const [blockTargetUser, setBlockTargetUser] = useState<any>(null);
+  const [isForceLogoutConfirmOpen, setIsForceLogoutConfirmOpen] = useState(false);
+  const [forceLogoutTargetUser, setForceLogoutTargetUser] = useState<any>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [visualProjects, setVisualProjects] = useState<any[]>([]);
@@ -681,38 +683,34 @@ export default function Dashboard() {
     }
   };
 
-  const handleForceLogout = async (user: any) => {
-    const confirmLogout = window.confirm(
-      lang === 'ar' 
-        ? `هل أنت متأكد من تسجيل خروج المستخدم "${user.username}" من التطبيق إجبارياً؟` 
-        : `Are you sure you want to force logout user "${user.username}"?`
-    );
-    if (!confirmLogout) return;
+  const handleForceLogout = (user: any) => {
+    setForceLogoutTargetUser(user);
+    setIsForceLogoutConfirmOpen(true);
+  };
 
-    const currentSettings = user.ui_settings || {};
+  const confirmForceLogout = async () => {
+    if (!forceLogoutTargetUser) return;
+
+    const currentSettings = forceLogoutTargetUser.ui_settings || {};
     const newSettings = {
       ...currentSettings,
       force_logout: true
     };
     
     // Update local state optimistically
-    setUsers((prev: any[]) => prev.map((u: any) => u.id === user.id ? { ...u, ui_settings: newSettings } : u));
+    setUsers((prev: any[]) => prev.map((u: any) => u.id === forceLogoutTargetUser.id ? { ...u, ui_settings: newSettings } : u));
+    setIsForceLogoutConfirmOpen(false);
     
     const { error } = await supabase
       .from('app_users')
       .update({ ui_settings: newSettings })
-      .eq('id', user.id);
+      .eq('id', forceLogoutTargetUser.id);
 
     if (error) {
       alert(error.message);
       fetchUsers();
-    } else {
-      alert(
-        lang === 'ar'
-          ? 'تم إرسال أمر تسجيل الخروج بنجاح. سيتم تسجيل خروج المستخدم في غضون ثوانٍ.'
-          : 'Force logout command sent successfully. The user will be logged out within seconds.'
-      );
     }
+    setForceLogoutTargetUser(null);
   };
 
   const handleToggleBlock = (user: any) => {
@@ -3384,6 +3382,54 @@ export default function Dashboard() {
                   className={`w-full py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   {t.confirmCancel}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Force Logout Confirmation Modal */}
+      <AnimatePresence>
+        {isForceLogoutConfirmOpen && forceLogoutTargetUser && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsForceLogoutConfirmOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className={`relative w-full max-w-sm rounded-[2rem] border p-8 shadow-2xl text-center ${theme === 'dark' ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'}`}
+            >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 text-red-500">
+                <LogOut className="w-8 h-8" />
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {lang === 'ar' ? 'تسجيل خروج إجباري' : 'Force Logout'}
+              </h3>
+              <p className="text-gray-500 text-sm mb-8">
+                {lang === 'ar' 
+                  ? `هل تريد حقاً تسجيل خروج المستخدم "${forceLogoutTargetUser.username}" من التطبيق إجبارياً؟ سيتم فصل البروكسي وإعادته لصفحة تسجيل الدخول.` 
+                  : `Are you sure you want to force logout user "${forceLogoutTargetUser.username}"? This will disconnect their proxy and return them to the login screen.`}
+              </p>
+              
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={confirmForceLogout}
+                  className="w-full py-3 text-white bg-red-600 hover:bg-red-500 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+                >
+                  {lang === 'ar' ? 'نعم، سجل خروج' : 'Yes, Log Out'}
+                </button>
+                <button 
+                  onClick={() => setIsForceLogoutConfirmOpen(false)}
+                  className={`w-full py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {lang === 'ar' ? 'إلغاء' : 'Cancel'}
                 </button>
               </div>
             </motion.div>
