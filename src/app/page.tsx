@@ -681,6 +681,40 @@ export default function Dashboard() {
     }
   };
 
+  const handleForceLogout = async (user: any) => {
+    const confirmLogout = window.confirm(
+      lang === 'ar' 
+        ? `هل أنت متأكد من تسجيل خروج المستخدم "${user.username}" من التطبيق إجبارياً؟` 
+        : `Are you sure you want to force logout user "${user.username}"?`
+    );
+    if (!confirmLogout) return;
+
+    const currentSettings = user.ui_settings || {};
+    const newSettings = {
+      ...currentSettings,
+      force_logout: true
+    };
+    
+    // Update local state optimistically
+    setUsers((prev: any[]) => prev.map((u: any) => u.id === user.id ? { ...u, ui_settings: newSettings } : u));
+    
+    const { error } = await supabase
+      .from('app_users')
+      .update({ ui_settings: newSettings })
+      .eq('id', user.id);
+
+    if (error) {
+      alert(error.message);
+      fetchUsers();
+    } else {
+      alert(
+        lang === 'ar'
+          ? 'تم إرسال أمر تسجيل الخروج بنجاح. سيتم تسجيل خروج المستخدم في غضون ثوانٍ.'
+          : 'Force logout command sent successfully. The user will be logged out within seconds.'
+      );
+    }
+  };
+
   const handleToggleBlock = (user: any) => {
     setBlockTargetUser(user);
     setIsBlockConfirmOpen(true);
@@ -1696,6 +1730,13 @@ export default function Dashboard() {
                               <Ban className="w-4 h-4" />
                             </button>
                             <button 
+                              onClick={() => handleForceLogout(user)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                              title={lang === 'ar' ? 'تسجيل خروج إجباري' : 'Force Logout'}
+                            >
+                              <LogOut className="w-4 h-4" />
+                            </button>
+                            <button 
                               onClick={() => handleOpenEdit(user)}
                               className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
                             >
@@ -1809,24 +1850,31 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button 
                       onClick={() => handleToggleBlock(user)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                     >
                       <Ban className="w-4 h-4" />
                       <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
                     </button>
                     <button 
+                      onClick={() => handleForceLogout(user)}
+                      className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                    </button>
+                    <button 
                       onClick={() => handleOpenEdit(user)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                     >
                       <Edit2 className="w-4 h-4" />
                       <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
                     </button>
                     <button 
                       onClick={() => handleDeleteClick(user.id, user.username)}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                      className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
