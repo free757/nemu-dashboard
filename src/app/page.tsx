@@ -675,8 +675,29 @@ export default function Dashboard() {
       )
       .subscribe();
 
+    // Realtime channel for remote_configs updates
+    const configChannel = supabase
+      .channel('remote_configs_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'remote_configs' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setRemoteConfigs((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setRemoteConfigs((prev) =>
+              prev.map((config) => (config.id === payload.new.id ? { ...config, ...payload.new } : config))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setRemoteConfigs((prev) => prev.filter((config) => config.id === payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(configChannel);
     };
   }, []);
 
@@ -732,6 +753,53 @@ export default function Dashboard() {
       );
     }
     setForceLogoutTargetUser(null);
+  };
+
+  const handleTriggerRentAHumanSync = async () => {
+    let syncConfig = remoteConfigs.find(c => c.config_key === 'rentahuman_sync_trigger');
+    
+    if (!syncConfig) {
+      const { data, error } = await supabase
+        .from('remote_configs')
+        .select('*')
+        .eq('config_key', 'rentahuman_sync_trigger')
+        .maybeSingle();
+      if (data) {
+        syncConfig = data;
+      } else {
+        const { data: newConfig } = await supabase
+          .from('remote_configs')
+          .insert([{ config_key: 'rentahuman_sync_trigger', config_value: { status: 'requested' }, is_enabled: true }])
+          .select()
+          .single();
+        if (newConfig) {
+          showToast(
+            lang === 'ar' ? 'تم إنشاء حقل المزامنة وبدء الطلب...' : 'Sync field created and request sent...',
+            'info'
+          );
+          fetchConfigs();
+          return;
+        }
+        showToast(lang === 'ar' ? 'تعذر العثور على إعداد المزامنة' : 'Could not find sync configuration', 'error');
+        return;
+      }
+    }
+
+    const newConfigValue = { ...syncConfig.config_value, status: 'requested' };
+    const { error } = await supabase
+      .from('remote_configs')
+      .update({ config_value: newConfigValue })
+      .eq('id', syncConfig.id);
+
+    if (error) {
+      showToast(error.message, 'error');
+    } else {
+      showToast(
+        lang === 'ar' ? 'تم إرسال طلب المزامنة إلى الماك.' : 'Sync request sent to Mac.',
+        'info'
+      );
+      fetchConfigs();
+    }
   };
 
   const handleToggleBlock = (user: any) => {
@@ -1595,6 +1663,30 @@ export default function Dashboard() {
             })()}
             {activeTab !== 'tools' && (
               <>
+                {activeTab === 'users' && (() => {
+                  const syncConfig = remoteConfigs.find(c => c.config_key === 'rentahuman_sync_trigger');
+                  const syncStatus = syncConfig?.config_value?.status || 'idle';
+                  const isSyncing = syncStatus === 'requested' || syncStatus === 'running';
+                  
+                  return (
+                    <button
+                      onClick={handleTriggerRentAHumanSync}
+                      disabled={isSyncing}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all text-sm border shrink-0 ${
+                        isSyncing 
+                          ? (theme === 'dark' ? 'bg-purple-600/25 text-purple-400 border-purple-500/20 cursor-not-allowed' : 'bg-purple-50 text-purple-500 border-purple-100 cursor-not-allowed')
+                          : (theme === 'dark' ? 'bg-purple-600/10 text-purple-400 border-purple-500/20 hover:bg-purple-600/20 shadow-[0_0_12px_rgba(139,92,246,0.1)]' : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/80')
+                      }`}
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>
+                        {isSyncing 
+                          ? (lang === 'ar' ? 'جاري المزامنة...' : 'Syncing...')
+                          : (lang === 'ar' ? 'مزامنة RentAHuman' : 'Sync RentAHuman')}
+                      </span>
+                    </button>
+                  );
+                })()}
                 <button 
                   onClick={activeTab === 'users' ? fetchUsers : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
                   className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
@@ -3690,8 +3782,19 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
 
   useEffect(() => {
     if (!user.rah_human_id) {
-      if (user.rah_api_key && user.rah_balance !== undefined && user.rah_balance !== null) {
-        // Construct synthetic profile from Supabase fields synced by the mobile client!
+      if ((user.rah_api_key || user.rah_earnings) && user.rah_balance !== undefined && user.rah_balance !== null) {
+        // Construct synthetic profile from Supabase fields synced by the mobile client/scraper!
+        const transactions = Array.isArray(user.rah_earnings)
+          ? user.rah_earnings.map((tx: any) => ({
+              id: tx.id || '',
+              amount: tx.amount, // already in cents in the database!
+              type: tx.type || (tx.direction === 'received' ? 'figure_ongoing_payout' : 'transfer'),
+              description: tx.description || '',
+              createdAt: tx.created_at || tx.createdAt || tx.timestamp || '',
+              balanceAfter: tx.balance_after || tx.balanceAfter || 0
+            }))
+          : [];
+
         setProfile({
           id: user.id || 'synthetic-id',
           name: user.username || 'Worker',
@@ -3699,14 +3802,7 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
           currentlyDue: (user.rah_currently_due !== undefined && user.rah_currently_due !== null
             ? user.rah_currently_due
             : (user.ui_settings?.rah?.earnings_offset || (user.email === 'flash75711@gmail.com' ? 51.33 : 0) || user.rah_balance || 0)) * 100, // fall back to earnings_offset so pending amounts display automatically!
-          transactions: (user.rah_earnings || []).map((tx: any) => ({
-            id: tx.id || '',
-            amount: tx.amount, // already in cents in the database!
-            type: tx.type || (tx.direction === 'received' ? 'figure_ongoing_payout' : 'transfer'),
-            description: tx.description || '',
-            createdAt: tx.created_at || tx.createdAt || tx.timestamp || '',
-            balanceAfter: tx.balance_after || tx.balanceAfter || 0
-          })),
+          transactions: transactions,
           totalBookings: 0,
           rating: 5,
           reviewCount: 0,
@@ -3757,7 +3853,7 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
     };
   }, [user.rah_human_id, user.rah_api_key, user.rah_balance, user.rah_earnings]);
 
-  if (!user.rah_human_id && !user.rah_api_key) {
+  if (!user.rah_human_id && !user.rah_api_key && !user.rah_earnings) {
     return (
       <div className={`text-xs py-2 px-3 rounded-2xl border border-dashed flex items-center justify-center gap-1.5 font-medium ${
         theme === 'dark' ? 'border-white/10 text-gray-500 bg-white/[0.01]' : 'border-gray-200 text-gray-400 bg-gray-50/50'
@@ -3842,8 +3938,18 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
     : (automatedEarningsOffset > 0 ? automatedEarningsOffset : (user.email === 'flash75711@gmail.com' ? 51.33 : 0));
 
   // 5. Final aggregate figures (exact summation)
-  const totalEarnings = paidEarnings + earningsOffset;
-  const totalHours = Number((paidHours + hoursOffset).toFixed(1));
+  let totalEarnings = paidEarnings + earningsOffset;
+  let totalHours = Number((paidHours + hoursOffset).toFixed(1));
+
+  const scrapedStats = (!Array.isArray(user.rah_earnings) && user.rah_earnings && typeof user.rah_earnings === 'object')
+    ? (user.rah_earnings as any)
+    : null;
+
+  if (scrapedStats) {
+    paidEarnings = scrapedStats.paid_to_you || 0;
+    totalEarnings = paidEarnings + (scrapedStats.due_next_payout || 0);
+    totalHours = Number((scrapedStats.usable_hours || scrapedStats.hours_submitted || 0).toFixed(1));
+  }
 
   // 6. EGP Worker Payout and Net Profit calculations
   const exchangeRate = Number(user.ui_settings?.rah?.exchange_rate || 48.5); // Fallback to current EGP exchange rate if not overridden
@@ -4086,9 +4192,33 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
                       );
                     })}
 
-                    {transactions.length === 0 && (
+                    {transactions.length === 0 && scrapedStats && (
+                      <div className="space-y-3 p-1">
+                        <div className={`p-4 rounded-3xl border text-xs space-y-3 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 font-medium">{lang === 'ar' ? 'الساعات المقدمة' : 'Hours Submitted'}</span>
+                            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{scrapedStats.hours_submitted} hrs</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-white/5 pt-2.5">
+                            <span className="text-gray-400 font-medium">{lang === 'ar' ? 'الساعات المقبولة للعمل' : 'Usable Hours'}</span>
+                            <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{scrapedStats.usable_hours} hrs</span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-white/5 pt-2.5">
+                            <span className="text-gray-400 font-medium">{lang === 'ar' ? 'معدل صلاحية الساعات' : 'Usability Rate'}</span>
+                            <span className={`font-bold ${scrapedStats.usability_rate >= 100 ? 'text-emerald-400' : 'text-amber-400'}`}>{scrapedStats.usability_rate}%</span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 text-center font-medium leading-relaxed">
+                          {lang === 'ar' 
+                            ? 'تم سحب هذه الأرقام مباشرة من صفحة RentAHuman Ongoing.'
+                            : 'These stats were scraped directly from RentAHuman Ongoing page.'}
+                        </p>
+                      </div>
+                    )}
+
+                    {transactions.length === 0 && !scrapedStats && (
                       <div className="py-8 text-center text-xs text-gray-500 border border-dashed border-white/5 rounded-2xl">
-                        No transactions registered yet.
+                        {lang === 'ar' ? 'لا توجد معاملات مسجلة حتى الآن.' : 'No transactions registered yet.'}
                       </div>
                     )}
                   </div>
