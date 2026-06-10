@@ -1663,6 +1663,18 @@ export default function Dashboard() {
             })()}
             {activeTab !== 'tools' && (
               <>
+                {activeTab === 'users' && (
+                  <div className="relative w-48 sm:w-64">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                    <input 
+                      type="text" 
+                      placeholder={t.search}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`w-full border rounded-xl py-2.5 pl-10 pr-3 focus:border-blue-500 outline-none transition-all text-xs font-medium ${theme === 'dark' ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-950'}`}
+                    />
+                  </div>
+                )}
                 {activeTab === 'users' && (() => {
                   const syncConfig = remoteConfigs.find(c => c.config_key === 'rentahuman_sync_trigger');
                   const syncStatus = syncConfig?.config_value?.status || 'idle';
@@ -1712,17 +1724,7 @@ export default function Dashboard() {
             {/* RentAHuman Payout Countdown Banner */}
             <PayoutCountdown lang={lang} theme={theme} />
 
-            {/* Search Bar */}
-            <div className="relative max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-              <input 
-                type="text" 
-                placeholder={t.search}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full border rounded-2xl py-4 pl-12 pr-4 focus:border-blue-500 outline-none transition-all ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200 text-gray-900'}`}
-              />
-            </div>
+
 
             {/* Desktop Table View */}
             <div className={`hidden md:block rounded-3xl border shadow-sm overflow-hidden ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
