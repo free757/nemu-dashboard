@@ -3760,10 +3760,12 @@ function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string 
     
     let daysToAdd = (4 - currentDay + 7) % 7;
     
-    if (currentDay === 4 && (currentHours > 4 || (currentHours === 4 && now.getUTCMinutes() > 0))) {
-      daysToAdd = 7;
-    } else if (currentDay === 4 && currentHours === 4 && now.getUTCMinutes() === 0 && now.getUTCSeconds() === 0) {
-      daysToAdd = 0;
+    if (currentDay === 4) {
+      if (currentHours >= 16) {
+        daysToAdd = 7;
+      } else {
+        daysToAdd = 0;
+      }
     }
     
     target.setUTCDate(target.getUTCDate() + daysToAdd);
@@ -3779,6 +3781,11 @@ function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string 
       if (diffMs <= 0) {
         setTimeLeftStr(lang === 'ar' ? 'جاري السحب حالياً...' : 'Processing Payout...');
         setIsProcessing(true);
+        setFullDetails(
+          lang === 'ar'
+            ? 'سحب الأرباح نشط حالياً! تستمر معالجة السحب لمدة 12 ساعة.'
+            : 'Payout is actively processing! This status remains for 12 hours.'
+        );
         return;
       }
       
