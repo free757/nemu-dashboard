@@ -3747,6 +3747,7 @@ function UserTimezoneDisplay({ timezone, small = false }: { timezone: string; sm
 function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string }) {
   const [timeLeftStr, setTimeLeftStr] = useState('');
   const [fullDetails, setFullDetails] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const getNextPayoutDate = () => {
     const now = new Date();
@@ -3776,10 +3777,12 @@ function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string 
       const diffMs = target.getTime() - now.getTime();
       
       if (diffMs <= 0) {
-        setTimeLeftStr(lang === 'ar' ? 'جاري السحب...' : 'Processing Payout...');
+        setTimeLeftStr(lang === 'ar' ? 'جاري السحب حالياً...' : 'Processing Payout...');
+        setIsProcessing(true);
         return;
       }
       
+      setIsProcessing(false);
       const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -3820,18 +3823,26 @@ function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string 
     <div 
       title={fullDetails}
       className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 cursor-help transition-all shrink-0 select-none ${
-        theme === 'dark'
-          ? 'bg-purple-600/10 border-purple-500/20 text-purple-400 hover:bg-purple-600/20 shadow-[0_0_12px_rgba(139,92,246,0.05)]'
-          : 'bg-purple-50 border-purple-100 text-purple-600 hover:bg-purple-100/70'
+        isProcessing
+          ? theme === 'dark'
+            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.05)]'
+            : 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100/70'
+          : theme === 'dark'
+            ? 'bg-purple-600/10 border-purple-500/20 text-purple-400 hover:bg-purple-600/20 shadow-[0_0_12px_rgba(139,92,246,0.05)]'
+            : 'bg-purple-50 border-purple-100 text-purple-600 hover:bg-purple-100/70'
       }`}
     >
       <span className="flex h-1.5 w-1.5 relative">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
+        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+          isProcessing ? 'bg-emerald-400' : 'bg-purple-400'
+        }`}></span>
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+          isProcessing ? 'bg-emerald-500' : 'bg-purple-500'
+        }`}></span>
       </span>
       <Calendar className="w-3.5 h-3.5" />
       <span>
-        {lang === 'ar' ? `السحب: ${timeLeftStr}` : `Payout: ${timeLeftStr}`}
+        {isProcessing ? timeLeftStr : (lang === 'ar' ? `السحب: ${timeLeftStr}` : `Payout: ${timeLeftStr}`)}
       </span>
     </div>
   );
