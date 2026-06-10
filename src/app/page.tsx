@@ -1638,6 +1638,9 @@ export default function Dashboard() {
           
           <div className="flex flex-wrap items-center gap-3">
             <DashboardLiveClock lang={lang} theme={theme} />
+            {activeTab === 'users' && (
+              <PayoutHeaderWidget lang={lang} theme={theme} />
+            )}
             {activeTab === 'users' && (() => {
               const nm = users.filter(u => !u.is_manager);
               const on = nm.filter(u => isProxyOnline(u)).length;
@@ -1721,8 +1724,7 @@ export default function Dashboard() {
         {activeTab === 'users' ? (
           <div className="space-y-6">
             
-            {/* RentAHuman Payout Countdown Banner */}
-            <PayoutCountdown lang={lang} theme={theme} />
+
 
 
 
@@ -3741,11 +3743,10 @@ function UserTimezoneDisplay({ timezone, small = false }: { timezone: string; sm
   );
 }
 
-// ─── RentAHuman Payout Countdown Component ───────────────────────────────────
-function PayoutCountdown({ lang, theme }: { lang: 'en' | 'ar'; theme: string }) {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [progress, setProgress] = useState(0);
-  const [payoutDateString, setPayoutDateString] = useState('');
+// ─── RentAHuman Payout Header Widget Component ───────────────────────────────
+function PayoutHeaderWidget({ lang, theme }: { lang: 'en' | 'ar'; theme: string }) {
+  const [timeLeftStr, setTimeLeftStr] = useState('');
+  const [fullDetails, setFullDetails] = useState('');
 
   const getNextPayoutDate = () => {
     const now = new Date();
@@ -3769,29 +3770,30 @@ function PayoutCountdown({ lang, theme }: { lang: 'en' | 'ar'; theme: string }) 
   };
 
   useEffect(() => {
-    const updateCountdown = () => {
+    const updateTime = () => {
       const now = new Date();
       const target = getNextPayoutDate();
-      
       const diffMs = target.getTime() - now.getTime();
+      
       if (diffMs <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setProgress(100);
+        setTimeLeftStr(lang === 'ar' ? 'جاري السحب...' : 'Processing Payout...');
         return;
       }
-      
-      // A payout cycle is 7 days
-      const totalCycleSeconds = 7 * 24 * 60 * 60;
-      const secondsLeft = Math.floor(diffMs / 1000);
-      const currentProgress = Math.max(0, Math.min(100, ((totalCycleSeconds - secondsLeft) / totalCycleSeconds) * 100));
       
       const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
       
-      setTimeLeft({ days, hours, minutes, seconds });
-      setProgress(currentProgress);
+      const dayLabel = lang === 'ar' ? 'يوم' : 'd';
+      const hourLabel = lang === 'ar' ? 'س' : 'h';
+      const minLabel = lang === 'ar' ? 'د' : 'm';
+      
+      const parts = [];
+      if (days > 0) parts.push(`${days}${dayLabel}`);
+      if (hours > 0 || days > 0) parts.push(`${hours}${hourLabel}`);
+      parts.push(`${minutes}${minLabel}`);
+      
+      setTimeLeftStr(parts.join(' '));
       
       const dateOpts: Intl.DateTimeFormatOptions = { 
         weekday: 'short', 
@@ -3800,79 +3802,37 @@ function PayoutCountdown({ lang, theme }: { lang: 'en' | 'ar'; theme: string }) 
         hour: '2-digit',
         minute: '2-digit'
       };
-      setPayoutDateString(target.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', dateOpts));
+      const formattedDate = target.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', dateOpts);
+      
+      setFullDetails(
+        lang === 'ar'
+          ? `موعد السحب القادم: ${formattedDate} (يغطي أسبوع العمل السابق من الجمعة للجمعة)`
+          : `Next payout: ${formattedDate} (Covers previous Friday-to-Friday week)`
+      );
     };
 
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
+    updateTime();
+    const interval = setInterval(updateTime, 10000); // 10s interval is fine
     return () => clearInterval(interval);
   }, [lang]);
 
   return (
-    <div className={`p-5 md:p-6 rounded-[2.5rem] border relative overflow-hidden transition-all shadow-lg ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-br from-[#1e1535]/40 to-[#120e24]/60 border-purple-500/10 shadow-[0_4px_30px_rgba(139,92,246,0.05)]' 
-        : 'bg-gradient-to-br from-purple-50/50 to-white border-purple-100 shadow-[0_4px_30px_rgba(139,92,246,0.03)]'
-    }`}>
-      {/* Background Blur Sparkle */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -z-10" />
-      
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1 text-left">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-            </span>
-            <span className={`text-xs font-black uppercase tracking-wider ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
-              {lang === 'ar' ? 'دورة الدفع لـ RentAHuman' : 'RentAHuman Payout Cycle'}
-            </span>
-          </div>
-          <h3 className={`text-sm md:text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {lang === 'ar' ? `السحب القادم: ${payoutDateString}` : `Next Payout: ${payoutDateString}`}
-          </h3>
-          <p className="text-[11px] text-gray-500 font-medium">
-            {lang === 'ar' 
-              ? 'يغطي أسبوع العمل السابق من الجمعة للجمعة (كل خميس 7:00 ص بتوقيت مصر)' 
-              : 'Covers previous Fri-to-Fri week (Every Thu 7:00 AM Egypt)'}
-          </p>
-        </div>
-
-        {/* Countdown Digits */}
-        <div className="flex items-center gap-2">
-          {[
-            { label: lang === 'ar' ? 'يوم' : 'Days', value: timeLeft.days },
-            { label: lang === 'ar' ? 'ساعة' : 'Hrs', value: timeLeft.hours },
-            { label: lang === 'ar' ? 'دقيقة' : 'Mins', value: timeLeft.minutes },
-            { label: lang === 'ar' ? 'ثانية' : 'Secs', value: timeLeft.seconds }
-          ].map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center">
-              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl border flex items-center justify-center font-mono font-black text-base md:text-lg shadow-sm ${
-                theme === 'dark' 
-                  ? 'bg-black/40 border-white/5 text-purple-300' 
-                  : 'bg-white border-purple-100 text-purple-700'
-              }`}>
-                {String(item.value).padStart(2, '0')}
-              </div>
-              <span className="text-[9px] text-gray-400 font-bold mt-1 uppercase tracking-wider">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="mt-5 space-y-1.5 text-left">
-        <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold">
-          <span>{lang === 'ar' ? 'تقدم دورة الدفع' : 'Payout Cycle Progress'}</span>
-          <span>{progress.toFixed(1)}%</span>
-        </div>
-        <div className={`h-2 rounded-full overflow-hidden p-[1px] border ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-gray-100 border-purple-50'}`}>
-          <div 
-            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000 ease-out" 
-            style={{ width: `${progress}%` }} 
-          />
-        </div>
-      </div>
+    <div 
+      title={fullDetails}
+      className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 cursor-help transition-all shrink-0 select-none ${
+        theme === 'dark'
+          ? 'bg-purple-600/10 border-purple-500/20 text-purple-400 hover:bg-purple-600/20 shadow-[0_0_12px_rgba(139,92,246,0.05)]'
+          : 'bg-purple-50 border-purple-100 text-purple-600 hover:bg-purple-100/70'
+      }`}
+    >
+      <span className="flex h-1.5 w-1.5 relative">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500"></span>
+      </span>
+      <Calendar className="w-3.5 h-3.5" />
+      <span>
+        {lang === 'ar' ? `السحب: ${timeLeftStr}` : `Payout: ${timeLeftStr}`}
+      </span>
     </div>
   );
 }
