@@ -1745,6 +1745,8 @@ export default function Dashboard() {
                     {filteredUsers.map((user) => (
                       <motion.tr 
                         key={user.id}
+                        layout="position"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -1877,13 +1879,17 @@ export default function Dashboard() {
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
-              {filteredUsers.map((user) => (
-                <motion.div 
-                  key={user.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`p-6 rounded-3xl border shadow-sm space-y-6 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
-                >
+              <AnimatePresence mode="popLayout">
+                {filteredUsers.map((user) => (
+                  <motion.div 
+                    key={user.id}
+                    layout
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={`p-6 rounded-3xl border shadow-sm space-y-6 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
+                  >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white">
@@ -2000,6 +2006,7 @@ export default function Dashboard() {
                   </div>
                 </motion.div>
               ))}
+              </AnimatePresence>
             </div>
 
             {filteredUsers.length === 0 && !loading && (
