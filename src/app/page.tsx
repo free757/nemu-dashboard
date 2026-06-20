@@ -42,7 +42,11 @@ import {
   TrendingUp,
   Calendar,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Wallet,
+  Coins,
+  Save,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -99,6 +103,17 @@ export default function Dashboard() {
   const [forceLogoutTargetUser, setForceLogoutTargetUser] = useState<any>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Record<string, boolean>>({});
   const [editingUser, setEditingUser] = useState<any>(null);
+  
+  // Financial & Accounts States
+  const [financialTransactions, setFinancialTransactions] = useState<any[]>([]);
+  const [exchangeRate, setExchangeRate] = useState<number>(50.0);
+  const [manualExchangeRate, setManualExchangeRate] = useState<string>('');
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+  const [payoutTargetUser, setPayoutTargetUser] = useState<any>(null);
+  const [payoutFormData, setPayoutFormData] = useState({ amountEgp: '', transferMobile: '', description: '' });
+  const [isTxModalOpen, setIsTxModalOpen] = useState(false);
+  const [txFormData, setTxFormData] = useState({ amountUsd: '', amountEgp: '', type: 'deposit', description: '' });
+  const [editedDues, setEditedDues] = useState<Record<string, string>>({});
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [visualProjects, setVisualProjects] = useState<any[]>([]);
   const [lang, setLang] = useState<'en' | 'ar'>('en');
@@ -122,6 +137,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
+    fetchExchangeRate();
+    fetchTransactions();
     const saved = localStorage.getItem('isSidebarCollapsed');
     if (saved !== null) {
       setIsSidebarCollapsed(saved === 'true');
@@ -299,7 +316,8 @@ export default function Dashboard() {
     rah_egp_rate: '',
     rah_exchange_rate: '',
     rah_usd_payout_unit: '',
-    rah_egp_payout_unit: ''
+    rah_egp_payout_unit: '',
+    owner_id: ''
   });
 
   const [quickPaste, setQuickPaste] = useState('');
@@ -493,6 +511,653 @@ export default function Dashboard() {
       });
     }
     setLoading(false);
+  };
+
+  const fetchTransactions = async () => {
+    const { data, error } = await supabase
+      .from('financial_transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      setFinancialTransactions(data);
+    }
+  };
+
+  const fetchExchangeRate = async () => {
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      if (data && data.rates && data.rates.EGP) {
+        setExchangeRate(data.rates.EGP);
+      }
+    } catch (e) {
+      console.error('Failed to fetch exchange rate:', e);
+    }
+  };
+
+  const handleSaveDue = async (accountId: string, val: string) => {
+    const numVal = parseFloat(val) || 0;
+    const { error } = await supabase
+      .from('app_users')
+      .update({ rah_currently_due: numVal })
+      .eq('id', accountId);
+    if (!error) {
+      showToast(lang === 'ar' ? 'تم حفظ القيمة بنجاح' : 'Due next payout updated successfully', 'success');
+      fetchUsers();
+    } else {
+      alert(error.message);
+    }
+  };
+
+  const handleCreateTransaction = async (payload: {
+    amount_usd?: number;
+    amount_egp?: number;
+    type: 'deposit' | 'payout' | 'expense' | 'profit_withdraw';
+    target_user_id?: string;
+    transfer_mobile?: string;
+    description?: string;
+  }) => {
+    const { error } = await supabase
+      .from('financial_transactions')
+      .insert([payload]);
+    if (!error) {
+      showToast(lang === 'ar' ? 'تم تسجيل المعاملة بنجاح' : 'Transaction created successfully', 'success');
+      fetchTransactions();
+      fetchUsers();
+    } else {
+      alert(error.message);
+    }
+  };
+
+  const getOwnerHexColor = (ownerId: string) => {
+    if (!ownerId) return 'transparent';
+    const colors = [
+      '#a855f7', // purple
+      '#14b8a6', // teal
+      '#ec4899', // pink
+      '#6366f1', // indigo
+      '#f43f5e', // rose
+      '#06b6d4', // cyan
+      '#f59e0b', // amber
+      '#10b981'  // emerald
+    ];
+    let hash = 0;
+    for (let i = 0; i < ownerId.length; i++) {
+      hash = ownerId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  const getOwnerClasses = (ownerId: string) => {
+    if (!ownerId) return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    const colorMap = [
+      'bg-purple-500/10 text-purple-400 border-purple-500/20',
+      'bg-teal-500/10 text-teal-400 border-teal-500/20',
+      'bg-pink-500/10 text-pink-400 border-pink-500/20',
+      'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+      'bg-rose-500/10 text-rose-400 border-rose-500/20',
+      'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+    ];
+    let hash = 0;
+    for (let i = 0; i < ownerId.length; i++) {
+      hash = ownerId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colorMap.length;
+    return colorMap[index];
+  };
+
+  const handlePayoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payoutTargetUser) return;
+    const amountEgp = parseFloat(payoutFormData.amountEgp) || 0;
+    const rate = parseFloat(manualExchangeRate) || exchangeRate || 50.0;
+    const amountUsd = amountEgp / rate;
+
+    const payload = {
+      amount_usd: amountUsd,
+      amount_egp: amountEgp,
+      type: 'payout' as const,
+      target_user_id: payoutTargetUser.id,
+      transfer_mobile: payoutFormData.transferMobile || undefined,
+      description: payoutFormData.description || `Salary payout for ${payoutTargetUser.username}`,
+    };
+
+    await handleCreateTransaction(payload);
+
+    // Reset linked accounts dues to 0
+    const { error } = await supabase
+      .from('app_users')
+      .update({ rah_currently_due: 0 })
+      .eq('owner_id', payoutTargetUser.id);
+    
+    if (!error) {
+      showToast(lang === 'ar' ? 'تم تصفير مستحقات الحسابات بنجاح' : 'Linked accounts dues reset to 0', 'success');
+      fetchUsers();
+    } else {
+      console.error('Error resetting dues:', error);
+    }
+
+    setIsPayoutModalOpen(false);
+    setPayoutFormData({ amountEgp: '', transferMobile: '', description: '' });
+    setPayoutTargetUser(null);
+  };
+
+  const handleTxSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountUsd = parseFloat(txFormData.amountUsd) || 0;
+    const amountEgp = parseFloat(txFormData.amountEgp) || 0;
+    const rate = parseFloat(manualExchangeRate) || exchangeRate || 50.0;
+
+    const payload = {
+      amount_usd: amountUsd || (amountEgp ? amountEgp / rate : 0),
+      amount_egp: amountEgp || (amountUsd ? amountUsd * rate : 0),
+      type: txFormData.type as 'deposit' | 'expense' | 'profit_withdraw',
+      description: txFormData.description || '',
+    };
+
+    await handleCreateTransaction(payload);
+    setIsTxModalOpen(false);
+    setTxFormData({ amountUsd: '', amountEgp: '', type: 'deposit', description: '' });
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm(lang === 'ar' ? 'هل أنت متأكد من حذف هذه المعاملة؟ هذا الإجراء لا يمكن التراجع عنه.' : 'Are you sure you want to delete this transaction? This action cannot be undone.')) {
+      return;
+    }
+    const { error } = await supabase
+      .from('financial_transactions')
+      .delete()
+      .eq('id', id);
+    if (!error) {
+      showToast(lang === 'ar' ? 'تم حذف المعاملة بنجاح' : 'Transaction deleted successfully', 'success');
+      fetchTransactions();
+      fetchUsers();
+    } else {
+      alert(error.message);
+    }
+  };
+
+  const renderAccountsTab = () => {
+    const currentRate = parseFloat(manualExchangeRate) || exchangeRate || 50.0;
+
+    // Calculate totals
+    let totalDepositsUsd = 0;
+    let totalExpensesUsd = 0;
+    let totalPayoutsUsd = 0;
+    let totalDistributionsUsd = 0;
+
+    financialTransactions.forEach(tx => {
+      const usdAmount = Number(tx.amount_usd) || 0;
+      if (tx.type === 'deposit') {
+        totalDepositsUsd += usdAmount;
+      } else if (tx.type === 'expense') {
+        totalExpensesUsd += usdAmount;
+      } else if (tx.type === 'payout') {
+        totalPayoutsUsd += usdAmount;
+      } else if (tx.type === 'profit_withdraw') {
+        totalDistributionsUsd += usdAmount;
+      }
+    });
+
+    const netUsdWallet = totalDepositsUsd - totalExpensesUsd - totalPayoutsUsd - totalDistributionsUsd;
+    const netEgpWallet = netUsdWallet * currentRate;
+
+    // Split splits
+    const partner1ShareUsd = netUsdWallet * 0.4;
+    const partner1ShareEgp = netEgpWallet * 0.4;
+    const partner2ShareUsd = netUsdWallet * 0.6;
+    const partner2ShareEgp = netEgpWallet * 0.6;
+
+    // Group users by owner
+    const employees = users.filter(u => !u.is_manager && !u.owner_id);
+
+    return (
+      <div className="space-y-6 pb-24 animate-fadeIn">
+        {/* Exchange Rate Banner */}
+        <div className={`p-6 rounded-[2rem] border flex flex-col md:flex-row items-center justify-between gap-6 transition-all ${
+          theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200 hover:shadow-lg'
+        }`}>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-gray-500 uppercase tracking-wider">{lang === 'ar' ? 'سعر صرف الدولار الحالي' : 'EGP / USD Exchange Rate'}</h3>
+              <p className={`text-xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mt-0.5`}>
+                1 USD = {currentRate.toFixed(2)} EGP
+                {!manualExchangeRate && (
+                  <span className="text-xs text-green-500 font-medium ml-2 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                    {lang === 'ar' ? 'سعر حي' : 'LIVE API'}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <label className="text-xs font-bold text-gray-400 whitespace-nowrap">{lang === 'ar' ? 'تعديل السعر يدويًا:' : 'Override Rate:'}</label>
+            <div className="relative flex items-center w-full md:w-48">
+              <input
+                type="number"
+                step="any"
+                placeholder={exchangeRate.toFixed(2)}
+                value={manualExchangeRate}
+                onChange={(e) => setManualExchangeRate(e.target.value)}
+                className={`w-full border rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-blue-500 transition-all font-bold ${
+                  theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                }`}
+              />
+              {manualExchangeRate && (
+                <button
+                  onClick={() => setManualExchangeRate('')}
+                  className="absolute right-3 text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded-full font-bold uppercase"
+                >
+                  {lang === 'ar' ? 'افتراضي' : 'CLEAR'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Central Wallet & Profit Split Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Central Wallet */}
+          <div className={`p-6 rounded-[2rem] border relative overflow-hidden flex flex-col justify-between h-[230px] transition-all bg-gradient-to-br ${
+            theme === 'dark' 
+              ? 'from-blue-600/10 via-blue-900/5 to-transparent border-blue-500/20' 
+              : 'from-blue-50 to-white border-blue-200 hover:shadow-xl'
+          }`}>
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest block">
+                  {lang === 'ar' ? 'المحفظة المركزية' : 'Central Wallet'}
+                </span>
+                <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  ${netUsdWallet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h3>
+                <p className="text-sm font-semibold text-gray-500">
+                  ≈ {netEgpWallet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center">
+                <Wallet className="w-6 h-6" />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
+              <button
+                onClick={() => {
+                  setTxFormData({ amountUsd: '', amountEgp: '', type: 'deposit', description: '' });
+                  setIsTxModalOpen(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/10"
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>{lang === 'ar' ? 'إيداع' : 'Deposit'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTxFormData({ amountUsd: '', amountEgp: '', type: 'expense', description: '' });
+                  setIsTxModalOpen(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-red-600/10"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5" />
+                <span>{lang === 'ar' ? 'مصروف' : 'Expense'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setTxFormData({ amountUsd: '', amountEgp: '', type: 'profit_withdraw', description: '' });
+                  setIsTxModalOpen(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-amber-600/10"
+              >
+                <Coins className="w-3.5 h-3.5" />
+                <span>{lang === 'ar' ? 'سحب أرباح' : 'Withdraw'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Partner 1 Split (40%) */}
+          <div className={`p-6 rounded-[2rem] border flex flex-col justify-between h-[230px] transition-all bg-gradient-to-br ${
+            theme === 'dark' 
+              ? 'from-purple-600/10 via-purple-900/5 to-transparent border-purple-500/20' 
+              : 'from-purple-50 to-white border-purple-200 hover:shadow-xl'
+          }`}>
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-purple-500 uppercase tracking-widest block">
+                {lang === 'ar' ? 'شريك 1 (40%)' : 'Partner 1 (40%)'}
+              </span>
+              <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                ${partner1ShareUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-sm font-semibold text-gray-500">
+                ≈ {partner1ShareEgp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP
+              </p>
+            </div>
+            
+            <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
+              <div className="flex justify-between text-xs text-gray-500 font-bold">
+                <span>{lang === 'ar' ? 'الحصة من المحفظة' : 'Current Share'}</span>
+                <span>40%</span>
+              </div>
+              <div className="w-full bg-gray-700/30 rounded-full h-2 overflow-hidden">
+                <div className="bg-purple-500 h-full rounded-full" style={{ width: '40%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Partner 2 Split (60%) */}
+          <div className={`p-6 rounded-[2rem] border flex flex-col justify-between h-[230px] transition-all bg-gradient-to-br ${
+            theme === 'dark' 
+              ? 'from-emerald-600/10 via-emerald-900/5 to-transparent border-emerald-500/20' 
+              : 'from-emerald-50 to-white border-emerald-200 hover:shadow-xl'
+          }`}>
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest block">
+                {lang === 'ar' ? 'شريك 2 (60%)' : 'Partner 2 (60%)'}
+              </span>
+              <h3 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                ${partner2ShareUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h3>
+              <p className="text-sm font-semibold text-gray-500">
+                ≈ {partner2ShareEgp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP
+              </p>
+            </div>
+            
+            <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
+              <div className="flex justify-between text-xs text-gray-500 font-bold">
+                <span>{lang === 'ar' ? 'الحصة من المحفظة' : 'Current Share'}</span>
+                <span>60%</span>
+              </div>
+              <div className="w-full bg-gray-700/30 rounded-full h-2 overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '60%' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grouped Employee Dues List */}
+        <div className="space-y-4">
+          <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            {lang === 'ar' ? 'مستحقات ورواتب الموظفين' : 'Employee Salaries & Work Hours'}
+          </h2>
+          
+          {employees.length === 0 ? (
+            <div className={`p-12 text-center rounded-[2rem] border ${theme === 'dark' ? 'bg-[#111] border-white/5 text-gray-500' : 'bg-white border-gray-200 text-gray-400'}`}>
+              {lang === 'ar' ? 'لا يوجد موظفون مضافون حالياً.' : 'No primary employees found.'}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {employees.map(employee => {
+                const linkedAccounts = users.filter(u => u.owner_id === employee.id);
+                let totalUsdDue = 0;
+                linkedAccounts.forEach(acc => {
+                  totalUsdDue += Number(acc.rah_currently_due) || 0;
+                });
+                const totalHours = totalUsdDue / 10;
+                const salaryDueEgp = totalHours * 100;
+                
+                const historicPaidEgp = financialTransactions
+                  .filter(tx => tx.type === 'payout' && tx.target_user_id === employee.id)
+                  .reduce((sum, tx) => sum + (Number(tx.amount_egp) || 0), 0);
+
+                const employeeColor = getOwnerHexColor(employee.id);
+
+                return (
+                  <div 
+                    key={employee.id}
+                    className={`rounded-[2rem] border p-6 transition-all ${
+                      theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200 hover:shadow-md'
+                    }`}
+                    style={{ borderLeft: `6px solid ${employeeColor}` }}
+                  >
+                    {/* Employee Header */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-lg animate-pulse"
+                            style={{ backgroundColor: employeeColor }}
+                          >
+                            {employee.username?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                              {employee.username}
+                            </h3>
+                            <p className="text-gray-500 text-xs">
+                              📞 {employee.phone_number || (lang === 'ar' ? 'بدون رقم هاتف' : 'No phone number')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats Overview */}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="text-center px-4 py-2 bg-white/5 border border-white/5 rounded-2xl">
+                          <span className="text-[10px] text-gray-500 font-bold block uppercase">{lang === 'ar' ? 'الساعات' : 'HOURS'}</span>
+                          <span className={`text-sm font-extrabold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>{totalHours.toFixed(1)} hrs</span>
+                        </div>
+                        <div className="text-center px-4 py-2 bg-white/5 border border-white/5 rounded-2xl">
+                          <span className="text-[10px] text-gray-500 font-bold block uppercase">{lang === 'ar' ? 'الراتب المستحق' : 'SALARY DUE'}</span>
+                          <span className={`text-sm font-extrabold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{salaryDueEgp.toLocaleString()} EGP</span>
+                        </div>
+                        <div className="text-center px-4 py-2 bg-white/5 border border-white/5 rounded-2xl">
+                          <span className="text-[10px] text-gray-500 font-bold block uppercase">{lang === 'ar' ? 'إجمالي المدفوع' : 'TOTAL PAID'}</span>
+                          <span className={`text-sm font-extrabold ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>{historicPaidEgp.toLocaleString()} EGP</span>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            setPayoutTargetUser(employee);
+                            setPayoutFormData({
+                              amountEgp: salaryDueEgp.toString(),
+                              transferMobile: employee.phone_number || '',
+                              description: `Salary payout for ${employee.username} (${totalHours.toFixed(1)} hrs worked)`,
+                            });
+                            setIsPayoutModalOpen(true);
+                          }}
+                          disabled={salaryDueEgp <= 0}
+                          className={`px-5 py-3 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 ${
+                            salaryDueEgp > 0
+                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
+                              : 'bg-gray-600/20 text-gray-500 cursor-not-allowed opacity-50'
+                          }`}
+                        >
+                          <Coins className="w-4 h-4" />
+                          <span>{lang === 'ar' ? 'صرف المرتب' : 'Payout Salary'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Linked Rent Accounts */}
+                    <div className="space-y-3 pl-2 sm:pl-12">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                        {lang === 'ar' ? 'حسابات رينت المرتبطة' : 'Linked Rent Accounts'}
+                      </h4>
+                      {linkedAccounts.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">
+                          {lang === 'ar' ? 'لا توجد حسابات مرتبطة بهذا الموظف.' : 'No accounts linked to this employee yet.'}
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {linkedAccounts.map(acc => {
+                            const isOnline = isProxyOnline(acc);
+                            const accHours = (Number(acc.rah_currently_due) || 0) / 10;
+                            const accSalary = accHours * 100;
+                            return (
+                              <div 
+                                key={acc.id}
+                                className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+                                  theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'
+                                }`}
+                              >
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-sm font-bold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                                      {acc.username}
+                                    </span>
+                                    <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                  </div>
+                                  <p className="text-[11px] text-gray-500">
+                                    {accHours.toFixed(1)} hrs • {accSalary} EGP
+                                  </p>
+                                </div>
+                                
+                                {/* Edit Due Field */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500 text-xs font-bold">$</span>
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={editedDues[acc.id] !== undefined ? editedDues[acc.id] : (acc.rah_currently_due || 0).toString()}
+                                    onChange={e => setEditedDues({ ...editedDues, [acc.id]: e.target.value })}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveDue(acc.id, editedDues[acc.id] || (acc.rah_currently_due || 0).toString());
+                                        const updated = { ...editedDues };
+                                        delete updated[acc.id];
+                                        setEditedDues(updated);
+                                      }
+                                    }}
+                                    className={`w-20 border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 font-bold transition-all text-center ${
+                                      theme === 'dark' ? 'bg-black/35 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'
+                                    }`}
+                                  />
+                                  {editedDues[acc.id] !== undefined && editedDues[acc.id] !== (acc.rah_currently_due || 0).toString() && (
+                                    <button
+                                      onClick={() => {
+                                        handleSaveDue(acc.id, editedDues[acc.id]);
+                                        const updated = { ...editedDues };
+                                        delete updated[acc.id];
+                                        setEditedDues(updated);
+                                      }}
+                                      className="p-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"
+                                      title="Save"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Transactions Ledger */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {lang === 'ar' ? 'سجل العمليات المالية' : 'Financial Ledger & Logs'}
+            </h2>
+          </div>
+
+          <div className={`rounded-[2rem] border overflow-hidden ${
+            theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'
+          }`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className={`border-b ${theme === 'dark' ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-500'} text-xs uppercase tracking-wider font-bold`}>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'التاريخ' : 'DATE'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'النوع' : 'TYPE'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'المبلغ بالدولار' : 'AMOUNT (USD)'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'المبلغ بالجنيه' : 'AMOUNT (EGP)'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'الموظف / المستفيد' : 'EMPLOYEE'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'رقم التحويل' : 'MOBILE'}</th>
+                    <th className="px-6 py-4">{lang === 'ar' ? 'البيان / التفاصيل' : 'DESCRIPTION'}</th>
+                    <th className="px-6 py-4 text-right"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-sm">
+                  {financialTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        {lang === 'ar' ? 'لا توجد معاملات مسجلة بعد.' : 'No transactions recorded yet.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    financialTransactions.map(tx => {
+                      const txUser = tx.target_user_id ? users.find(u => u.id === tx.target_user_id) : null;
+                      return (
+                        <tr 
+                          key={tx.id} 
+                          className={`transition-colors ${
+                            theme === 'dark' ? 'hover:bg-white/[0.01] divide-white/5' : 'hover:bg-gray-50 divide-gray-100'
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                            {new Date(tx.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {tx.type === 'deposit' && (
+                              <span className="px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-bold">
+                                DEPOSIT
+                              </span>
+                            )}
+                            {tx.type === 'payout' && (
+                              <span className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold">
+                                PAYOUT
+                              </span>
+                            )}
+                            {tx.type === 'expense' && (
+                              <span className="px-2 py-0.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-bold">
+                                EXPENSE
+                              </span>
+                            )}
+                            {tx.type === 'profit_withdraw' && (
+                              <span className="px-2 py-0.5 text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-bold">
+                                WITHDRAW
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold font-mono text-xs">
+                            ${Number(tx.amount_usd).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold font-mono text-xs">
+                            {Number(tx.amount_egp).toLocaleString(undefined, { minimumFractionDigits: 2 })} EGP
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs font-bold">
+                            {txUser ? txUser.username : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs">
+                            {tx.transfer_mobile || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-gray-400 max-w-xs truncate" title={tx.description}>
+                            {tx.description || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => handleDeleteTransaction(tx.id)}
+                              className="p-1.5 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                              title={lang === 'ar' ? 'حذف المعاملة' : 'Delete transaction'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const fetchConfigs = async () => {
@@ -693,6 +1358,18 @@ export default function Dashboard() {
       )
       .subscribe();
 
+    // Realtime channel for financial_transactions updates
+    const txChannel = supabase
+      .channel('financial_transactions_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'financial_transactions' },
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
     // Realtime channel for remote_configs updates
     const configChannel = supabase
       .channel('remote_configs_changes')
@@ -716,6 +1393,7 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(configChannel);
+      supabase.removeChannel(txChannel);
     };
   }, []);
 
@@ -960,7 +1638,8 @@ export default function Dashboard() {
       rah_egp_rate: user.ui_settings?.rah?.egp_rate?.toString() || '',
       rah_exchange_rate: user.ui_settings?.rah?.exchange_rate?.toString() || '',
       rah_usd_payout_unit: user.ui_settings?.rah?.usd_payout_unit?.toString() || '',
-      rah_egp_payout_unit: user.ui_settings?.rah?.egp_payout_unit?.toString() || ''
+      rah_egp_payout_unit: user.ui_settings?.rah?.egp_payout_unit?.toString() || '',
+      owner_id: user.owner_id || ''
     });
     setIsModalOpen(true);
   };
@@ -1006,7 +1685,8 @@ export default function Dashboard() {
         rah_human_id: '', rah_api_key: '',
         rah_hours_offset: '', rah_earnings_offset: '', rah_rate_override: '',
         rah_egp_rate: '', rah_exchange_rate: '',
-        rah_usd_payout_unit: '', rah_egp_payout_unit: ''
+        rah_usd_payout_unit: '', rah_egp_payout_unit: '',
+        owner_id: ''
       });
       setIsModalOpen(true);
     } else {
@@ -1141,7 +1821,8 @@ export default function Dashboard() {
       verification_code: formData.verification_code?.trim() || null,
       rah_human_id: formData.rah_human_id?.trim() || null,
       rah_api_key: formData.rah_api_key?.trim() || null,
-      ui_settings
+      ui_settings,
+      owner_id: formData.owner_id || null
     };
 
     // Double check duplicate validation just in case
@@ -1672,6 +2353,13 @@ export default function Dashboard() {
                   {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.users}</motion.span>}
                 </button>
                 <button 
+                  onClick={() => { setActiveTab('accounts'); setIsMobileMenuOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  <DollarSign className="w-5 h-5 flex-shrink-0" />
+                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{lang === 'ar' ? 'الحسابات والمالية' : 'Financial Accounts'}</motion.span>}
+                </button>
+                <button 
                   onClick={() => { setActiveTab('config'); setIsMobileMenuOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
                 >
@@ -1737,10 +2425,10 @@ export default function Dashboard() {
         <header className={`sticky top-0 z-30 px-4 md:px-8 py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#f8f9fa] border-gray-200'}`}>
           <div>
             <h1 className="text-2xl font-bold mb-1">
-              {activeTab === 'users' ? t.title : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
+              {activeTab === 'users' ? t.title : activeTab === 'accounts' ? (lang === 'ar' ? 'الحسابات والمحفظة المالية' : 'Financial Accounts & Wallet') : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
             </h1>
             <p className="text-gray-500 text-xs md:text-sm">
-              {activeTab === 'users' ? t.subtitle : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
+              {activeTab === 'users' ? t.subtitle : activeTab === 'accounts' ? (lang === 'ar' ? 'تتبع رواتب الموظفين، ساعات العمل، المصروفات، وأرباح الشركاء.' : 'Track employee salaries, hours, expenses, and partner profits.') : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
             </p>
           </div>
           
@@ -1811,18 +2499,20 @@ export default function Dashboard() {
                   );
                 })()}
                 <button 
-                  onClick={activeTab === 'users' ? fetchUsers : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
+                  onClick={activeTab === 'users' || activeTab === 'accounts' ? async () => { await fetchUsers(); await fetchTransactions(); } : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
                   className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
-                <button 
-                  onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : activeTab === 'misc' ? () => { setEditingMisc(null); setMiscFormData({ title: '', content: '', display_order: 0 }); setIsMiscModalOpen(true); } : handleOpenAdd}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : activeTab === 'misc' ? t.addMisc : t.addNotification}</span>
-                </button>
+                {activeTab !== 'accounts' && (
+                  <button 
+                    onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : activeTab === 'misc' ? () => { setEditingMisc(null); setMiscFormData({ title: '', content: '', display_order: 0 }); setIsMiscModalOpen(true); } : handleOpenAdd}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20 text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : activeTab === 'misc' ? t.addMisc : t.addNotification}</span>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1885,6 +2575,7 @@ export default function Dashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         className={`transition-all group ${theme === 'dark' ? 'hover:bg-white/[0.02] divide-white/5' : 'hover:bg-gray-50 divide-gray-100'}`}
+                        style={{ borderLeft: user.owner_id ? `4px solid ${getOwnerHexColor(user.owner_id)}` : undefined }}
                       >
                         <td className="pl-6 py-5 w-12 text-center">
                           {!user.is_manager ? (
@@ -1930,6 +2621,15 @@ export default function Dashboard() {
                                     🔑 Auto-Login
                                   </span>
                                 )}
+                                {(() => {
+                                  const owner = user.owner_id ? users.find(u => u.id === user.owner_id) : null;
+                                  if (!owner) return null;
+                                  return (
+                                    <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
+                                      👤 {lang === 'ar' ? `صاحب الحساب: ${owner.username}` : `Owner: ${owner.username}`}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               <p className="text-gray-500 text-sm">{user.phone_number}</p>
                               {user.email && (
@@ -2090,6 +2790,7 @@ export default function Dashboard() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className={`p-6 rounded-3xl border shadow-sm space-y-6 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
+                    style={{ borderLeft: user.owner_id ? `6px solid ${getOwnerHexColor(user.owner_id)}` : undefined }}
                   >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
@@ -2131,6 +2832,15 @@ export default function Dashboard() {
                               🔑 Auto-Login
                             </span>
                           )}
+                          {(() => {
+                            const owner = user.owner_id ? users.find(u => u.id === user.owner_id) : null;
+                            if (!owner) return null;
+                            return (
+                              <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
+                                👤 {lang === 'ar' ? `صاحب الحساب: ${owner.username}` : `Owner: ${owner.username}`}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-gray-500 text-sm">{user.phone_number}</p>
                         {user.email && (
@@ -2300,6 +3010,8 @@ export default function Dashboard() {
               document.body
             )}
           </div>
+        ) : activeTab === 'accounts' ? (
+          renderAccountsTab()
         ) : activeTab === 'config' ? (
           <div>
             {remoteConfigs.length === 0 ? (
@@ -3371,6 +4083,31 @@ export default function Dashboard() {
                       <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
+                  {!formData.is_manager && (
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400 ml-1">
+                        {lang === 'ar' ? 'صاحب الحساب (الموظف)' : 'Account Owner (Employee)'}
+                      </label>
+                      <select
+                        value={formData.owner_id || ''}
+                        onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
+                        className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                          theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                          {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
+                        </option>
+                        {users
+                          .filter(u => !u.is_manager && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
+                          .map(u => (
+                            <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                              {u.username}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Microsoft Credentials Section */}
@@ -3605,6 +4342,225 @@ export default function Dashboard() {
                     }`}
                   >
                     {editingUser ? t.save : t.createBtn}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Financial Payout Modal */}
+      <AnimatePresence>
+        {isPayoutModalOpen && payoutTargetUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setIsPayoutModalOpen(false);
+                setPayoutTargetUser(null);
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-md rounded-[2.5rem] border p-8 shadow-2xl ${
+                theme === 'dark' ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}
+            >
+              <h2 className="text-xl font-bold mb-6">
+                {lang === 'ar' ? `تسجيل صرف راتب: ${payoutTargetUser.username}` : `Salary Payout: ${payoutTargetUser.username}`}
+              </h2>
+              <form onSubmit={handlePayoutSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                    {lang === 'ar' ? 'المبلغ بالجنيه المصري (EGP)' : 'Amount (EGP)'}
+                  </label>
+                  <input 
+                    required
+                    type="number"
+                    step="any"
+                    value={payoutFormData.amountEgp}
+                    onChange={e => setPayoutFormData({...payoutFormData, amountEgp: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                      theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                    }`}
+                    placeholder="e.g. 1500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                    {lang === 'ar' ? 'رقم فودافون كاش / المحفظة' : 'Mobile Transfer Number'}
+                  </label>
+                  <input 
+                    type="text"
+                    value={payoutFormData.transferMobile}
+                    onChange={e => setPayoutFormData({...payoutFormData, transferMobile: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-mono ${
+                      theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-[#fff] border-gray-200 text-gray-900'
+                    }`}
+                    placeholder="e.g. 01012345678"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                    {lang === 'ar' ? 'البيان / الملاحظات' : 'Description'}
+                  </label>
+                  <input 
+                    type="text"
+                    value={payoutFormData.description}
+                    onChange={e => setPayoutFormData({...payoutFormData, description: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                      theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                    }`}
+                    placeholder="e.g. June salary"
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsPayoutModalOpen(false);
+                      setPayoutTargetUser(null);
+                    }}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all ${
+                      theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-bold transition-all text-white shadow-lg shadow-emerald-600/20"
+                  >
+                    {lang === 'ar' ? 'تسجيل الدفع' : 'Record Payout'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Financial Transaction Modal */}
+      <AnimatePresence>
+        {isTxModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTxModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`relative w-full max-w-md rounded-[2.5rem] border p-8 shadow-2xl ${
+                theme === 'dark' ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}
+            >
+              <h2 className="text-xl font-bold mb-6">
+                {txFormData.type === 'deposit' && (lang === 'ar' ? 'إيداع أموال في المحفظة' : 'Deposit Funds')}
+                {txFormData.type === 'expense' && (lang === 'ar' ? 'تسجيل مصروفات' : 'Log Expense')}
+                {txFormData.type === 'profit_withdraw' && (lang === 'ar' ? 'سحب أرباح الشركاء' : 'Withdraw Partner Profits')}
+              </h2>
+              <form onSubmit={handleTxSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                    {lang === 'ar' ? 'العملية' : 'Transaction Type'}
+                  </label>
+                  <select
+                    value={txFormData.type}
+                    onChange={e => setTxFormData({...txFormData, type: e.target.value as any})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-bold ${
+                      theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <option value="deposit" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                      {lang === 'ar' ? 'إيداع (Deposit)' : 'Deposit'}
+                    </option>
+                    <option value="expense" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                      {lang === 'ar' ? 'مصروفات (Expense)' : 'Expense'}
+                    </option>
+                    <option value="profit_withdraw" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                      {lang === 'ar' ? 'سحب أرباح شركاء (Profit Withdraw)' : 'Profit Withdraw'}
+                    </option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                      {lang === 'ar' ? 'المبلغ ($)' : 'Amount (USD)'}
+                    </label>
+                    <input 
+                      type="number"
+                      step="any"
+                      value={txFormData.amountUsd}
+                      onChange={e => setTxFormData({...txFormData, amountUsd: e.target.value})}
+                      className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                      }`}
+                      placeholder="$100"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                      {lang === 'ar' ? 'المبلغ (EGP)' : 'Amount (EGP)'}
+                    </label>
+                    <input 
+                      type="number"
+                      step="any"
+                      value={txFormData.amountEgp}
+                      onChange={e => setTxFormData({...txFormData, amountEgp: e.target.value})}
+                      className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all font-bold font-mono ${
+                        theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                      }`}
+                      placeholder="5000"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                    {lang === 'ar' ? 'البيان / التفاصيل' : 'Description'}
+                  </label>
+                  <input 
+                    required
+                    type="text"
+                    value={txFormData.description}
+                    onChange={e => setTxFormData({...txFormData, description: e.target.value})}
+                    className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                      theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                    }`}
+                    placeholder="e.g. Rent Payment, Office rent, etc."
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsTxModalOpen(false)}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all ${
+                      theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition-all text-white shadow-lg shadow-blue-600/20"
+                  >
+                    {lang === 'ar' ? 'تسجيل العملية' : 'Save Transaction'}
                   </button>
                 </div>
               </form>
