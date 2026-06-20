@@ -1844,15 +1844,22 @@ export default function Dashboard() {
                     <th className="pl-6 py-5 w-12 text-center">
                       <input
                         type="checkbox"
-                        checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds[u.id])}
+                        checked={
+                          (() => {
+                            const nonManagers = filteredUsers.filter(u => !u.is_manager);
+                            return nonManagers.length > 0 && nonManagers.every(u => selectedUserIds[u.id]);
+                          })()
+                        }
                         onChange={(e) => {
                           const checked = e.target.checked;
                           const newSelected = { ...selectedUserIds };
                           filteredUsers.forEach(u => {
-                            if (checked) {
-                              newSelected[u.id] = true;
-                            } else {
-                              delete newSelected[u.id];
+                            if (!u.is_manager) {
+                              if (checked) {
+                                newSelected[u.id] = true;
+                              } else {
+                                delete newSelected[u.id];
+                              }
                             }
                           });
                           setSelectedUserIds(newSelected);
@@ -1880,21 +1887,25 @@ export default function Dashboard() {
                         className={`transition-all group ${theme === 'dark' ? 'hover:bg-white/[0.02] divide-white/5' : 'hover:bg-gray-50 divide-gray-100'}`}
                       >
                         <td className="pl-6 py-5 w-12 text-center">
-                          <input
-                            type="checkbox"
-                            checked={!!selectedUserIds[user.id]}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const newSelected = { ...selectedUserIds };
-                              if (checked) {
-                                newSelected[user.id] = true;
-                              } else {
-                                delete newSelected[user.id];
-                              }
-                              setSelectedUserIds(newSelected);
-                            }}
-                            className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
-                          />
+                          {!user.is_manager ? (
+                            <input
+                              type="checkbox"
+                              checked={!!selectedUserIds[user.id]}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                const newSelected = { ...selectedUserIds };
+                                if (checked) {
+                                  newSelected[user.id] = true;
+                                } else {
+                                  delete newSelected[user.id];
+                                }
+                                setSelectedUserIds(newSelected);
+                              }}
+                              className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                            />
+                          ) : (
+                            <div className="w-4 h-4" />
+                          )}
                         </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
@@ -1979,39 +1990,51 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-5 text-right">
                           <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => handleOpenUserSettings(user)}
-                              className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all"
-                              title="User Button Settings"
-                            >
-                              <SlidersHorizontal className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleToggleBlock(user)}
-                              className={`p-2 rounded-lg transition-all ${user.is_blocked ? 'text-red-500 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-400 hover:bg-red-500/5'}`}
-                              title={user.is_blocked ? 'Unblock User' : 'Block User'}
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleForceLogout(user)}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                              title={lang === 'ar' ? 'تسجيل خروج إجباري' : 'Force Logout'}
-                            >
-                              <LogOut className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleOpenEdit(user)}
-                              className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteClick(user.id, user.username)}
-                              className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {user.is_manager ? (
+                              <button 
+                                onClick={() => handleOpenEdit(user)}
+                                className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
+                                title={lang === 'ar' ? 'تعديل البيانات' : 'Edit Profile'}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <>
+                                <button 
+                                  onClick={() => handleOpenUserSettings(user)}
+                                  className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-all"
+                                  title="User Button Settings"
+                                >
+                                  <SlidersHorizontal className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleToggleBlock(user)}
+                                  className={`p-2 rounded-lg transition-all ${user.is_blocked ? 'text-red-500 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-400 hover:bg-red-500/5'}`}
+                                  title={user.is_blocked ? 'Unblock User' : 'Block User'}
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleForceLogout(user)}
+                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                  title={lang === 'ar' ? 'تسجيل خروج إجباري' : 'Force Logout'}
+                                >
+                                  <LogOut className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleOpenEdit(user)}
+                                  className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteClick(user.id, user.username)}
+                                  className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </motion.tr>
@@ -2026,15 +2049,22 @@ export default function Dashboard() {
               <label className="flex items-center gap-3 cursor-pointer text-sm">
                 <input
                   type="checkbox"
-                  checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds[u.id])}
+                  checked={
+                    (() => {
+                      const nonManagers = filteredUsers.filter(u => !u.is_manager);
+                      return nonManagers.length > 0 && nonManagers.every(u => selectedUserIds[u.id]);
+                    })()
+                  }
                   onChange={(e) => {
                     const checked = e.target.checked;
                     const newSelected = { ...selectedUserIds };
                     filteredUsers.forEach(u => {
-                      if (checked) {
-                        newSelected[u.id] = true;
-                      } else {
-                        delete newSelected[u.id];
+                      if (!u.is_manager) {
+                        if (checked) {
+                          newSelected[u.id] = true;
+                        } else {
+                          delete newSelected[u.id];
+                        }
                       }
                     });
                     setSelectedUserIds(newSelected);
@@ -2063,21 +2093,23 @@ export default function Dashboard() {
                   >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedUserIds[user.id]}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          const newSelected = { ...selectedUserIds };
-                          if (checked) {
-                            newSelected[user.id] = true;
-                          } else {
-                            delete newSelected[user.id];
-                          }
-                          setSelectedUserIds(newSelected);
-                        }}
-                        className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
-                      />
+                      {!user.is_manager ? (
+                        <input
+                          type="checkbox"
+                          checked={!!selectedUserIds[user.id]}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            const newSelected = { ...selectedUserIds };
+                            if (checked) {
+                              newSelected[user.id] = true;
+                            } else {
+                              delete newSelected[user.id];
+                            }
+                            setSelectedUserIds(newSelected);
+                          }}
+                          className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                        />
+                      ) : null}
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white">
                         {user.username?.charAt(0).toUpperCase()}
                       </div>
@@ -2160,36 +2192,46 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => handleToggleBlock(user)}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                    >
-                      <Ban className="w-4 h-4" />
-                      <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleForceLogout(user)}
-                      className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
-                    </button>
+                  {user.is_manager ? (
                     <button 
                       onClick={() => handleOpenEdit(user)}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all w-full ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                     >
                       <Edit2 className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
+                      <span>{lang === 'ar' ? 'تعديل البيانات' : 'Edit Profile'}</span>
                     </button>
-                    <button 
-                      onClick={() => handleDeleteClick(user.id, user.username)}
-                      className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => handleToggleBlock(user)}
+                        className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      >
+                        <Ban className="w-4 h-4" />
+                        <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
+                      </button>
+                      <button 
+                        onClick={() => handleForceLogout(user)}
+                        className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                      </button>
+                      <button 
+                        onClick={() => handleOpenEdit(user)}
+                        className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteClick(user.id, user.username)}
+                        className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
               </AnimatePresence>
