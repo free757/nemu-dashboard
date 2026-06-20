@@ -32,6 +32,7 @@ import {
   Mic,
   MicOff,
   Ban,
+  CheckCircle,
   Bell,
   Clock,
   Layers,
@@ -95,6 +96,7 @@ export default function Dashboard() {
   const [blockTargetUser, setBlockTargetUser] = useState<any>(null);
   const [isForceLogoutConfirmOpen, setIsForceLogoutConfirmOpen] = useState(false);
   const [forceLogoutTargetUser, setForceLogoutTargetUser] = useState<any>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Record<string, boolean>>({});
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [visualProjects, setVisualProjects] = useState<any[]>([]);
@@ -473,7 +475,21 @@ export default function Dashboard() {
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
-    if (!error) setUsers(data);
+    if (!error) {
+      setUsers(data);
+      // Clean up selectedUserIds to remove any users that are no longer in the list
+      setSelectedUserIds(prev => {
+        if (!data) return {};
+        const activeIds = new Set(data.map(u => u.id));
+        const clean: Record<string, boolean> = {};
+        for (const id in prev) {
+          if (activeIds.has(id) && prev[id]) {
+            clean[id] = true;
+          }
+        }
+        return clean;
+      });
+    }
     setLoading(false);
   };
 
@@ -822,6 +838,96 @@ export default function Dashboard() {
       setBlockTargetUser(null);
     } else {
       alert(error.message);
+    }
+  };
+
+  const batchToggleBlock = async (blockStatus: boolean) => {
+    const selectedIds = Object.keys(selectedUserIds).filter(id => selectedUserIds[id]);
+    if (selectedIds.length === 0) return;
+    
+    const message = blockStatus
+      ? (lang === 'ar' 
+         ? `هل أنت متأكد من حظر ${selectedIds.length} مستخدم؟ سيتم طردهم من هواتفهم فوراً.` 
+         : `Are you sure you want to block ${selectedIds.length} users? They will be logged out of their phones instantly.`)
+      : (lang === 'ar' 
+         ? `هل أنت متأكد من إلغاء حظر ${selectedIds.length} مستخدم؟` 
+         : `Are you sure you want to unblock ${selectedIds.length} users?`);
+         
+    if (!confirm(message)) return;
+    
+    setLoading(true);
+    const { error } = await supabase
+      .from('app_users')
+      .update({ is_blocked: blockStatus })
+      .in('id', selectedIds);
+      
+    if (!error) {
+      showToast(
+        lang === 'ar'
+          ? `تمت العملية بنجاح لـ ${selectedIds.length} مستخدم.`
+          : `Action completed successfully for ${selectedIds.length} users.`,
+        'success'
+      );
+      setSelectedUserIds({});
+      fetchUsers();
+    } else {
+      alert(error.message);
+    }
+    setLoading(false);
+  };
+
+  const batchForceLogout = async () => {
+    const selectedIds = Object.keys(selectedUserIds).filter(id => selectedUserIds[id]);
+    if (selectedIds.length === 0) return;
+    
+    const confirmed = confirm(
+      lang === 'ar'
+        ? `هل أنت متأكد من تسجيل الخروج الإجباري لـ ${selectedIds.length} مستخدم؟`
+        : `Are you sure you want to force logout ${selectedIds.length} users?`
+    );
+    if (!confirmed) return;
+    
+    setLoading(true);
+    try {
+      const selectedUsers = users.filter(u => selectedIds.includes(u.id));
+      
+      // Update local state optimistically
+      setUsers((prev: any[]) => prev.map((u: any) => {
+        if (selectedIds.includes(u.id)) {
+          const currentSettings = u.ui_settings || {};
+          return {
+            ...u,
+            ui_settings: { ...currentSettings, force_logout: true }
+          };
+        }
+        return u;
+      }));
+      
+      const promises = selectedUsers.map(user => {
+        const currentSettings = user.ui_settings || {};
+        const newSettings = {
+          ...currentSettings,
+          force_logout: true
+        };
+        return supabase
+          .from('app_users')
+          .update({ ui_settings: newSettings })
+          .eq('id', user.id);
+      });
+      
+      await Promise.all(promises);
+      showToast(
+        lang === 'ar'
+          ? `تم إرسال أمر تسجيل الخروج لـ ${selectedIds.length} مستخدم بنجاح.`
+          : `Force logout command sent to ${selectedIds.length} users successfully.`,
+        'success'
+      );
+      setSelectedUserIds({});
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+      fetchUsers();
     }
   };
 
@@ -1733,6 +1839,25 @@ export default function Dashboard() {
               <table className="w-full text-left">
                 <thead>
                   <tr className={`border-b ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                    <th className="pl-6 py-5 w-12 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds[u.id])}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const newSelected = { ...selectedUserIds };
+                          filteredUsers.forEach(u => {
+                            if (checked) {
+                              newSelected[u.id] = true;
+                            } else {
+                              delete newSelected[u.id];
+                            }
+                          });
+                          setSelectedUserIds(newSelected);
+                        }}
+                        className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                      />
+                    </th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.profile}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.pin}</th>
                     <th className="px-6 py-5 text-gray-400 font-medium">{t.proxy}</th>
@@ -1752,6 +1877,23 @@ export default function Dashboard() {
                         exit={{ opacity: 0, x: -20 }}
                         className={`transition-all group ${theme === 'dark' ? 'hover:bg-white/[0.02] divide-white/5' : 'hover:bg-gray-50 divide-gray-100'}`}
                       >
+                        <td className="pl-6 py-5 w-12 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedUserIds[user.id]}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const newSelected = { ...selectedUserIds };
+                              if (checked) {
+                                newSelected[user.id] = true;
+                              } else {
+                                delete newSelected[user.id];
+                              }
+                              setSelectedUserIds(newSelected);
+                            }}
+                            className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                          />
+                        </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg text-white">
@@ -1877,6 +2019,33 @@ export default function Dashboard() {
               </table>
             </div>
 
+            {/* Mobile Select All Bar */}
+            <div className={`md:hidden flex items-center justify-between p-4 rounded-2xl border mb-2 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+              <label className="flex items-center gap-3 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds[u.id])}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    const newSelected = { ...selectedUserIds };
+                    filteredUsers.forEach(u => {
+                      if (checked) {
+                        newSelected[u.id] = true;
+                      } else {
+                        delete newSelected[u.id];
+                      }
+                    });
+                    setSelectedUserIds(newSelected);
+                  }}
+                  className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                />
+                <span className={`font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{lang === 'ar' ? 'تحديد الكل' : 'Select All'}</span>
+              </label>
+              <span className={`text-xs px-2.5 py-1 rounded-full border ${theme === 'dark' ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-gray-100 border-gray-200 text-gray-600'}`}>
+                {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length} {lang === 'ar' ? 'محدد' : 'selected'}
+              </span>
+            </div>
+
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               <AnimatePresence mode="popLayout">
@@ -1892,6 +2061,21 @@ export default function Dashboard() {
                   >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedUserIds[user.id]}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const newSelected = { ...selectedUserIds };
+                          if (checked) {
+                            newSelected[user.id] = true;
+                          } else {
+                            delete newSelected[user.id];
+                          }
+                          setSelectedUserIds(newSelected);
+                        }}
+                        className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                      />
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white">
                         {user.username?.charAt(0).toUpperCase()}
                       </div>
@@ -2014,6 +2198,60 @@ export default function Dashboard() {
                 {t.noUsers}
               </div>
             )}
+
+            {/* Floating Bulk Action Bar */}
+            <AnimatePresence>
+              {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 50 }}
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-white/10 bg-[#16161a]/95 backdrop-blur-md max-w-full w-[90%] md:w-[600px] flex-col sm:flex-row"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs text-white">
+                      {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length}
+                    </span>
+                    <span className="text-sm font-semibold text-white">
+                      {lang === 'ar' ? 'مستخدمين محددين' : 'users selected'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <button
+                      onClick={() => batchToggleBlock(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>{lang === 'ar' ? 'حظر' : 'Block'}</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => batchToggleBlock(false)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>{lang === 'ar' ? 'فك حظر' : 'Unblock'}</span>
+                    </button>
+
+                    <button
+                      onClick={batchForceLogout}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setSelectedUserIds({})}
+                      className="px-2.5 py-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl text-xs font-medium transition-all"
+                    >
+                      {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ) : activeTab === 'config' ? (
           <div>
