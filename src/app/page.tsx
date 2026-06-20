@@ -46,7 +46,8 @@ import {
   Wallet,
   Coins,
   Save,
-  Check
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -319,7 +320,9 @@ export default function Dashboard() {
     rah_exchange_rate: '',
     rah_usd_payout_unit: '',
     rah_egp_payout_unit: '',
-    owner_id: ''
+    owner_id: '',
+    payoneer_email: '',
+    payout_status: 'waiting'
   });
 
   const [quickPaste, setQuickPaste] = useState('');
@@ -551,6 +554,19 @@ export default function Dashboard() {
     }
   };
 
+  const handleUpdatePayoutStatus = async (accountId: string, status: string) => {
+    const { error } = await supabase
+      .from('app_users')
+      .update({ payout_status: status })
+      .eq('id', accountId);
+    if (!error) {
+      showToast(lang === 'ar' ? 'تم تحديث حالة الدفع بنجاح' : 'Payout status updated successfully', 'success');
+      fetchUsers();
+    } else {
+      alert(error.message);
+    }
+  };
+
   const handleCreateTransaction = async (payload: {
     amount_usd?: number;
     amount_egp?: number;
@@ -760,6 +776,36 @@ export default function Dashboard() {
                   {lang === 'ar' ? 'افتراضي' : 'CLEAR'}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Withdrawal Cycle & Suspension Risks Info Banner */}
+        <div className={`p-6 rounded-[2rem] border relative overflow-hidden bg-gradient-to-r ${
+          theme === 'dark'
+            ? 'from-amber-500/10 via-red-500/5 to-transparent border-amber-500/20'
+            : 'from-amber-50 via-red-50/30 to-white border-amber-200'
+        }`}>
+          <div className="flex gap-4 items-start">
+            <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <h4 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {lang === 'ar' ? 'ℹ️ دورة السحب ومخاطر بايونير' : 'ℹ️ Withdrawal Cycle & Payoneer Risk Info'}
+              </h4>
+              <div className={`text-xs space-y-1.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p>
+                  {lang === 'ar'
+                    ? '⚠️ تظهر أزرار السحب في رينت يوم الخميس صباحاً (تقريباً 7:00 ص بتوقيت مصر). عند طلب السحب، تتجدول الدفعة لتصل بايونير خلال يومين.'
+                    : '⚠️ Rent withdrawal buttons appear on Thursday mornings (~7:00 AM Egypt time). Once requested, payouts are scheduled to reach Payoneer within 2 days.'}
+                </p>
+                <p>
+                  {lang === 'ar'
+                    ? '⚠️ تنبيه هام: عند ربط عدة حسابات رينت بحساب بايونير واحد، قد يتم تعليق دفعات بعض الحسابات بينما تمر دفعات الحسابات الأخرى بسلام.'
+                    : '⚠️ Important: When linking multiple Rent accounts to a single Payoneer, some withdrawals may get suspended/held while others clear successfully.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1114,16 +1160,54 @@ export default function Dashboard() {
                                   theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'
                                 }`}
                               >
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
+                                <div className="space-y-2 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`text-sm font-bold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
                                       {acc.username}
                                     </span>
                                     <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                    {acc.payoneer_email && (
+                                      <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-medium font-mono">
+                                        {lang === 'ar' ? 'بايونير' : 'Payoneer'}: {acc.payoneer_email}
+                                      </span>
+                                    )}
                                   </div>
-                                  <p className="text-[11px] text-gray-500">
-                                    {accHours.toFixed(1)} hrs • {accSalary} EGP
-                                  </p>
+                                  <div className="flex items-center gap-3 flex-wrap">
+                                    <p className="text-[11px] text-gray-500 whitespace-nowrap">
+                                      {accHours.toFixed(1)} hrs • {accSalary} EGP
+                                    </p>
+                                    <select
+                                      value={acc.payout_status || 'waiting'}
+                                      onChange={e => handleUpdatePayoutStatus(acc.id, e.target.value)}
+                                      className={`text-[10px] font-bold border rounded-lg px-2 py-1 outline-none transition-all cursor-pointer ${
+                                        acc.payout_status === 'cleared'
+                                          ? 'bg-green-500/15 border-green-500/30 text-green-400'
+                                          : acc.payout_status === 'requested'
+                                          ? 'bg-yellow-500/15 border-yellow-500/30 text-yellow-400'
+                                          : acc.payout_status === 'ready'
+                                          ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                                          : acc.payout_status === 'suspended'
+                                          ? 'bg-orange-500/15 border-orange-500/30 text-orange-400'
+                                          : 'bg-gray-500/15 border-gray-500/30 text-gray-400'
+                                      }`}
+                                    >
+                                      <option value="waiting" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                        ⚪ {lang === 'ar' ? 'لم تبدأ الدورة' : 'Cycle Waiting'}
+                                      </option>
+                                      <option value="ready" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                        🔴 {lang === 'ar' ? 'جاهز للطلب' : 'Ready to Request'}
+                                      </option>
+                                      <option value="requested" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                        🟡 {lang === 'ar' ? 'قيد الانتظار' : 'Requested / Pending'}
+                                      </option>
+                                      <option value="cleared" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                        🟢 {lang === 'ar' ? 'تم الوصول' : 'Cleared / Received'}
+                                      </option>
+                                      <option value="suspended" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                        ⚠️ {lang === 'ar' ? 'معلقة / مشكلة' : 'Suspended / Issue'}
+                                      </option>
+                                    </select>
+                                  </div>
                                 </div>
                                 
                                 {/* Edit Due Field */}
@@ -1708,7 +1792,9 @@ export default function Dashboard() {
       rah_exchange_rate: user.ui_settings?.rah?.exchange_rate?.toString() || '',
       rah_usd_payout_unit: user.ui_settings?.rah?.usd_payout_unit?.toString() || '',
       rah_egp_payout_unit: user.ui_settings?.rah?.egp_payout_unit?.toString() || '',
-      owner_id: user.owner_id || ''
+      owner_id: user.owner_id || '',
+      payoneer_email: user.payoneer_email || '',
+      payout_status: user.payout_status || 'waiting'
     });
     setIsModalOpen(true);
   };
@@ -1755,7 +1841,9 @@ export default function Dashboard() {
         rah_hours_offset: '', rah_earnings_offset: '', rah_rate_override: '',
         rah_egp_rate: '', rah_exchange_rate: '',
         rah_usd_payout_unit: '', rah_egp_payout_unit: '',
-        owner_id: ''
+        owner_id: '',
+        payoneer_email: '',
+        payout_status: 'waiting'
       });
       setIsModalOpen(true);
     } else {
@@ -1891,7 +1979,9 @@ export default function Dashboard() {
       rah_human_id: formData.rah_human_id?.trim() || null,
       rah_api_key: formData.rah_api_key?.trim() || null,
       ui_settings,
-      owner_id: formData.owner_id || null
+      owner_id: formData.owner_id || null,
+      payoneer_email: formData.payoneer_email?.trim() || null,
+      payout_status: formData.payout_status || 'waiting'
     };
 
     // Double check duplicate validation just in case
@@ -2699,6 +2789,37 @@ export default function Dashboard() {
                                     </span>
                                   );
                                 })()}
+                                {!user.is_manager && (
+                                  <>
+                                    {user.payoneer_email && (
+                                      <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono">
+                                        📧 Payoneer: {user.payoneer_email}
+                                      </span>
+                                    )}
+                                    <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider ${
+                                      user.payout_status === 'cleared'
+                                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                        : user.payout_status === 'requested'
+                                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                        : user.payout_status === 'ready'
+                                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                        : user.payout_status === 'suspended'
+                                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                        : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                    }`}>
+                                      {user.payout_status === 'cleared' && '🟢 '}
+                                      {user.payout_status === 'requested' && '🟡 '}
+                                      {user.payout_status === 'ready' && '🔴 '}
+                                      {user.payout_status === 'suspended' && '⚠️ '}
+                                      {user.payout_status === 'waiting' && '⚪ '}
+                                      {user.payout_status === 'cleared' && (lang === 'ar' ? 'تم الوصول' : 'Cleared')}
+                                      {user.payout_status === 'requested' && (lang === 'ar' ? 'قيد الانتظار' : 'Requested')}
+                                      {user.payout_status === 'ready' && (lang === 'ar' ? 'جاهز للطلب' : 'Ready')}
+                                      {user.payout_status === 'suspended' && (lang === 'ar' ? 'معلقة' : 'Suspended')}
+                                      {(user.payout_status === 'waiting' || !user.payout_status) && (lang === 'ar' ? 'لم تبدأ الدورة' : 'Waiting')}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                               <p className="text-gray-500 text-sm">{user.phone_number}</p>
                               {user.email && (
@@ -2910,6 +3031,37 @@ export default function Dashboard() {
                               </span>
                             );
                           })()}
+                          {!user.is_manager && (
+                            <>
+                              {user.payoneer_email && (
+                                <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono">
+                                  📧 Payoneer: {user.payoneer_email}
+                                </span>
+                              )}
+                              <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider ${
+                                user.payout_status === 'cleared'
+                                  ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                  : user.payout_status === 'requested'
+                                  ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                  : user.payout_status === 'ready'
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                  : user.payout_status === 'suspended'
+                                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                  : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                              }`}>
+                                {user.payout_status === 'cleared' && '🟢 '}
+                                {user.payout_status === 'requested' && '🟡 '}
+                                {user.payout_status === 'ready' && '🔴 '}
+                                {user.payout_status === 'suspended' && '⚠️ '}
+                                {user.payout_status === 'waiting' && '⚪ '}
+                                {user.payout_status === 'cleared' && (lang === 'ar' ? 'تم الوصول' : 'Cleared')}
+                                {user.payout_status === 'requested' && (lang === 'ar' ? 'قيد الانتظار' : 'Requested')}
+                                {user.payout_status === 'ready' && (lang === 'ar' ? 'جاهز للطلب' : 'Ready')}
+                                {user.payout_status === 'suspended' && (lang === 'ar' ? 'معلقة' : 'Suspended')}
+                                {(user.payout_status === 'waiting' || !user.payout_status) && (lang === 'ar' ? 'لم تبدأ الدورة' : 'Waiting')}
+                              </span>
+                            </>
+                          )}
                         </div>
                         <p className="text-gray-500 text-sm">{user.phone_number}</p>
                         {user.email && (
@@ -4153,29 +4305,45 @@ export default function Dashboard() {
                     </label>
                   </div>
                   {!formData.is_manager && (
-                    <div className="space-y-2">
-                      <label className="text-sm text-gray-400 ml-1">
-                        {lang === 'ar' ? 'صاحب الحساب (الموظف)' : 'Account Owner (Employee)'}
-                      </label>
-                      <select
-                        value={formData.owner_id || ''}
-                        onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
-                        className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
-                          theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
-                        }`}
-                      >
-                        <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
-                          {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
-                        </option>
-                        {users
-                          .filter(u => !u.is_manager && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
-                          .map(u => (
-                            <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
-                              {u.username}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-400 ml-1">
+                          {lang === 'ar' ? 'صاحب الحساب (الموظف)' : 'Account Owner (Employee)'}
+                        </label>
+                        <select
+                          value={formData.owner_id || ''}
+                          onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
+                          className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                            theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                          }`}
+                        >
+                          <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                            {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
+                          </option>
+                          {users
+                            .filter(u => !u.is_manager && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
+                            .map(u => (
+                              <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                {u.username}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-400 ml-1">
+                          {lang === 'ar' ? 'بريد بايونير (Payoneer Email)' : 'Payoneer Email'}
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.payoneer_email || ''}
+                          onChange={e => setFormData({ ...formData, payoneer_email: e.target.value })}
+                          className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                            theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                          }`}
+                          placeholder="email@payoneer.com"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
 
