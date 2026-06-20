@@ -48,6 +48,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboard() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [remoteConfigs, setRemoteConfigs] = useState<any[]>([]);
@@ -120,6 +121,7 @@ export default function Dashboard() {
   }, [toast]);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('isSidebarCollapsed');
     if (saved !== null) {
       setIsSidebarCollapsed(saved === 'true');
@@ -2200,58 +2202,61 @@ export default function Dashboard() {
             )}
 
             {/* Floating Bulk Action Bar */}
-            <AnimatePresence>
-              {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 50 }}
-                  className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-white/10 bg-[#16161a]/95 backdrop-blur-md max-w-full w-[90%] md:w-[600px] flex-col sm:flex-row"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs text-white">
-                      {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length}
-                    </span>
-                    <span className="text-sm font-semibold text-white">
-                      {lang === 'ar' ? 'مستخدمين محددين' : 'users selected'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 flex-wrap justify-center">
-                    <button
-                      onClick={() => batchToggleBlock(true)}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all"
-                    >
-                      <Ban className="w-3.5 h-3.5" />
-                      <span>{lang === 'ar' ? 'حظر' : 'Block'}</span>
-                    </button>
+            {mounted && typeof window !== 'undefined' && createPortal(
+              <AnimatePresence>
+                {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 50 }}
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-white/10 bg-[#16161a]/95 backdrop-blur-md max-w-full w-[90%] md:w-[600px] flex-col sm:flex-row"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xs text-white">
+                        {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length}
+                      </span>
+                      <span className="text-sm font-semibold text-white">
+                        {lang === 'ar' ? 'مستخدمين محددين' : 'users selected'}
+                      </span>
+                    </div>
                     
-                    <button
-                      onClick={() => batchToggleBlock(false)}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>{lang === 'ar' ? 'فك حظر' : 'Unblock'}</span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                      <button
+                        onClick={() => batchToggleBlock(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'حظر' : 'Block'}</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => batchToggleBlock(false)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'فك حظر' : 'Unblock'}</span>
+                      </button>
 
-                    <button
-                      onClick={batchForceLogout}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => setSelectedUserIds({})}
-                      className="px-2.5 py-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl text-xs font-medium transition-all"
-                    >
-                      {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <button
+                        onClick={batchForceLogout}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setSelectedUserIds({})}
+                        className="px-2.5 py-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl text-xs font-medium transition-all"
+                      >
+                        {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              document.body
+            )}
           </div>
         ) : activeTab === 'config' ? (
           <div>
