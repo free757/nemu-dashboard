@@ -55,6 +55,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; username: string; is_team_manager: boolean } | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [remoteConfigs, setRemoteConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +89,12 @@ export default function Dashboard() {
     if (!auth) {
       router.replace('/login');
     } else {
+      const parsed = JSON.parse(auth);
+      setCurrentUser(parsed);
       setIsAuthChecked(true);
+      if (parsed?.is_team_manager) {
+        setActiveTab('users');
+      }
     }
   }, [router]);
 
@@ -308,6 +314,7 @@ export default function Dashboard() {
     proxy_location: '',
     proxy_timezone: '',
     is_manager: false,
+    is_team_manager: false,
     email: '',
     password: '',
     verification_code: '',
@@ -414,6 +421,7 @@ export default function Dashboard() {
       quickPaste: 'Quick Paste (IP:Port:User:Pass)',
       quickPastePlaceholder: 'Paste proxy string here...',
       isManager: 'Is Manager (Dashboard Access)',
+      isTeamManager: 'Team Manager (Restricted to Team)',
       blockConfirm: 'Are you sure you want to block this user? They will be logged out of their phone instantly.',
       unblockConfirm: 'Are you sure you want to unblock this user?',
       notifTitle: 'Notification Title',
@@ -482,6 +490,7 @@ export default function Dashboard() {
       quickPaste: 'لصق سريع (IP:Port:User:Pass)',
       quickPastePlaceholder: 'الصق سطر البروكسي هنا...',
       isManager: 'مدير (صلاحية دخول لوحة التحكم)',
+      isTeamManager: 'مدير تيم (محدد بموظفيه فقط)',
       blockConfirm: 'هل أنت متأكد من حظر هذا المستخدم؟ سيتم طرده وتسجيل خروجه من الهاتف فوراً.',
       unblockConfirm: 'هل أنت متأكد من إلغاء حظر هذا المستخدم؟',
       notifTitle: 'عنوان الإشعار',
@@ -499,7 +508,15 @@ export default function Dashboard() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+    const auth = sessionStorage.getItem('dashboard_auth');
+    const authUser = auth ? JSON.parse(auth) : null;
+
+    let query = supabase.from('app_users').select('*');
+    if (authUser?.is_team_manager) {
+      query = query.or(`id.eq.${authUser.id},owner_id.eq.${authUser.id}`);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     if (!error) {
       setUsers(data);
       // Clean up selectedUserIds to remove any users that are no longer in the list
@@ -1485,11 +1502,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    const auth = sessionStorage.getItem('dashboard_auth');
+    const authUser = auth ? JSON.parse(auth) : null;
+    const isTeamManager = authUser?.is_team_manager || false;
+
     fetchUsers();
-    fetchConfigs();
-    fetchNotifications();
-    fetchMiscItems();
-    fetchOverlayUiSettings();
+
+    if (!isTeamManager) {
+      fetchConfigs();
+      fetchNotifications();
+      fetchMiscItems();
+      fetchOverlayUiSettings();
+    }
 
     // Realtime channel for app_users updates
     const channel = supabase
@@ -1499,11 +1523,17 @@ export default function Dashboard() {
         { event: '*', schema: 'public', table: 'app_users' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setUsers((prev) => [payload.new as any, ...prev]);
+            const newUser = payload.new as any;
+            if (!isTeamManager || newUser.id === authUser?.id || newUser.owner_id === authUser?.id) {
+              setUsers((prev) => [newUser, ...prev]);
+            }
           } else if (payload.eventType === 'UPDATE') {
-            setUsers((prev) =>
-              prev.map((user) => (user.id === payload.new.id ? { ...user, ...payload.new } : user))
-            );
+            const updatedUser = payload.new as any;
+            if (!isTeamManager || updatedUser.id === authUser?.id || updatedUser.owner_id === authUser?.id) {
+              setUsers((prev) =>
+                prev.map((user) => (user.id === updatedUser.id ? { ...user, ...updatedUser } : user))
+              );
+            }
           } else if (payload.eventType === 'DELETE') {
             setUsers((prev) => prev.filter((user) => user.id === payload.old.id));
           }
@@ -1512,41 +1542,47 @@ export default function Dashboard() {
       .subscribe();
 
     // Realtime channel for financial_transactions updates
-    const txChannel = supabase
-      .channel('financial_transactions_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'financial_transactions' },
-        () => {
-          fetchTransactions();
-        }
-      )
-      .subscribe();
+    let txChannel: any = null;
+    if (!isTeamManager) {
+      txChannel = supabase
+        .channel('financial_transactions_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'financial_transactions' },
+          () => {
+            fetchTransactions();
+          }
+        )
+        .subscribe();
+    }
 
     // Realtime channel for remote_configs updates
-    const configChannel = supabase
-      .channel('remote_configs_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'remote_configs' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setRemoteConfigs((prev) => [payload.new as any, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setRemoteConfigs((prev) =>
-              prev.map((config) => (config.id === payload.new.id ? { ...config, ...payload.new } : config))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setRemoteConfigs((prev) => prev.filter((config) => config.id === payload.old.id));
+    let configChannel: any = null;
+    if (!isTeamManager) {
+      configChannel = supabase
+        .channel('remote_configs_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'remote_configs' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setRemoteConfigs((prev) => [payload.new as any, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              setRemoteConfigs((prev) =>
+                prev.map((config) => (config.id === payload.new.id ? { ...config, ...payload.new } : config))
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setRemoteConfigs((prev) => prev.filter((config) => config.id === payload.old.id));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(configChannel);
-      supabase.removeChannel(txChannel);
+      if (channel) supabase.removeChannel(channel);
+      if (configChannel) supabase.removeChannel(configChannel);
+      if (txChannel) supabase.removeChannel(txChannel);
     };
   }, []);
 
@@ -1780,6 +1816,7 @@ export default function Dashboard() {
       proxy_location: user.proxy_location || '',
       proxy_timezone: user.proxy_timezone || '',
       is_manager: user.is_manager || false,
+      is_team_manager: user.is_team_manager || false,
       email: user.email || '',
       password: user.password || '',
       verification_code: user.verification_code || '',
@@ -1835,7 +1872,7 @@ export default function Dashboard() {
       setFormData({
         pin: '', username: '', phone_number: '',
         proxy_ip: '', proxy_port: '', proxy_user: '', proxy_pass: '',
-        proxy_location: '', proxy_timezone: '', is_manager: false,
+        proxy_location: '', proxy_timezone: '', is_manager: false, is_team_manager: false,
         email: '', password: '', verification_code: '',
         rah_human_id: '', rah_api_key: '',
         rah_hours_offset: '', rah_earnings_offset: '', rah_rate_override: '',
@@ -1973,6 +2010,8 @@ export default function Dashboard() {
       proxy_location: formData.proxy_location?.trim() || null,
       proxy_timezone: formData.proxy_timezone?.trim() || null,
       phone_number: formData.phone_number?.trim() || null,
+      is_manager: formData.is_manager,
+      is_team_manager: formData.is_team_manager,
       email: formData.email?.trim() || null,
       password: formData.password?.trim() || null,
       verification_code: formData.verification_code?.trim() || null,
@@ -2523,41 +2562,45 @@ export default function Dashboard() {
                   <Users className="w-5 h-5 flex-shrink-0" />
                   {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.users}</motion.span>}
                 </button>
-                <button 
-                  onClick={() => { setActiveTab('accounts'); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <DollarSign className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{lang === 'ar' ? 'الحسابات والمالية' : 'Financial Accounts'}</motion.span>}
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('config'); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <Settings className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('tools'); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'tools' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <Bot className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.tools}</motion.span>}
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('notifications'); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'notifications' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <Bell className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.notifications}</motion.span>}
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('misc'); setIsMobileMenuOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'misc' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <Layers className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.misc}</motion.span>}
-                </button>
+                {!currentUser?.is_team_manager && (
+                  <>
+                    <button 
+                      onClick={() => { setActiveTab('accounts'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'accounts' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <DollarSign className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{lang === 'ar' ? 'الحسابات والمالية' : 'Financial Accounts'}</motion.span>}
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('config'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'config' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <Settings className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.config}</motion.span>}
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('tools'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'tools' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <Bot className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.tools}</motion.span>}
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('notifications'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'notifications' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <Bell className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.notifications}</motion.span>}
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('misc'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'misc' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <Layers className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.misc}</motion.span>}
+                    </button>
+                  </>
+                )}
               </nav>
 
               <div className={`p-4 border-t border-white/5 space-y-4 ${isSidebarCollapsed ? 'items-center flex flex-col px-0' : ''}`}>
@@ -4319,12 +4362,33 @@ export default function Dashboard() {
                       <input 
                         type="checkbox" 
                         checked={formData.is_manager} 
-                        onChange={e => setFormData({...formData, is_manager: e.target.checked})} 
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setFormData({
+                            ...formData, 
+                            is_manager: checked,
+                            is_team_manager: checked ? formData.is_team_manager : false
+                          });
+                        }} 
                         className="sr-only peer" 
                       />
                       <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
+                  {formData.is_manager && (
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all h-[56px] self-end ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                      <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.isTeamManager}</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.is_team_manager} 
+                          onChange={e => setFormData({...formData, is_team_manager: e.target.checked})} 
+                          className="sr-only peer" 
+                        />
+                        <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  )}
                   {!formData.is_manager && (
                     <>
                       <div className="space-y-2">
@@ -4336,13 +4400,13 @@ export default function Dashboard() {
                           onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
                           className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
                             theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
-                          }`}
+                           }`}
                         >
                           <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
                             {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
                           </option>
                           {users
-                            .filter(u => !u.is_manager && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
+                            .filter(u => (!u.is_manager || u.is_team_manager) && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
                             .map(u => (
                               <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
                                 {u.username}

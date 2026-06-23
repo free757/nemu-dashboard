@@ -107,7 +107,7 @@ export default function LoginPage() {
     try {
       const { data, error } = await supabase
         .from('app_users')
-        .select('id, username, pin, is_manager')
+        .select('id, username, pin, is_manager, is_team_manager')
         .eq('pin', enteredPin)
         .eq('is_manager', true)
         .single();
@@ -124,7 +124,11 @@ export default function LoginPage() {
         }, 600);
       } else {
         // Success — store session and redirect
-        sessionStorage.setItem('dashboard_auth', JSON.stringify({ id: data.id, username: data.username }));
+        sessionStorage.setItem('dashboard_auth', JSON.stringify({ 
+          id: data.id, 
+          username: data.username,
+          is_team_manager: data.is_team_manager || false
+        }));
         router.push('/');
       }
     } catch {
