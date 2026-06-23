@@ -2018,7 +2018,9 @@ export default function Dashboard() {
       rah_human_id: formData.rah_human_id?.trim() || null,
       rah_api_key: formData.rah_api_key?.trim() || null,
       ui_settings,
-      owner_id: formData.owner_id || null,
+      owner_id: currentUser?.is_team_manager 
+        ? (editingUser?.id === currentUser.id ? null : (editingUser ? formData.owner_id : currentUser.id)) 
+        : (formData.owner_id || null),
       payoneer_email: formData.payoneer_email?.trim() || null,
       payout_status: formData.payout_status || 'waiting'
     };
@@ -4356,295 +4358,302 @@ export default function Dashboard() {
                       placeholder="+20123456789"
                     />
                   </div>
-                  <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all h-[56px] self-end ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.isManager}</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={formData.is_manager} 
-                        onChange={e => {
-                          const checked = e.target.checked;
-                          setFormData({
-                            ...formData, 
-                            is_manager: checked,
-                            is_team_manager: checked ? formData.is_team_manager : false
-                          });
-                        }} 
-                        className="sr-only peer" 
-                      />
-                      <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                  {formData.is_manager && (
-                    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all h-[56px] self-end ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                      <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.isTeamManager}</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={formData.is_team_manager} 
-                          onChange={e => setFormData({...formData, is_team_manager: e.target.checked})} 
-                          className="sr-only peer" 
-                        />
-                        <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  )}
-                  {!formData.is_manager && (
+                  {!currentUser?.is_team_manager && (
                     <>
-                      <div className="space-y-2">
-                        <label className="text-sm text-gray-400 ml-1">
-                          {lang === 'ar' ? 'صاحب الحساب (الموظف)' : 'Account Owner (Employee)'}
+                      <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all h-[56px] self-end ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                        <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.isManager}</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={formData.is_manager} 
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              setFormData({
+                                ...formData, 
+                                is_manager: checked,
+                                is_team_manager: checked ? formData.is_team_manager : false
+                              });
+                            }} 
+                            className="sr-only peer" 
+                          />
+                          <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
-                        <select
-                          value={formData.owner_id || ''}
-                          onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
-                          className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
-                            theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
-                           }`}
-                        >
-                          <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
-                            {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
-                          </option>
-                          {users
-                            .filter(u => (!u.is_manager || u.is_team_manager) && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
-                            .map(u => (
-                              <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
-                                {u.username}
+                      </div>
+                      {formData.is_manager && (
+                        <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all h-[56px] self-end ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                          <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t.isTeamManager}</span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={formData.is_team_manager} 
+                              onChange={e => setFormData({...formData, is_team_manager: e.target.checked})} 
+                              className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
+                        </div>
+                      )}
+                      {!formData.is_manager && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-sm text-gray-400 ml-1">
+                              {lang === 'ar' ? 'صاحب الحساب (الموظف)' : 'Account Owner (Employee)'}
+                            </label>
+                            <select
+                              value={formData.owner_id || ''}
+                              onChange={e => setFormData({ ...formData, owner_id: e.target.value })}
+                              className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                                theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                               }`}
+                            >
+                              <option value="" className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                {lang === 'ar' ? 'بدون صاحب (هو الموظف الأساسي)' : 'None (This is the primary employee)'}
                               </option>
-                            ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm text-gray-400 ml-1">
-                          {lang === 'ar' ? 'بريد بايونير (Payoneer Email)' : 'Payoneer Email'}
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.payoneer_email || ''}
-                          onChange={e => setFormData({ ...formData, payoneer_email: e.target.value })}
-                          className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
-                            theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
-                          }`}
-                          placeholder="email@payoneer.com"
-                        />
-                      </div>
+                              {users
+                                .filter(u => (!u.is_manager || u.is_team_manager) && !u.owner_id && (editingUser ? u.id !== editingUser.id : true))
+                                .map(u => (
+                                  <option key={u.id} value={u.id} className={theme === 'dark' ? 'bg-[#111]' : 'bg-white'}>
+                                    {u.username}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm text-gray-400 ml-1">
+                              {lang === 'ar' ? 'بريد بايونير (Payoneer Email)' : 'Payoneer Email'}
+                            </label>
+                            <input
+                              type="email"
+                              value={formData.payoneer_email || ''}
+                              onChange={e => setFormData({ ...formData, payoneer_email: e.target.value })}
+                              className={`w-full border rounded-2xl p-4 outline-none focus:border-blue-500 transition-all ${
+                                theme === 'dark' ? 'bg-white/5 border-white/5 text-white' : 'bg-gray-50 border-gray-100 text-gray-900'
+                              }`}
+                              placeholder="email@payoneer.com"
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
 
-                {/* Microsoft Credentials Section */}
-                <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                  <h3 className="text-sm font-bold text-orange-500 flex items-center gap-2 uppercase tracking-widest">
-                    <ShieldCheck className="w-4 h-4" /> {t.microsoftCreds}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                        {t.microsoftEmail}
-                      </label>
-                      <input 
-                        type="email"
-                        value={formData.email}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setFormData({...formData, email: val});
-                          const trimmed = val.trim().toLowerCase();
-                          if (!trimmed) {
-                            setEmailError('');
-                          } else {
-                            const duplicate = users.find(u => u.email?.trim().toLowerCase() === trimmed && (!editingUser || u.id !== editingUser.id));
-                            if (duplicate) {
-                              setEmailError(lang === 'ar' ? `⚠️ البريد الإلكتروني مستخدم بالفعل من قبل الموظف: ${duplicate.username}` : `⚠️ Email already used by: ${duplicate.username}`);
-                            } else {
-                              setEmailError('');
-                            }
-                          }
-                        }}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'} ${emailError ? 'border-red-500/50 focus:border-red-500' : ''}`}
-                        placeholder="username@outlook.com / company.com"
-                      />
-                      {emailError && (
-                        <p className="text-red-500 text-xs ml-1 font-semibold animate-pulse">{emailError}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                        {t.microsoftPassword}
-                      </label>
-                      <input 
-                        type="text"
-                        value={formData.password}
-                        onChange={e => setFormData({...formData, password: e.target.value})}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                        placeholder="••••••••••••"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                        {t.verificationCode}
-                      </label>
-                      <input 
-                        type="text"
-                        value={formData.verification_code}
-                        onChange={e => setFormData({...formData, verification_code: e.target.value})}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                        placeholder="e.g. 123 456"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* RentAHuman Integration Section */}
-                <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                  <h3 className="text-sm font-bold text-purple-500 flex items-center gap-2 uppercase tracking-widest">
-                    <Bot className="w-4 h-4" /> {t.rahTitle}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                        {t.rahHumanId}
-                      </label>
-                      <input 
-                        type="text"
-                        value={formData.rah_human_id}
-                        onChange={e => setFormData({...formData, rah_human_id: e.target.value})}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                        placeholder="e.g. secretboss001 or Pt4Z1msFXpnKAZvTtPbL"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                        {t.rahApiKey}
-                      </label>
-                      <input 
-                        type="text"
-                        value={formData.rah_api_key}
-                        onChange={e => setFormData({...formData, rah_api_key: e.target.value})}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                        placeholder="rah_live_..."
-                      />
-                    </div>
-                  </div>
-
-
-
-                  <div className="border-t border-dashed border-white/10 pt-4 space-y-4">
-                    <span className="text-xs font-bold text-emerald-400 block uppercase tracking-wider">
-                      {lang === 'ar' ? 'حسابات الدفع والربح بالجنيه المصري (EGP Payout Accounting)' : 'EGP Payout Accounting & Exchange Rate'}
-                    </span>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                          {lang === 'ar' ? 'لكل كم دولار ($)' : 'USD Payout Unit ($)'}
-                        </label>
-                        <input 
-                          type="number"
-                          step="any"
-                          value={formData.rah_usd_payout_unit}
-                          onChange={e => setFormData({...formData, rah_usd_payout_unit: e.target.value})}
-                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                          placeholder="e.g. 100 (Default)"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                          {lang === 'ar' ? 'الجنيه المصري المقابل' : 'EGP Payout Value'}
-                        </label>
-                        <input 
-                          type="number"
-                          step="any"
-                          value={formData.rah_egp_payout_unit}
-                          onChange={e => setFormData({...formData, rah_egp_payout_unit: e.target.value})}
-                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                          placeholder="e.g. 1000 (Default)"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                          {lang === 'ar' ? 'سعر صرف الدولار (EGP/$)' : 'USD to EGP Exchange Rate'}
-                        </label>
-                        <input 
-                          type="number"
-                          step="any"
-                          value={formData.rah_exchange_rate}
-                          onChange={e => setFormData({...formData, rah_exchange_rate: e.target.value})}
-                          className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
-                          placeholder="e.g. 48.5"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
-                  <h3 className="text-sm font-bold text-blue-500 flex items-center gap-2 uppercase tracking-widest">
-                    <Globe className="w-4 h-4" /> {t.proxyConfig}
-                  </h3>
-                  
-                  {/* Quick Paste Input */}
-                  <div className="space-y-2">
-                    <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
-                      {t.quickPaste}
-                    </label>
-                    <div className="relative">
-                      <input 
-                        value={quickPaste}
-                        onChange={e => handleQuickPasteChange(e.target.value)}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all font-mono text-sm ${theme === 'dark' ? 'bg-black/40 border-white/5 text-blue-400 placeholder-gray-600' : 'bg-white border-gray-200 text-blue-600 placeholder-gray-400'}`}
-                        placeholder={t.quickPastePlaceholder}
-                      />
-                      {quickPaste && (
-                        <div className="absolute right-3 top-3 text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          Auto-parsed!
+                {!currentUser?.is_team_manager && (
+                  <>
+                    {/* Microsoft Credentials Section */}
+                    <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                      <h3 className="text-sm font-bold text-orange-500 flex items-center gap-2 uppercase tracking-widest">
+                        <ShieldCheck className="w-4 h-4" /> {t.microsoftCreds}
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                            {t.microsoftEmail}
+                          </label>
+                          <input 
+                            type="email"
+                            value={formData.email}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, email: val});
+                              const trimmed = val.trim().toLowerCase();
+                              if (!trimmed) {
+                                setEmailError('');
+                              } else {
+                                const duplicate = users.find(u => u.email?.trim().toLowerCase() === trimmed && (!editingUser || u.id !== editingUser.id));
+                                if (duplicate) {
+                                  setEmailError(lang === 'ar' ? `⚠️ البريد الإلكتروني مستخدم بالفعل من قبل الموظف: ${duplicate.username}` : `⚠️ Email already used by: ${duplicate.username}`);
+                                } else {
+                                  setEmailError('');
+                                }
+                              }
+                            }}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'} ${emailError ? 'border-red-500/50 focus:border-red-500' : ''}`}
+                            placeholder="username@outlook.com / company.com"
+                          />
+                          {emailError && (
+                            <p className="text-red-500 text-xs ml-1 font-semibold animate-pulse">{emailError}</p>
+                          )}
                         </div>
-                      )}
+                        <div className="space-y-2">
+                          <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                            {t.microsoftPassword}
+                          </label>
+                          <input 
+                            type="text"
+                            value={formData.password}
+                            onChange={e => setFormData({...formData, password: e.target.value})}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                            placeholder="••••••••••••"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                            {t.verificationCode}
+                          </label>
+                          <input 
+                            type="text"
+                            value={formData.verification_code}
+                            onChange={e => setFormData({...formData, verification_code: e.target.value})}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                            placeholder="e.g. 123 456"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="relative">
-                      <input 
-                        value={formData.proxy_ip}
-                        onChange={e => setFormData({...formData, proxy_ip: e.target.value})}
-                        className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                        placeholder={t.ip}
-                      />
+                    {/* RentAHuman Integration Section */}
+                    <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                      <h3 className="text-sm font-bold text-purple-500 flex items-center gap-2 uppercase tracking-widest">
+                        <Bot className="w-4 h-4" /> {t.rahTitle}
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                            {t.rahHumanId}
+                          </label>
+                          <input 
+                            type="text"
+                            value={formData.rah_human_id}
+                            onChange={e => setFormData({...formData, rah_human_id: e.target.value})}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                            placeholder="e.g. secretboss001 or Pt4Z1msFXpnKAZvTtPbL"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                            {t.rahApiKey}
+                          </label>
+                          <input 
+                            type="text"
+                            value={formData.rah_api_key}
+                            onChange={e => setFormData({...formData, rah_api_key: e.target.value})}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                            placeholder="rah_live_..."
+                          />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-dashed border-white/10 pt-4 space-y-4">
+                        <span className="text-xs font-bold text-emerald-400 block uppercase tracking-wider">
+                          {lang === 'ar' ? 'حسابات الدفع والربح بالجنيه المصري (EGP Payout Accounting)' : 'EGP Payout Accounting & Exchange Rate'}
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                              {lang === 'ar' ? 'لكل كم دولار ($)' : 'USD Payout Unit ($)'}
+                            </label>
+                            <input 
+                              type="number"
+                              step="any"
+                              value={formData.rah_usd_payout_unit}
+                              onChange={e => setFormData({...formData, rah_usd_payout_unit: e.target.value})}
+                              className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                              placeholder="e.g. 100 (Default)"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                              {lang === 'ar' ? 'الجنيه المصري المقابل' : 'EGP Payout Value'}
+                            </label>
+                            <input 
+                              type="number"
+                              step="any"
+                              value={formData.rah_egp_payout_unit}
+                              onChange={e => setFormData({...formData, rah_egp_payout_unit: e.target.value})}
+                              className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                              placeholder="e.g. 1000 (Default)"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                              {lang === 'ar' ? 'سعر صرف الدولار (EGP/$)' : 'USD to EGP Exchange Rate'}
+                            </label>
+                            <input 
+                              type="number"
+                              step="any"
+                              value={formData.rah_exchange_rate}
+                              onChange={e => setFormData({...formData, rah_exchange_rate: e.target.value})}
+                              className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                              placeholder="e.g. 48.5"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <input 
-                      type="number"
-                      value={formData.proxy_port}
-                      onChange={e => setFormData({...formData, proxy_port: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.port}
-                    />
-                    <input 
-                      value={formData.proxy_user}
-                      onChange={e => setFormData({...formData, proxy_user: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.user}
-                    />
-                    <input 
-                      value={formData.proxy_pass}
-                      onChange={e => setFormData({...formData, proxy_pass: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.pass}
-                    />
-                    <input 
-                      value={formData.proxy_location}
-                      onChange={e => setFormData({...formData, proxy_location: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.location}
-                    />
-                    <input 
-                      value={formData.proxy_timezone}
-                      onChange={e => setFormData({...formData, proxy_timezone: e.target.value})}
-                      className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
-                      placeholder={t.timezone}
-                    />
-                  </div>
-                </div>
+
+                    {/* Proxy Configuration Section */}
+                    <div className={`p-6 rounded-3xl border space-y-6 ${theme === 'dark' ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+                      <h3 className="text-sm font-bold text-blue-500 flex items-center gap-2 uppercase tracking-widest">
+                        <Globe className="w-4 h-4" /> {t.proxyConfig}
+                      </h3>
+                      
+                      {/* Quick Paste Input */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-gray-400 font-bold uppercase tracking-wider block ml-1">
+                          {t.quickPaste}
+                        </label>
+                        <div className="relative">
+                          <input 
+                            value={quickPaste}
+                            onChange={e => handleQuickPasteChange(e.target.value)}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all font-mono text-sm ${theme === 'dark' ? 'bg-black/40 border-white/5 text-blue-400 placeholder-gray-600' : 'bg-white border-gray-200 text-blue-600 placeholder-gray-400'}`}
+                            placeholder={t.quickPastePlaceholder}
+                          />
+                          {quickPaste && (
+                            <div className="absolute right-3 top-3 text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              Auto-parsed!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="relative">
+                          <input 
+                            value={formData.proxy_ip}
+                            onChange={e => setFormData({...formData, proxy_ip: e.target.value})}
+                            className={`w-full border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                            placeholder={t.ip}
+                          />
+                        </div>
+                        <input 
+                          type="number"
+                          value={formData.proxy_port}
+                          onChange={e => setFormData({...formData, proxy_port: e.target.value})}
+                          className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                          placeholder={t.port}
+                        />
+                        <input 
+                          value={formData.proxy_user}
+                          onChange={e => setFormData({...formData, proxy_user: e.target.value})}
+                          className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                          placeholder={t.user}
+                        />
+                        <input 
+                          value={formData.proxy_pass}
+                          onChange={e => setFormData({...formData, proxy_pass: e.target.value})}
+                          className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                          placeholder={t.pass}
+                        />
+                        <input 
+                          value={formData.proxy_location}
+                          onChange={e => setFormData({...formData, proxy_location: e.target.value})}
+                          className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                          placeholder={t.location}
+                        />
+                        <input 
+                          value={formData.proxy_timezone}
+                          onChange={e => setFormData({...formData, proxy_timezone: e.target.value})}
+                          className={`border rounded-xl p-3 outline-none focus:border-blue-500 transition-all ${theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-gray-200'}`}
+                          placeholder={t.timezone}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-4 pt-4">
                   <button 
