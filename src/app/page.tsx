@@ -2700,7 +2700,7 @@ export default function Dashboard() {
                     />
                   </div>
                 )}
-                {activeTab === 'users' && (() => {
+                {/* {activeTab === 'users' && (() => {
                   const syncConfig = remoteConfigs.find(c => c.config_key === 'rentahuman_sync_trigger');
                   const syncStatus = syncConfig?.config_value?.status || 'idle';
                   const isSyncing = syncStatus === 'requested' || syncStatus === 'running';
@@ -2728,7 +2728,7 @@ export default function Dashboard() {
                       )}
                     </button>
                   );
-                })()}
+                })()} */}
                 <button 
                   onClick={activeTab === 'users' || activeTab === 'accounts' ? async () => { await fetchUsers(); await fetchTransactions(); } : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
                   className={`p-2 border md:p-2.5 rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
