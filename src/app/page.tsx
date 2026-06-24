@@ -2639,26 +2639,30 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto scroll-gpu">
-        <header className={`sticky top-0 z-30 px-4 md:px-8 py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#f8f9fa] border-gray-200'}`}>
+        <header className={`sticky top-0 z-30 px-4 md:px-8 py-3 md:py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#f8f9fa] border-gray-200'}`}>
           <div>
-            <h1 className="text-2xl font-bold mb-1">
+            <h1 className="text-xl md:text-2xl font-bold mb-0.5">
               {activeTab === 'users' ? t.title : activeTab === 'accounts' ? (lang === 'ar' ? 'الحسابات والمحفظة المالية' : 'Financial Accounts & Wallet') : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
             </h1>
-            <p className="text-gray-500 text-xs md:text-sm">
+            <p className="text-gray-500 text-xs md:text-sm hidden sm:block">
               {activeTab === 'users' ? t.subtitle : activeTab === 'accounts' ? (lang === 'ar' ? 'تتبع رواتب الموظفين، ساعات العمل، المصروفات، وأرباح الشركاء.' : 'Track employee salaries, hours, expenses, and partner profits.') : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
             </p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
-            <DashboardLiveClock lang={lang} theme={theme} />
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+            <div className="hidden lg:block">
+              <DashboardLiveClock lang={lang} theme={theme} />
+            </div>
             {activeTab === 'users' && (
-              <PayoutHeaderWidget lang={lang} theme={theme} />
+              <div className="hidden md:block">
+                <PayoutHeaderWidget lang={lang} theme={theme} />
+              </div>
             )}
             {activeTab === 'users' && (() => {
               const nm = users.filter(u => !u.is_manager);
               const on = nm.filter(u => isProxyOnline(u)).length;
               return (
-                <div className="flex items-center gap-2 mr-2">
+                <div className="hidden xl:flex items-center gap-2 mr-2">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'}`}>
                     <Users className="w-3.5 h-3.5 text-gray-400" />
                     <span className="text-gray-400">{lang === 'ar' ? 'الكل' : 'Total'}</span>
@@ -2680,14 +2684,14 @@ export default function Dashboard() {
             {activeTab !== 'tools' && (
               <>
                 {activeTab === 'users' && (
-                  <div className="relative w-48 sm:w-64">
+                  <div className="relative flex-1 sm:flex-none w-full sm:w-48 md:w-64">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                     <input 
                       type="text" 
                       placeholder={t.search}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`w-full border rounded-xl py-2.5 pl-10 pr-3 focus:border-blue-500 outline-none transition-all text-xs font-medium ${theme === 'dark' ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-950'}`}
+                      className={`w-full border rounded-xl py-2 pl-9 pr-3 focus:border-blue-500 outline-none transition-all text-xs font-medium ${theme === 'dark' ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-950'}`}
                     />
                   </div>
                 )}
@@ -2700,34 +2704,41 @@ export default function Dashboard() {
                     <button
                       onClick={handleTriggerRentAHumanSync}
                       disabled={isSyncing}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all text-sm border shrink-0 ${
+                      className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl font-bold transition-all text-xs md:text-sm border shrink-0 ${
                         isSyncing 
                           ? (theme === 'dark' ? 'bg-purple-600/25 text-purple-400 border-purple-500/20 cursor-not-allowed' : 'bg-purple-50 text-purple-500 border-purple-100 cursor-not-allowed')
                           : (theme === 'dark' ? 'bg-purple-600/10 text-purple-400 border-purple-500/20 hover:bg-purple-600/20 shadow-[0_0_12px_rgba(139,92,246,0.1)]' : 'bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100/80')
                       }`}
                     >
-                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                      <span>
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span className="hidden sm:inline">
                         {isSyncing 
                           ? (lang === 'ar' ? 'جاري المزامنة...' : 'Syncing...')
                           : (lang === 'ar' ? 'مزامنة RentAHuman' : 'Sync RentAHuman')}
                       </span>
+                      {isSyncing && (
+                        <span className="sm:hidden">
+                          {lang === 'ar' ? 'جاري...' : 'Sync...'}
+                        </span>
+                      )}
                     </button>
                   );
                 })()}
                 <button 
                   onClick={activeTab === 'users' || activeTab === 'accounts' ? async () => { await fetchUsers(); await fetchTransactions(); } : activeTab === 'config' ? fetchConfigs : activeTab === 'misc' ? fetchMiscItems : fetchNotifications}
-                  className={`p-2.5 border rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+                  className={`p-2 border md:p-2.5 rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                 >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
                 {activeTab !== 'accounts' && (
                   <button 
                     onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : activeTab === 'misc' ? () => { setEditingMisc(null); setMiscFormData({ title: '', content: '', display_order: 0 }); setIsMiscModalOpen(true); } : handleOpenAdd}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20 text-sm"
+                    className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20 text-xs md:text-sm shrink-0"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>{activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : activeTab === 'misc' ? t.addMisc : t.addNotification}</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">
+                      {activeTab === 'users' ? t.addNew : activeTab === 'config' ? t.addConfig : activeTab === 'misc' ? t.addMisc : t.addNotification}
+                    </span>
                   </button>
                 )}
               </>
