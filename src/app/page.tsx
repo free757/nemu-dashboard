@@ -1088,11 +1088,16 @@ export default function Dashboard() {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                       <div>
                         <div className="flex items-center gap-3">
-                          <div 
-                            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-lg animate-pulse"
-                            style={{ backgroundColor: employeeColor }}
-                          >
-                            {employee.username?.charAt(0).toUpperCase()}
+                          <div className="relative">
+                            <div 
+                              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-lg animate-pulse"
+                              style={{ backgroundColor: employeeColor }}
+                            >
+                              {employee.username?.charAt(0).toUpperCase()}
+                            </div>
+                            {isProxyOnline(employee) && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#111] rounded-full shadow-sm" />
+                            )}
                           </div>
                           <div>
                             <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
