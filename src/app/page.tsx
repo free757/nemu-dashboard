@@ -2831,8 +2831,13 @@ export default function Dashboard() {
                             {user.owner_id && (
                               <span className={`text-xl font-bold select-none mr-1 ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>↳</span>
                             )}
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg text-white">
-                              {user.username?.charAt(0).toUpperCase()}
+                            <div className="relative">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg text-white">
+                                {user.username?.charAt(0).toUpperCase()}
+                              </div>
+                              {isProxyOnline(user) && (
+                                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#111] rounded-full shadow-sm" />
+                              )}
                             </div>
                             <div>
                               <div className="flex items-center flex-wrap gap-2">
@@ -3097,8 +3102,13 @@ export default function Dashboard() {
                           {user.owner_id && (
                             <span className={`text-xl font-bold select-none mr-1 ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>↳</span>
                           )}
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-lg text-white">
-                            {user.username?.charAt(0).toUpperCase()}
+                          <div className="relative">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-lg text-white">
+                              {user.username?.charAt(0).toUpperCase()}
+                            </div>
+                            {isProxyOnline(user) && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#111] rounded-full shadow-sm" />
+                            )}
                           </div>
                           <div>
                             <div className="flex items-center flex-wrap gap-1.5">
