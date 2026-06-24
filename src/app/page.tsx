@@ -3101,16 +3101,16 @@ export default function Dashboard() {
                             {user.username?.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="flex items-center flex-wrap gap-2">
+                            <div className="flex items-center flex-wrap gap-1.5">
                               <h3 className={`font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.username}</h3>
                               {user.is_manager && (
-                                <span className="px-2 py-0.5 text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold uppercase tracking-wider">
-                                  Manager
+                                <span className="p-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg flex items-center justify-center" title="Manager">
+                                  <ShieldCheck className="w-3.5 h-3.5" />
                                 </span>
                               )}
                               {user.is_blocked && (
-                                <span className="px-2 py-0.5 text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-bold uppercase tracking-wider">
-                                  Blocked
+                                <span className="p-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg flex items-center justify-center" title="Blocked">
+                                  <Ban className="w-3.5 h-3.5" />
                                 </span>
                               )}
                             </div>
@@ -3137,24 +3137,24 @@ export default function Dashboard() {
                           {/* Status Badges Grid */}
                           <div className="flex flex-wrap gap-2">
                             {user.email && user.password && (
-                              <span className="px-2 py-0.5 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
-                                🔑 Auto-Login
+                              <span className="px-2 py-0.5 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full font-bold flex items-center gap-1" title={lang === 'ar' ? 'تسجيل دخول تلقائي' : 'Auto-Login'}>
+                                🔑 <span className="text-[9px] uppercase tracking-wider">{lang === 'ar' ? 'تلقائي' : 'Auto'}</span>
                               </span>
                             )}
                             {(() => {
                               const owner = user.owner_id ? users.find(u => u.id === user.owner_id) : null;
                               if (!owner) return null;
                               return (
-                                <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
-                                  👤 {lang === 'ar' ? `صاحب الحساب: ${owner.username}` : `Owner: ${owner.username}`}
+                                <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
+                                  👤 {owner.username}
                                 </span>
                               );
                             })()}
                             {!user.is_manager && (
                               <>
                                 {user.payoneer_email && (
-                                  <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono">
-                                    📧 Payoneer: {user.payoneer_email}
+                                  <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono flex items-center gap-1">
+                                    📧 {user.payoneer_email}
                                   </span>
                                 )}
                                 <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider ${
@@ -3249,34 +3249,42 @@ export default function Dashboard() {
                               <span>{lang === 'ar' ? 'تعديل البيانات' : 'Edit Profile'}</span>
                             </button>
                           ) : (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex gap-2 pt-2">
                               <button 
                                 onClick={() => handleToggleBlock(user)}
-                                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                title={user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}
+                                className={`flex-1 flex items-center justify-center py-3 rounded-xl font-bold transition-all ${
+                                  user.is_blocked 
+                                    ? 'bg-red-500/15 text-red-500 hover:bg-red-500/20' 
+                                    : (theme === 'dark' ? 'bg-white/5 text-gray-400 hover:bg-white/10' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+                                }`}
                               >
-                                <Ban className="w-4 h-4" />
-                                <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
+                                <Ban className="w-4.5 h-4.5" />
                               </button>
                               <button 
                                 onClick={() => handleForceLogout(user)}
-                                className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                                title={lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}
+                                className="flex-1 flex items-center justify-center py-3 bg-amber-500/10 text-amber-500 rounded-xl font-bold hover:bg-amber-500/20 transition-all border border-amber-500/10"
                               >
-                                <LogOut className="w-4 h-4" />
-                                <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                                <LogOut className="w-4.5 h-4.5" />
                               </button>
                               <button 
                                 onClick={() => handleOpenEdit(user)}
-                                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                title={lang === 'ar' ? 'تعديل' : 'Edit'}
+                                className={`flex-1 flex items-center justify-center py-3 rounded-xl font-bold transition-all ${
+                                  theme === 'dark' 
+                                    ? 'bg-blue-600/10 border border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
+                                    : 'bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-100/80'
+                                }`}
                               >
-                                <Edit2 className="w-4 h-4" />
-                                <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
+                                <Edit2 className="w-4.5 h-4.5" />
                               </button>
                               <button 
                                 onClick={() => handleDeleteClick(user.id, user.username)}
-                                className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                                title={lang === 'ar' ? 'حذف' : 'Delete'}
+                                className="flex-1 flex items-center justify-center py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all border border-red-500/10"
                               >
-                                <Trash2 className="w-4 h-4" />
-                                <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
+                                <Trash2 className="w-4.5 h-4.5" />
                               </button>
                             </div>
                           )}
