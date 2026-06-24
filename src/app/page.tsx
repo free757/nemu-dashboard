@@ -61,6 +61,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   // Notifications state
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -3031,206 +3032,237 @@ export default function Dashboard() {
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               <AnimatePresence mode="popLayout">
-                {filteredUsers.map((user) => (
-                  <motion.div 
-                    key={user.id}
-                    layout
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className={`p-6 rounded-3xl border shadow-sm space-y-6 ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
-                    style={{ 
-                      borderLeft: !user.is_manager ? `6px solid ${getOwnerHexColor(user.owner_id || user.id)}` : undefined,
-                      marginLeft: user.owner_id ? '1.5rem' : undefined
-                    }}
-                  >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      {!user.is_manager ? (
-                        <input
-                          type="checkbox"
-                          checked={!!selectedUserIds[user.id]}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            const newSelected = { ...selectedUserIds };
-                            if (checked) {
-                              newSelected[user.id] = true;
-                            } else {
-                              delete newSelected[user.id];
-                            }
-                            setSelectedUserIds(newSelected);
-                          }}
-                          className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
-                        />
-                      ) : null}
-                      {user.owner_id && (
-                        <span className={`text-xl font-bold select-none mr-1 ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>↳</span>
-                      )}
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl text-white">
-                        {user.username?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center flex-wrap gap-2">
-                          <h3 className={`font-bold text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.username}</h3>
-                          {user.is_manager && (
-                            <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold uppercase tracking-wider">
-                              Manager
-                            </span>
+                {filteredUsers.map((user) => {
+                  const isExpanded = expandedUserId === user.id;
+                  return (
+                    <motion.div 
+                      key={user.id}
+                      layout
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className={`p-6 rounded-3xl border shadow-sm transition-all duration-300 ${isExpanded ? 'space-y-6' : 'space-y-0'} ${theme === 'dark' ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}
+                      style={{ 
+                        borderLeft: !user.is_manager ? `6px solid ${getOwnerHexColor(user.owner_id || user.id)}` : undefined,
+                        marginLeft: user.owner_id ? '1.5rem' : undefined
+                      }}
+                    >
+                      {/* Card Header (clickable to expand/collapse) */}
+                      <div 
+                        onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                        className="flex justify-between items-center cursor-pointer select-none"
+                      >
+                        <div className="flex items-center gap-3 animate-none">
+                          {!user.is_manager ? (
+                            <input
+                              type="checkbox"
+                              checked={!!selectedUserIds[user.id]}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                const newSelected = { ...selectedUserIds };
+                                if (checked) {
+                                  newSelected[user.id] = true;
+                                } else {
+                                  delete newSelected[user.id];
+                                }
+                                setSelectedUserIds(newSelected);
+                              }}
+                              className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer ${theme === 'dark' ? 'bg-[#222] border-white/10' : 'bg-white border-gray-300'}`}
+                            />
+                          ) : null}
+                          {user.owner_id && (
+                            <span className={`text-xl font-bold select-none mr-1 ${theme === 'dark' ? 'text-white/40' : 'text-gray-400'}`}>↳</span>
                           )}
-                          {user.is_blocked && (
-                            <span className="px-2 py-0.5 text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-bold uppercase tracking-wider">
-                              Blocked
-                            </span>
-                          )}
-                          {user.email && user.password && (
-                            <span className="px-2 py-0.5 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
-                              🔑 Auto-Login
-                            </span>
-                          )}
-                          {(() => {
-                            const owner = user.owner_id ? users.find(u => u.id === user.owner_id) : null;
-                            if (!owner) return null;
-                            return (
-                              <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
-                                👤 {lang === 'ar' ? `صاحب الحساب: ${owner.username}` : `Owner: ${owner.username}`}
-                              </span>
-                            );
-                          })()}
-                          {!user.is_manager && (
-                            <>
-                              {user.payoneer_email && (
-                                <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono">
-                                  📧 Payoneer: {user.payoneer_email}
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-lg text-white">
+                            {user.username?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center flex-wrap gap-2">
+                              <h3 className={`font-bold text-base ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{user.username}</h3>
+                              {user.is_manager && (
+                                <span className="px-2 py-0.5 text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold uppercase tracking-wider">
+                                  Manager
                                 </span>
                               )}
-                              <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider ${
-                                user.payout_status === 'cleared'
-                                  ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                  : user.payout_status === 'requested'
-                                  ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                                  : user.payout_status === 'ready'
-                                  ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                  : user.payout_status === 'suspended'
-                                  ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                                  : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
-                              }`}>
-                                {user.payout_status === 'cleared' && '🟢 '}
-                                {user.payout_status === 'requested' && '🟡 '}
-                                {user.payout_status === 'ready' && '🔴 '}
-                                {user.payout_status === 'suspended' && '⚠️ '}
-                                {user.payout_status === 'waiting' && '⚪ '}
-                                {user.payout_status === 'cleared' && (lang === 'ar' ? 'تم الوصول' : 'Cleared')}
-                                {user.payout_status === 'requested' && (lang === 'ar' ? 'قيد الانتظار' : 'Requested')}
-                                {user.payout_status === 'ready' && (lang === 'ar' ? 'جاهز للطلب' : 'Ready')}
-                                {user.payout_status === 'suspended' && (lang === 'ar' ? 'معلقة' : 'Suspended')}
-                                {(user.payout_status === 'waiting' || !user.payout_status) && (lang === 'ar' ? 'لم تبدأ الدورة' : 'Waiting')}
-                              </span>
-                            </>
-                          )}
+                              {user.is_blocked && (
+                                <span className="px-2 py-0.5 text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-full font-bold uppercase tracking-wider">
+                                  Blocked
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-500 text-xs">{user.phone_number || (lang === 'ar' ? 'بدون رقم هاتف' : 'No phone number')}</p>
+                          </div>
                         </div>
-                        <p className="text-gray-500 text-sm">{user.phone_number}</p>
-                        {user.email && (
-                          <p className="text-xs text-gray-400 mt-1 flex items-center flex-wrap gap-1 font-mono">
-                            <span>📧 {user.email}</span>
-                            {user.verification_code && (
-                              <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 font-sans text-[10px]">
-                                OTP: {user.verification_code}
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 border rounded-lg font-mono text-xs text-blue-400 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
+                            {user.pin}
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+
+                      {/* Card Details (Expanded Area) */}
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-6 pt-4 border-t border-dashed border-gray-200 dark:border-white/10"
+                        >
+                          {/* Status Badges Grid */}
+                          <div className="flex flex-wrap gap-2">
+                            {user.email && user.password && (
+                              <span className="px-2 py-0.5 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                                🔑 Auto-Login
                               </span>
                             )}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 border rounded-lg font-mono text-sm text-blue-400 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
-                      {user.pin}
-                    </span>
-                  </div>
-
-                  <RentAHumanDisplay user={user} theme={theme} lang={lang} isMobile />
-
-                  {user.is_manager ? (
-                    <div className={`p-5 rounded-2xl border flex flex-col items-center text-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.05)] ${theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50/50 border-amber-200'}`}>
-                      <div className="p-3 bg-amber-500/10 rounded-full text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-                        <ShieldCheck className="w-6 h-6" strokeWidth={2.5} />
-                      </div>
-                      <p className="text-sm font-bold text-amber-500">{lang === 'ar' ? 'مدير النظام (صلاحيات كاملة)' : 'System Administrator'}</p>
-                      <p className="text-xs text-gray-500 max-w-[240px]">
-                        {lang === 'ar' ? 'صلاحيات وصول كاملة لوحة التحكم وخيارات التهيئة.' : 'Full system privileges for dashboard configurations and logs.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className={`p-4 rounded-2xl space-y-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
-                      <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t.proxy}</p>
-                      <p className="flex items-center gap-2 text-sm">
-                        <Globe className="w-4 h-4 text-blue-500" />
-                        <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{user.proxy_ip}:{user.proxy_port}</span>
-                      </p>
-                      <p className="text-gray-500 text-xs flex items-center gap-2">
-                         <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {user.proxy_timezone && <UserTimezoneDisplay timezone={user.proxy_timezone} />}
-                        {isProxyOnline(user) ? (
-                          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl w-max font-semibold text-xs border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                            <span>ONLINE</span>
+                            {(() => {
+                              const owner = user.owner_id ? users.find(u => u.id === user.owner_id) : null;
+                              if (!owner) return null;
+                              return (
+                                <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${getOwnerClasses(user.owner_id)}`}>
+                                  👤 {lang === 'ar' ? `صاحب الحساب: ${owner.username}` : `Owner: ${owner.username}`}
+                                </span>
+                              );
+                            })()}
+                            {!user.is_manager && (
+                              <>
+                                {user.payoneer_email && (
+                                  <span className="px-2 py-0.5 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full font-bold font-mono">
+                                    📧 Payoneer: {user.payoneer_email}
+                                  </span>
+                                )}
+                                <span className={`px-2 py-0.5 text-[10px] border rounded-full font-bold uppercase tracking-wider ${
+                                  user.payout_status === 'cleared'
+                                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                    : user.payout_status === 'requested'
+                                    ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                    : user.payout_status === 'ready'
+                                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                    : user.payout_status === 'suspended'
+                                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                    : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                }`}>
+                                  {user.payout_status === 'cleared' && '🟢 '}
+                                  {user.payout_status === 'requested' && '🟡 '}
+                                  {user.payout_status === 'ready' && '🔴 '}
+                                  {user.payout_status === 'suspended' && '⚠️ '}
+                                  {user.payout_status === 'waiting' && '⚪ '}
+                                  {user.payout_status === 'cleared' && (lang === 'ar' ? 'تم الوصول' : 'Cleared')}
+                                  {user.payout_status === 'requested' && (lang === 'ar' ? 'قيد الانتظار' : 'Requested')}
+                                  {user.payout_status === 'ready' && (lang === 'ar' ? 'جاهز للطلب' : 'Ready')}
+                                  {user.payout_status === 'suspended' && (lang === 'ar' ? 'معلقة' : 'Suspended')}
+                                  {(user.payout_status === 'waiting' || !user.payout_status) && (lang === 'ar' ? 'لم تبدأ الدورة' : 'Waiting')}
+                                </span>
+                              </>
+                            )}
                           </div>
-                        ) : (
-                          <div 
-                            className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-3 py-1 rounded-xl w-max font-medium text-xs border border-gray-500/10 cursor-help"
-                            title={user.proxy_last_seen ? new Date(user.proxy_last_seen).toLocaleString() : undefined}
-                          >
-                            <span className="w-2 h-2 rounded-full bg-gray-400" />
-                            <span>{lang === 'ar' ? `آخر ظهور: ${formatLastSeen(user.proxy_last_seen, 'ar')}` : `LAST SEEN: ${formatLastSeen(user.proxy_last_seen, 'en').toUpperCase()}`}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  {user.is_manager ? (
-                    <button 
-                      onClick={() => handleOpenEdit(user)}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all w-full ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'تعديل البيانات' : 'Edit Profile'}</span>
-                    </button>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={() => handleToggleBlock(user)}
-                        className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                      >
-                        <Ban className="w-4 h-4" />
-                        <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
-                      </button>
-                      <button 
-                        onClick={() => handleForceLogout(user)}
-                        className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
-                      </button>
-                      <button 
-                        onClick={() => handleOpenEdit(user)}
-                        className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteClick(user.id, user.username)}
-                        className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+                          {user.email && (
+                            <div className={`p-4 rounded-2xl space-y-1.5 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">{lang === 'ar' ? 'بيانات تسجيل الدخول' : 'Login Credentials'}</p>
+                              <p className="text-xs font-mono text-gray-400 break-all">📧 {user.email}</p>
+                              {user.verification_code && (
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                  <span>{lang === 'ar' ? 'رمز التحقق (OTP):' : 'OTP Code:'}</span>
+                                  <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 font-sans text-xs">
+                                    {user.verification_code}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <RentAHumanDisplay user={user} theme={theme} lang={lang} isMobile />
+
+                          {user.is_manager ? (
+                            <div className={`p-5 rounded-2xl border flex flex-col items-center text-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.05)] ${theme === 'dark' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50/50 border-amber-200'}`}>
+                              <div className="p-3 bg-amber-500/10 rounded-full text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                                <ShieldCheck className="w-6 h-6" strokeWidth={2.5} />
+                              </div>
+                              <p className="text-sm font-bold text-amber-500">{lang === 'ar' ? 'مدير النظام (صلاحيات كاملة)' : 'System Administrator'}</p>
+                              <p className="text-xs text-gray-500 max-w-[240px]">
+                                {lang === 'ar' ? 'صلاحيات وصول كاملة لوحة التحكم وخيارات التهيئة.' : 'Full system privileges for dashboard configurations and logs.'}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className={`p-4 rounded-2xl space-y-2 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-50'}`}>
+                              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t.proxy}</p>
+                              <p className="flex items-center gap-2 text-sm">
+                                <Globe className="w-4 h-4 text-blue-500" />
+                                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>{user.proxy_ip}:{user.proxy_port}</span>
+                              </p>
+                              <p className="text-gray-500 text-xs flex items-center gap-2">
+                                 <MapPin className="w-4 h-4" /> {user.proxy_location || 'N/A'} • {user.proxy_timezone || 'N/A'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {user.proxy_timezone && <UserTimezoneDisplay timezone={user.proxy_timezone} />}
+                                {isProxyOnline(user) ? (
+                                  <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-xl w-max font-semibold text-xs border border-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                    <span>ONLINE</span>
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-3 py-1 rounded-xl w-max font-medium text-xs border border-gray-500/10 cursor-help"
+                                    title={user.proxy_last_seen ? new Date(user.proxy_last_seen).toLocaleString() : undefined}
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                    <span>{lang === 'ar' ? `آخر ظهور: ${formatLastSeen(user.proxy_last_seen, 'ar')}` : `LAST SEEN: ${formatLastSeen(user.proxy_last_seen, 'en').toUpperCase()}`}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {user.is_manager ? (
+                            <button 
+                              onClick={() => handleOpenEdit(user)}
+                              className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all w-full ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>{lang === 'ar' ? 'تعديل البيانات' : 'Edit Profile'}</span>
+                            </button>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                              <button 
+                                onClick={() => handleToggleBlock(user)}
+                                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${user.is_blocked ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                              >
+                                <Ban className="w-4 h-4" />
+                                <span>{user.is_blocked ? (lang === 'ar' ? 'فك حظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}</span>
+                              </button>
+                              <button 
+                                onClick={() => handleForceLogout(user)}
+                                className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                              >
+                                <LogOut className="w-4 h-4" />
+                                <span>{lang === 'ar' ? 'خروج إجباري' : 'Force Logout'}</span>
+                              </button>
+                              <button 
+                                onClick={() => handleOpenEdit(user)}
+                                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'bg-white/5 text-gray-300 hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                                <span>{lang === 'ar' ? 'تعديل' : 'Edit'}</span>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClick(user.id, user.username)}
+                                className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 rounded-xl font-bold hover:bg-red-500/20 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span>{lang === 'ar' ? 'حذف' : 'Delete'}</span>
+                              </button>
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
 
