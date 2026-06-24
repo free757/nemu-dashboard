@@ -5614,14 +5614,7 @@ function RentAHumanDisplay({ user, theme, lang, isMobile = false }: { user: any;
   }, [user.rah_human_id, user.rah_api_key, user.rah_balance, user.rah_earnings]);
 
   if (!user.rah_human_id && !user.rah_api_key && !user.rah_earnings) {
-    return (
-      <div className={`text-xs py-2 px-3 rounded-2xl border border-dashed flex items-center justify-center gap-1.5 font-medium ${
-        theme === 'dark' ? 'border-white/10 text-gray-500 bg-white/[0.01]' : 'border-gray-200 text-gray-400 bg-gray-50/50'
-      }`}>
-        <Sparkles className="w-3.5 h-3.5 opacity-60" />
-        <span>{lang === 'ar' ? 'غير متصل بـ RentAHuman' : 'Not Connected'}</span>
-      </div>
-    );
+    return null;
   }
 
   if (!user.rah_human_id && user.rah_api_key && (user.rah_balance === undefined || user.rah_balance === null)) {
