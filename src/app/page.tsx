@@ -2662,7 +2662,7 @@ export default function Dashboard() {
               const nm = users.filter(u => !u.is_manager);
               const on = nm.filter(u => isProxyOnline(u)).length;
               return (
-                <div className="hidden xl:flex items-center gap-2 mr-2">
+                <div className="hidden md:flex items-center gap-2 mr-2">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'}`}>
                     <Users className="w-3.5 h-3.5 text-gray-400" />
                     <span className="text-gray-400">{lang === 'ar' ? 'الكل' : 'Total'}</span>
@@ -3035,9 +3035,20 @@ export default function Dashboard() {
                 />
                 <span className={`font-semibold ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{lang === 'ar' ? 'تحديد الكل' : 'Select All'}</span>
               </label>
-              <span className={`text-xs px-2.5 py-1 rounded-full border ${theme === 'dark' ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-gray-100 border-gray-200 text-gray-600'}`}>
-                {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length} {lang === 'ar' ? 'محدد' : 'selected'}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border ${
+                  theme === 'dark' 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                }`}>
+                  {lang === 'ar' 
+                    ? `متصل: ${users.filter(u => !u.is_manager && isProxyOnline(u)).length}/${users.filter(u => !u.is_manager).length}` 
+                    : `Online: ${users.filter(u => !u.is_manager && isProxyOnline(u)).length}/${users.filter(u => !u.is_manager).length}`}
+                </span>
+                <span className={`text-xs px-2.5 py-1 rounded-full border ${theme === 'dark' ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-gray-100 border-gray-200 text-gray-600'}`}>
+                  {Object.keys(selectedUserIds).filter(id => selectedUserIds[id]).length} {lang === 'ar' ? 'محدد' : 'selected'}
+                </span>
+              </div>
             </div>
 
             {/* Mobile Card View */}
