@@ -1624,12 +1624,15 @@ export default function Dashboard() {
     };
     
     // Update local state optimistically
-    setUsers((prev: any[]) => prev.map((u: any) => u.id === forceLogoutTargetUser.id ? { ...u, ui_settings: newSettings } : u));
+    setUsers((prev: any[]) => prev.map((u: any) => u.id === forceLogoutTargetUser.id ? { ...u, ui_settings: newSettings, last_device_id: null } : u));
     setIsForceLogoutConfirmOpen(false);
     
     const { error } = await supabase
       .from('app_users')
-      .update({ ui_settings: newSettings })
+      .update({ 
+        ui_settings: newSettings,
+        last_device_id: null
+      })
       .eq('id', forceLogoutTargetUser.id);
 
     if (error) {
@@ -1638,8 +1641,8 @@ export default function Dashboard() {
     } else {
       showToast(
         lang === 'ar'
-          ? 'تم إرسال أمر تسجيل الخروج بنجاح.'
-          : 'Force logout command sent successfully.',
+          ? 'تم إرسال أمر تسجيل الخروج وإعادة تعيين ارتباط الجهاز بنجاح.'
+          : 'Force logout and device reset command sent successfully.',
         'success'
       );
     }
@@ -1702,9 +1705,14 @@ export default function Dashboard() {
     if (!blockTargetUser) return;
     const newStatus = !blockTargetUser.is_blocked;
 
+    const payload: any = { is_blocked: newStatus };
+    if (newStatus === true) {
+      payload.last_device_id = null;
+    }
+
     const { error } = await supabase
       .from('app_users')
-      .update({ is_blocked: newStatus })
+      .update(payload)
       .eq('id', blockTargetUser.id);
 
     if (!error) {
@@ -1722,8 +1730,8 @@ export default function Dashboard() {
     
     const message = blockStatus
       ? (lang === 'ar' 
-         ? `هل أنت متأكد من حظر ${selectedIds.length} مستخدم؟ سيتم طردهم من هواتفهم فوراً.` 
-         : `Are you sure you want to block ${selectedIds.length} users? They will be logged out of their phones instantly.`)
+         ? `هل أنت متأكد من حظر ${selectedIds.length} مستخدم؟ سيتم طردهم من هواتفهم وإعادة تعيين ارتباط أجهزتهم فوراً.` 
+         : `Are you sure you want to block ${selectedIds.length} users? They will be logged out and their device associations will be reset instantly.`)
       : (lang === 'ar' 
          ? `هل أنت متأكد من إلغاء حظر ${selectedIds.length} مستخدم؟` 
          : `Are you sure you want to unblock ${selectedIds.length} users?`);
@@ -1731,9 +1739,14 @@ export default function Dashboard() {
     if (!confirm(message)) return;
     
     setLoading(true);
+    const payload: any = { is_blocked: blockStatus };
+    if (blockStatus === true) {
+      payload.last_device_id = null;
+    }
+
     const { error } = await supabase
       .from('app_users')
-      .update({ is_blocked: blockStatus })
+      .update(payload)
       .in('id', selectedIds);
       
     if (!error) {
@@ -1757,8 +1770,8 @@ export default function Dashboard() {
     
     const confirmed = confirm(
       lang === 'ar'
-        ? `هل أنت متأكد من تسجيل الخروج الإجباري لـ ${selectedIds.length} مستخدم؟`
-        : `Are you sure you want to force logout ${selectedIds.length} users?`
+        ? `هل أنت متأكد من تسجيل الخروج الإجباري وإعادة تعيين ارتباط الأجهزة لـ ${selectedIds.length} مستخدم؟`
+        : `Are you sure you want to force logout and reset device associations for ${selectedIds.length} users?`
     );
     if (!confirmed) return;
     
@@ -1772,7 +1785,8 @@ export default function Dashboard() {
           const currentSettings = u.ui_settings || {};
           return {
             ...u,
-            ui_settings: { ...currentSettings, force_logout: true }
+            ui_settings: { ...currentSettings, force_logout: true },
+            last_device_id: null
           };
         }
         return u;
@@ -1786,15 +1800,18 @@ export default function Dashboard() {
         };
         return supabase
           .from('app_users')
-          .update({ ui_settings: newSettings })
+          .update({ 
+            ui_settings: newSettings,
+            last_device_id: null
+          })
           .eq('id', user.id);
       });
       
       await Promise.all(promises);
       showToast(
         lang === 'ar'
-          ? `تم إرسال أمر تسجيل الخروج لـ ${selectedIds.length} مستخدم بنجاح.`
-          : `Force logout command sent to ${selectedIds.length} users successfully.`,
+          ? `تم إرسال أمر تسجيل الخروج وإعادة تعيين ارتباط الأجهزة لـ ${selectedIds.length} مستخدم بنجاح.`
+          : `Force logout and device reset command sent to ${selectedIds.length} users successfully.`,
         'success'
       );
       setSelectedUserIds({});
