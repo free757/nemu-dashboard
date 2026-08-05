@@ -4,20 +4,26 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: DO NOT SPLIT MULTIPLE OBJECTS HELD BY THE SAME HAND (NEVER OVER-SPLIT):
+1. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS REJECTION RULE):
+   - ❌ NEVER USE THE GENERIC WORD "tool" UNDER ANY CIRCUMSTANCES.
+   - ✅ YOU MUST ALWAYS REPLACE "tool" WITH THE SPECIFIC EXACT ITEM NAME:
+     * Gardening/Farming tools: "hoe", "trowel", "shovel", "rake", "shears"
+     * Kitchen utensils: "ladle", "knife", "spoon", "tongs", "brush"
+     * Workshop tools: "screwdriver", "pliers", "scissors", "hammer"
+   - Example CORRECT: "dig soil with hoe in right hand" (NOT "dig soil with tool in right hand").
+
+2. CRITICAL: DO NOT SPLIT MULTIPLE OBJECTS HELD BY THE SAME HAND (NEVER OVER-SPLIT):
    - When a single hand holds more than one item (e.g., a screwdriver AND an electrical plug), keep them in ONE SINGLE CLAUSE combined with "and".
    - ❌ NEVER SPLIT into: "hold screwdriver with left hand, hold electrical plug with left hand" (FATAL ERROR!).
    - ✅ ALWAYS COMBINE into: "hold screwdriver and electrical plug with left hand".
 
-2. BOTH-HAND ATTRIBUTION (ALWAYS LABEL WHAT BOTH HANDS ARE DOING):
-   - Every segment must describe what the left hand AND the right hand are doing if active.
-   - Example CORRECT: "hold screwdriver and electrical plug with left hand, hold screws with right hand".
+3. FARMING & GARDENING SPECIFIC ACTION RULES:
+   - Digging soil: "dig soil with hoe in right hand" (Do not add extra hold clauses if off-hand is resting).
+   - Setting tool down before gathering: "place hoe on ground with right hand, gather soil with both hands" or "set hose on ground with left hand".
+   - Placing bucket: "place bucket on floor with left hand, pick up hoe with right hand".
 
-3. FINE-MOTOR VERB "position" FOR TOOLS:
-   - Use "position screw on screwdriver tip with right hand" when placing a screw onto a tool tip.
-
-4. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES:
-   - ❌ NEVER USE "inspect", "adjust", "reach", "manipulate", "tool", "grab".
+4. ABSOLUTE BAN ON OTHER VAGUE VERBS & APPROVED ALTERNATIVES:
+   - ❌ NEVER USE "inspect", "adjust", "reach", "manipulate", "grab".
    - ✅ USE SPECIFIC ALTERNATIVES: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "pick up".
 
 5. BANNED BODY PARTS (HANDS ONLY):
@@ -46,7 +52,7 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
     - "pick up wrench and place wrench on table with right hand".
 
 13. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION:
-    - "water plant in bucket with hose in both hands", "set hose on ground with left hand".
+    - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands".
 
 14. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
     - "stir minced meat and onions in wok with ladle in right hand".
