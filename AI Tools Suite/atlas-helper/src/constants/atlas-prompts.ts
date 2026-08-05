@@ -9,37 +9,38 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
    - Hand attribution NEVER carries over across commas or "and".
    - Example CORRECT: "hold glass cup with left hand, wipe glass cup with cloth in right hand".
 
-2. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
-   - Object Noun Precision: ALWAYS use the specific compound noun "sewing needle" (NOT generic "needle" or "thread").
-   - Target Object: Use "cap" as the target object (NOT "patch" or "fabric").
-   - Action Sequence & Direction Accuracy:
-     * Inserting: "insert sewing needle into cap with right hand"
-     * Pulling out: "pull sewing needle with right hand"
-     * Full Stitch Cycle (3 actions): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
+2. STRICT RULE ON BODY PARTS & OBJECT ADJECTIVES (FROM PDF GUIDE PAGE 4):
+   - NEVER mention body parts other than hands (e.g. say "wash spoon with right hand", NOT "wash spoon with fingers").
+   - Use adjectives ONLY when necessary to distinguish two similar objects on table (e.g. "pick up blue cloth with right hand").
+   - Maintain strict naming consistency throughout the video (if named "bottle" or "wash", do NOT switch to "container" or "wipe").
 
-3. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
-   - Always split into TWO distinct clauses: "hold cloth in left hand, smoothen cloth with right hand". Always use verb "smoothen" (NOT "smooth").
+3. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
+   - Object Noun Precision: ALWAYS use specific compound noun "sewing needle" (NOT generic "needle" or "thread"). Target object: "cap".
+   - Full Stitch Cycle (3 actions): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
 
-4. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
+4. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
+   - Always split into TWO distinct clauses: "hold cloth in left hand, smoothen cloth with right hand". Use verb "smoothen" (NOT "smooth").
+
+5. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
    - Always write: "pick up [object] with [hand1], pass [object] from [hand1] to [hand2]".
 
-5. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
+6. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand, pick up screws from tray with right hand".
 
-6. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
+7. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
    - "pick up wrench and place wrench on table with right hand".
    - Always state surface location when present ("on table", "on counter", "on ground", "on floor").
 
-7. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
+8. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
    - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands", "set hose on ground with left hand, pick up watering can with right hand".
 
-8. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
+9. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
    - "stir minced meat and onions in wok with ladle in right hand".
 
-9. ABSOLUTE BAN ON VAGUE WORDS ("tool", "inspect", "adjust", "reach", "manipulate", "grab"):
-   - NEVER use generic "tool" or vague verbs. Use specific item ("sewing needle", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver") and specific verbs ("pick up", "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "strip", "rake").
+10. ABSOLUTE BAN ON VAGUE WORDS ("tool", "inspect", "adjust", "reach", "manipulate", "grab"):
+    - NEVER use generic "tool" or vague verbs. Use specific item ("sewing needle", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver") and specific verbs ("pick up", "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "strip", "rake").
 
-10. MANDATORY CLAUSE STRUCTURE & FORMAT:
+11. MANDATORY CLAUSE STRUCTURE & FORMAT:
     - Template: Verb + Object (+ Location) + "with/in" + Hand.
     - NO PRONOUNS (their, its, his, her).
     - NO "-ing" VERBS (use "seal", NOT "sealing").
