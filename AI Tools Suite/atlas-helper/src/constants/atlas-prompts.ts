@@ -4,16 +4,15 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: BOOK WIPING RULES (ALWAYS "hold book", NEVER "rotate", NEVER "page"):
+1. CRITICAL: FARMING & GARDENING RULES (STRICT SEGMENT SCOPING):
+   - ❌ NEVER use generic word "tool" -> ALWAYS use specific tool name "hoe".
+   - Digging Segments (where person is digging): Output ONLY "dig soil with hoe in right hand" (DO NOT add "place hoe on ground" to digging segments!).
+   - Soil Gathering Segments (where person transitions from hoeing to gathering soil by hand): Output "place hoe on ground with right hand, gather soil with both hands".
+
+2. CRITICAL: BOOK WIPING RULES (ALWAYS "hold book", NEVER "rotate", NEVER "page"):
    - Object Noun Simplification: ALWAYS use "book" (❌ NEVER write "page" or "book cover").
    - Action Clause Format for all segments: "hold book with left hand, wipe book with cloth in right hand".
    - ❌ NEVER use "rotate book" (books stay stationary on the table while held: expected "hold", not "rotate").
-
-2. CRITICAL: FARMING & GARDENING RULES (BANNED "tool" -> USE "hoe"):
-   - ❌ NEVER use generic word "tool" -> ALWAYS use specific tool name "hoe".
-   - Digging action: "dig soil with hoe in right hand".
-   - Placing hoe to gather soil: ALWAYS include explicit placing clause before gathering:
-     * Ground Truth Action: "place hoe on ground with right hand, gather soil with both hands".
 
 3. CRITICAL: CONTAINER WIPING & ROTATION SEQUENCE (3D ROUND CONTAINERS ONLY):
    - For 3D round containers (glass cups, jars, bottles):
