@@ -39,7 +39,14 @@ export class GeminiService {
     if (this.apiKeys.length > 0) {
       for (const key of this.apiKeys) {
         try {
-          const ai = new GoogleGenAI({ apiKey: key });
+          const ai = new GoogleGenAI({
+            apiKey: key,
+            httpOptions: {
+              headers: {
+                "x-goog-api-key": key,
+              },
+            },
+          });
           const fileUpload = await ai.files.upload({
             file: tempFilePath,
             config: {
@@ -124,7 +131,14 @@ Output raw JSON array strictly adhering to this schema:
     ];
 
     for (const key of this.apiKeys) {
-      const ai = new GoogleGenAI({ apiKey: key });
+      const ai = new GoogleGenAI({
+        apiKey: key,
+        httpOptions: {
+          headers: {
+            "x-goog-api-key": key,
+          },
+        },
+      });
 
       for (const model of modelsToTry) {
         try {
