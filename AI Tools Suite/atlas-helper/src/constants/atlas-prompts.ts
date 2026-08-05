@@ -4,28 +4,30 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
-   - When holding or operating a hose to water plants or fill a watering can, specify "with hose in both hands" (DO NOT default to "left hand" or "right hand").
-   - Include the liquid noun "with water": "fill watering can with water with hose in both hands".
-   - Example CORRECT: "water plant in bucket with hose in both hands"
-   - Example CORRECT: "fill watering can with water with hose in both hands"
-   - Example INCORRECT: "water plant in bucket with hose in left hand" (Fails hand attribution!).
+1. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
+   - Object Noun Precision: ALWAYS use the specific compound noun "sewing needle" (NOT generic "needle" or "thread").
+   - Target Object: Use "cap" as the target object (NOT "patch" or "fabric").
+   - Action Sequence & Direction Accuracy:
+     * When inserting: "insert sewing needle into cap with right hand"
+     * When pulling out: "pull sewing needle with right hand"
+     * Full Stitch Cycle (if 3 actions take place in segment): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
+   - Example CORRECT: "hold cap with both hands, insert sewing needle into cap with right hand"
+   - Example INCORRECT (FATAL ATLAS REJECTION): "hold cap with both hands, reposition patch on cap with both hands" (Fails needle attribution and verb direction!).
 
-2. EXACT VERB FOR SETTING HOSE DOWN ("set hose on ground"):
-   - Use the exact verb "set" (NOT "place") when putting a hose down: "set hose on ground with left hand".
-   - Do NOT omit the simultaneous/following right-hand action: "set hose on ground with left hand, pick up watering can with right hand".
+2. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
+   - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands", "set hose on ground with left hand, pick up watering can with right hand".
 
 3. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
-   - "stir minced meat and onions in wok with ladle in right hand" (ONE clause).
+   - "stir minced meat and onions in wok with ladle in right hand".
 
 4. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS ERROR):
-   - NEVER use the generic word "tool". You MUST use the specific object name ("hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver").
+   - NEVER use generic "tool". Use specific item: "sewing needle", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver".
 
 5. MANDATORY CLAUSE STRUCTURE & FORMAT:
-   - Template for EVERY action clause: Verb + Object (+ Location) + "with/in" + Hand.
+   - Template: Verb + Object (+ Location) + "with/in" + Hand.
    - NO PRONOUNS (their, its, his, her).
-   - NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
-   - NO ARTICLES (never use "a", "an", "the"). Write "pick up spoon" NOT "pick up the spoon".
+   - NO "-ing" VERBS (use "seal", NOT "sealing").
+   - NO ARTICLES (never use "a", "an", "the").
    - WRITE NUMBERS IN WORDS (say "three" NOT "3").
    - SEPARATORS: ONLY use commas "," or "and". NEVER use semicolons (;) or slashes (/).
 
