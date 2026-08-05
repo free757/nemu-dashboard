@@ -4,34 +4,42 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
+1. CRITICAL: OBJECT NOUN SIMPLIFICATION & SPECIFIC ITEM NAMES:
+   - ❌ NEVER use over-descriptive color, flavor, or brand adjectives unless necessary to distinguish two identical items.
+   - ❌ NEVER write "syrup bottle" -> ALWAYS write simple "bottle".
+   - ❌ NEVER write "red snack bag" / "orange snack bag" -> ALWAYS write simple "sachet" or "bag".
+   - ❌ NEVER write generic "tool" -> ALWAYS use specific item ("hoe", "shears", "screwdriver", "ladle", "pliers", "scissors").
+
+2. CRITICAL: HAND-TO-HAND PASSES & SEQUENTIAL PLACING:
+   - When an object is transferred/handed over from one hand to another: ALWAYS include explicit transfer clause "pass [object] from [hand1] to [hand2]".
+   - Example CORRECT: "pick up bottle with right hand, pass bottle from right hand to left hand".
+   - If an object was passed to the left hand, the subsequent placing action MUST specify the left hand: "place bottle on counter with left hand".
+
+3. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
    - ❌ NEVER prepend "hold [object]" before an active motion verb ("twist", "fold", "strip", "cut", "squeeze") acting on the SAME object.
    - Example WRONG: "hold blue wire with both hands, twist blue wire with both hands".
    - Example CORRECT: "twist blue wire with both hands".
 
-2. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+4. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
    - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
    - When hands tap, adjust, align, or arrange sheets of paper together (even while right hand holds scissors):
      * Ground Truth Action: "hold scissors with right hand, align papers with both hands"
      * Holding Action: "hold papers with left hand, hold scissors with right hand"
-   - ❌ NEVER write "cut papers" if the hands are tapping/arranging/aligning paper edges together.
 
-3. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
+5. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
    - Shears vs Pliers: "shears" and "pliers" are interchangeable valid object nouns for wire-cutting tools.
-   - Wire vs Cable: "wire" and "cable" are interchangeable valid object nouns for electrical conductors.
    - Wire stripping: "hold blue wire with left hand, strip blue wire with shears in right hand" (or "with pliers in right hand").
    - Multi-action cable sequence: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands".
 
-4. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS (PRIORITY RULE FOR NEEDLE/FABRIC CLIPS):
+6. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS:
    - ALWAYS use specific compound noun "sewing needle" (NEVER generic "needle" or "thread").
    - ALWAYS use "cap" as the target object (NEVER "patch" or "fabric").
    - STRICT STITCH CYCLE ACTION SEQUENCE:
      * Inserting needle: "insert sewing needle into cap with right hand"
-     * Pulling needle out: "pull sewing needle with right hand" (NEVER use "insert" when pulling out!).
-     * Full 3-Action Stitch Cycle (in ~8s-10s segments): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
-   - ❌ NEVER use banned verb "reposition".
+     * Pulling needle out: "pull sewing needle with right hand".
+     * Full 3-Action Stitch Cycle: "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
 
-5. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
+7. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
    - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
    - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands".
    - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER use semicolons (;) or slashes (/).
@@ -40,20 +48,11 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
    - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
-6. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
+8. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
    - Off-hand clause: Always label what the other hand is doing (e.g. "hold blue wire with left hand, strip blue wire with shears in right hand").
-   - Hand-to-hand passes: ALWAYS describe when an object is passed from one hand to another ("pass cup from left hand to right hand").
 
-7. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
+9. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
    - ❌ NEVER USE "inspect", "adjust", "reposition", "reach", "manipulate", "tool", "grab".
-   - ✅ USE SPECIFIC ALTERNATIVES: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "pull", "insert", "pick up".
-
-8. OBJECT NAMING TIPS & CONSISTENCY (PDF PAGE 4):
-   - Naming consistency: Maintain exact object/verb names throughout episode ("sewing needle", "cap", "papers", "blue wire", "shears").
-   - Object Noun Simplification: Use "bottle", "bag", "sachet", "cap", "sewing needle", "papers", "blue wire", "shears".
-
-9. BANNED BODY PARTS (HANDS ONLY - PDF PAGE 4):
-   - ❌ NEVER mention body parts other than hands (e.g. "wash spoon with right hand", NOT "wash spoon with fingers").
 
 10. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS:
     - "hold glass cup with left hand, wipe glass cup with cloth in right hand" or "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
