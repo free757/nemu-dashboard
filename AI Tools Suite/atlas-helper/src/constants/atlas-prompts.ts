@@ -13,7 +13,14 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
      * Full 3-Action Stitch Cycle (in ~8s-10s segments): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
    - ❌ NEVER use banned verb "reposition".
 
-2. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
+2. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
+   - When hands tap, adjust, or arrange sheets of paper together (even while holding scissors):
+     * "hold scissors with right hand, align papers with both hands"
+     * "hold papers with left hand, hold scissors with right hand"
+   - Example CORRECT: "hold scissors with right hand, align papers with both hands".
+
+3. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
    - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
    - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands".
    - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER use semicolons (;) or slashes (/).
@@ -22,26 +29,23 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
    - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
-3. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
-   - Off-hand clause: Always label what the other hand is doing (e.g. "hold cap with left hand, insert sewing needle into cap with right hand").
+4. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
+   - Off-hand clause: Always label what the other hand is doing (e.g. "hold papers with left hand, cut papers with scissors in right hand").
    - Hand-to-hand passes: ALWAYS describe when an object is passed from one hand to another ("pass cup from left hand to right hand").
 
-4. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
+5. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
    - ❌ NEVER USE "inspect", "adjust", "reposition", "reach", "manipulate", "tool", "grab".
    - ✅ USE SPECIFIC ALTERNATIVES: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "pull", "insert", "pick up".
 
-5. OBJECT NAMING TIPS & CONSISTENCY (PDF PAGE 4):
-   - Naming consistency: Maintain exact object/verb names throughout episode ("sewing needle", "cap").
-   - Object Noun Simplification: Use "bottle", "bag", "sachet", "cap", "sewing needle".
+6. OBJECT NAMING TIPS & CONSISTENCY (PDF PAGE 4):
+   - Naming consistency: Maintain exact object/verb names throughout episode ("sewing needle", "cap", "papers").
+   - Object Noun Simplification: Use "bottle", "bag", "sachet", "cap", "sewing needle", "papers".
 
-6. BANNED BODY PARTS (HANDS ONLY - PDF PAGE 4):
+7. BANNED BODY PARTS (HANDS ONLY - PDF PAGE 4):
    - ❌ NEVER mention body parts other than hands (e.g. "wash spoon with right hand", NOT "wash spoon with fingers").
 
-7. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS:
+8. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS:
    - "hold glass cup with left hand, wipe glass cup with cloth in right hand" or "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
-
-8. PAPER HANDLING & ALIGNMENT RULES:
-   - Use plural "papers": "hold scissors with right hand, align papers with both hands".
 
 9. COMBining MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand".
