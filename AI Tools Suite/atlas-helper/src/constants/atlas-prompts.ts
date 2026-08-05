@@ -4,50 +4,51 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: FARMING & GARDENING RULES (STRICT SEGMENT SCOPING):
+1. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
+   - Holding Scissors & Paper Alignment: Whenever hands hold scissors and tap/align/adjust paper edges (or if label states "cut paper with scissors"):
+     * Correct Action for Alignment Segments: "hold scissors with right hand, align papers with both hands"
+     * Holding Action for Holding Segments: "hold papers with left hand, hold scissors with right hand"
+   - ❌ Replace any instance of "cut paper with scissors in right hand" with "hold scissors with right hand, align papers with both hands" when aligning/adjusting papers.
+
+2. CRITICAL: FARMING & GARDENING RULES (STRICT SEGMENT SCOPING):
    - ❌ NEVER use generic word "tool" -> ALWAYS use specific tool name "hoe".
    - Digging Segments (where person is digging): Output ONLY "dig soil with hoe in right hand" (DO NOT add "place hoe on ground" to digging segments!).
    - Soil Gathering Segments (where person transitions from hoeing to gathering soil by hand): Output "place hoe on ground with right hand, gather soil with both hands".
 
-2. CRITICAL: BOOK WIPING RULES (ALWAYS "hold book", NEVER "rotate", NEVER "page"):
+3. CRITICAL: BOOK WIPING RULES (ALWAYS "hold book", NEVER "rotate", NEVER "page"):
    - Object Noun Simplification: ALWAYS use "book" (❌ NEVER write "page" or "book cover").
    - Action Clause Format for all segments: "hold book with left hand, wipe book with cloth in right hand".
    - ❌ NEVER use "rotate book" (books stay stationary on the table while held: expected "hold", not "rotate").
 
-3. CRITICAL: CONTAINER WIPING & ROTATION SEQUENCE (3D ROUND CONTAINERS ONLY):
+4. CRITICAL: CONTAINER WIPING & ROTATION SEQUENCE (3D ROUND CONTAINERS ONLY):
    - For 3D round containers (glass cups, jars, bottles):
      * Initial Wiping Segment: "hold glass cup with left hand, wipe glass cup with cloth in right hand"
      * Continuous Turning Wiping: "rotate glass cup with left hand, wipe glass cup with cloth in right hand"
    - Note: Only apply "rotate" to 3D round containers, NEVER to flat objects like books.
 
-4. CRITICAL: HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION & SEQUENTIAL PICKUP:
+5. CRITICAL: HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION & SEQUENTIAL PICKUP:
    - When watering plants or filling cans with a hose: ALWAYS specify "hose in both hands".
      * "water plant in bucket with hose in both hands"
      * "fill watering can with water with hose in both hands"
    - Placing hose while picking up watering can: ALWAYS use verb "set" for hose and include pickup:
      * "set hose on ground with left hand, pick up watering can with right hand"
 
-5. CRITICAL: OBJECT NOUN SIMPLIFICATION & SPECIFIC ITEM NAMES:
+6. CRITICAL: OBJECT NOUN SIMPLIFICATION & SPECIFIC ITEM NAMES:
    - ❌ NEVER use over-descriptive color, flavor, or brand adjectives unless necessary to distinguish two identical items.
    - ❌ NEVER write "syrup bottle" -> ALWAYS write simple "bottle".
    - ❌ NEVER write "red snack bag" / "orange snack bag" -> ALWAYS write simple "sachet" or "bag".
    - ❌ NEVER write generic "tool" -> ALWAYS use specific item ("hoe", "shears", "screwdriver", "ladle", "pliers", "scissors").
 
-6. CRITICAL: HAND-TO-HAND PASSES & SEQUENTIAL PLACING:
+7. CRITICAL: HAND-TO-HAND PASSES & SEQUENTIAL PLACING:
    - When an object is transferred/handed over from one hand to another: ALWAYS include explicit transfer clause "pass [object] from [hand1] to [hand2]".
    - Example CORRECT: "pick up bottle with right hand, pass bottle from right hand to left hand".
    - If an object was passed to the left hand, the subsequent placing action MUST specify the left hand: "place bottle on counter with left hand".
 
-7. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
+8. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
    - ❌ NEVER prepend "hold [object]" before an active motion verb ("twist", "fold", "strip", "cut", "squeeze") acting on the SAME object.
    - Example WRONG: "hold blue wire with both hands, twist blue wire with both hands".
    - Example CORRECT: "twist blue wire with both hands".
-
-8. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
-   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
-   - When hands tap, adjust, align, or arrange sheets of paper together (even while right hand holds scissors):
-     * Ground Truth Action: "hold scissors with right hand, align papers with both hands"
-     * Holding Action: "hold papers with left hand, hold scissors with right hand"
 
 9. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
    - Shears vs Pliers: "shears" and "pliers" are interchangeable valid object nouns for wire-cutting tools.
