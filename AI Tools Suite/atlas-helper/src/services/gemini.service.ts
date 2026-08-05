@@ -75,8 +75,8 @@ export class GeminiService {
   }
 
   /**
-   * Corrects action labels for multiple segments with automatic model fallback
-   * if quota or rate limits occur (gemini-2.5-pro -> gemini-2.5-flash -> gemini-1.5-pro -> gemini-1.5-flash).
+   * Corrects action labels for multiple segments using active stable Gemini models
+   * (gemini-2.0-flash -> gemini-1.5-flash -> gemini-1.5-pro -> gemini-2.0-flash-lite).
    */
   async correctLabels(
     fileUri: string,
@@ -99,12 +99,12 @@ ${JSON.stringify(segmentsPayload, null, 2)}
 Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
 `;
 
-    // Try primary model and fallback to flash/1.5 models if quota is exceeded
+    // Active production models with generous free tier quotas
     const modelsToTry = [
-      "gemini-2.5-pro",
-      "gemini-2.5-flash",
-      "gemini-1.5-pro",
+      "gemini-2.0-flash",
       "gemini-1.5-flash",
+      "gemini-1.5-pro",
+      "gemini-2.0-flash-lite",
     ];
 
     let lastError: any = null;
@@ -146,8 +146,11 @@ Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
         const errStr = String(err?.message || err);
         if (
           err?.status === 429 ||
+          err?.status === 404 ||
           errStr.includes("429") ||
+          errStr.includes("404") ||
           errStr.includes("Quota exceeded") ||
+          errStr.includes("no longer available") ||
           errStr.includes("RESOURCE_EXHAUSTED") ||
           errStr.includes("limit: 0")
         ) {
@@ -159,7 +162,7 @@ Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
 
     throw new Error(
       lastError?.message ||
-        "Gemini API quota exceeded on free tier. Please enable Billing in Google AI Studio or wait a few moments."
+        "Gemini API model call failed. Please check your Gemini API Key in Vercel settings."
     );
   }
 }
