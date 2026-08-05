@@ -75,7 +75,8 @@ export class GeminiService {
   }
 
   /**
-   * Corrects action labels for multiple segments using Gemini 2.5 Pro model.
+   * Corrects action labels for multiple segments with automatic model fallback
+   * if quota or rate limits occur (gemini-2.5-pro -> gemini-2.5-flash -> gemini-1.5-pro -> gemini-1.5-flash).
    */
   async correctLabels(
     fileUri: string,
@@ -98,39 +99,67 @@ ${JSON.stringify(segmentsPayload, null, 2)}
 Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
 `;
 
-    const response = await this.ai.models.generateContent({
-      model: "gemini-2.5-pro",
-      contents: [
-        {
-          role: "user",
-          parts: [
+    // Try primary model and fallback to flash/1.5 models if quota is exceeded
+    const modelsToTry = [
+      "gemini-2.5-pro",
+      "gemini-2.5-flash",
+      "gemini-1.5-pro",
+      "gemini-1.5-flash",
+    ];
+
+    let lastError: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await this.ai.models.generateContent({
+          model,
+          contents: [
             {
-              fileData: {
-                fileUri,
-                mimeType: "video/mp4",
-              },
-            },
-            {
-              text: `${systemPrompt}\n\n${userPrompt}`,
+              role: "user",
+              parts: [
+                {
+                  fileData: {
+                    fileUri,
+                    mimeType: "video/mp4",
+                  },
+                },
+                {
+                  text: `${systemPrompt}\n\n${userPrompt}`,
+                },
+              ],
             },
           ],
-        },
-      ],
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
-    });
+          config: {
+            responseMimeType: "application/json",
+            temperature: 0.1,
+          },
+        });
 
-    const responseText = response.text || "[]";
-    try {
-      const parsedResults = JSON.parse(responseText);
-      if (Array.isArray(parsedResults)) {
-        return parsedResults;
+        const responseText = response.text || "[]";
+        const parsedResults = JSON.parse(responseText);
+        if (Array.isArray(parsedResults)) {
+          return parsedResults;
+        }
+      } catch (err: any) {
+        console.warn(`Model ${model} failed, trying fallback model...`, err?.message || err);
+        lastError = err;
+        const errStr = String(err?.message || err);
+        if (
+          err?.status === 429 ||
+          errStr.includes("429") ||
+          errStr.includes("Quota exceeded") ||
+          errStr.includes("RESOURCE_EXHAUSTED") ||
+          errStr.includes("limit: 0")
+        ) {
+          continue; // Fallback to next model
+        }
+        throw err;
       }
-      return [];
-    } catch {
-      throw new Error(`Failed to parse Gemini response as JSON: ${responseText}`);
     }
+
+    throw new Error(
+      lastError?.message ||
+        "Gemini API quota exceeded on free tier. Please enable Billing in Google AI Studio or wait a few moments."
+    );
   }
 }
