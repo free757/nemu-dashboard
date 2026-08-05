@@ -81,6 +81,11 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
 export function translateToArabic(englishText: string): string {
   if (!englishText) return "";
 
+  // Full sentence phrases mapping
+  if (englishText.includes("Applied ground-truth Atlas rubric syntax rules")) {
+    return "تم تطبيق القواعد النحوية والقياسية المعتمدة لأطلس.";
+  }
+
   let ar = englishText;
 
   // Dictionary mappings
@@ -113,6 +118,8 @@ export function translateToArabic(englishText: string): string {
     [/\bposition\b/gi, "تثبيت دقيق"],
 
     // Objects
+    [/\bbook\b/gi, "كتاب"],
+    [/\bpage\b/gi, "صفحة"],
     [/\bsewing needle\b/gi, "إبرة الخياطة"],
     [/\bneedle\b/gi, "إبرة"],
     [/\bthread\b/gi, "خيط"],
@@ -153,7 +160,7 @@ export function translateToArabic(englishText: string): string {
     [/\bground\b/gi, "الأرض"],
     [/\bfloor\b/gi, "الأرضية"],
 
-    // Hands
+    // Prepositions & Hands
     [/\bwith right hand\b/gi, "باليد اليمنى"],
     [/\bwith left hand\b/gi, "باليد اليسرى"],
     [/\bwith both hands\b/gi, "بكلتا اليدين"],
@@ -162,6 +169,7 @@ export function translateToArabic(englishText: string): string {
     [/\bin both hands\b/gi, "في كلتا اليدين"],
     [/\bfrom right hand to left hand\b/gi, "من اليد اليمنى إلى اليد اليسرى"],
     [/\bfrom left hand to right hand\b/gi, "من اليد اليسرى إلى اليد اليمنى"],
+    [/\bwith\b/gi, "بـ"],
     [/\bfrom\b/gi, "من"],
     [/\bto\b/gi, "إلى"],
     [/\band\b/gi, "و"],
