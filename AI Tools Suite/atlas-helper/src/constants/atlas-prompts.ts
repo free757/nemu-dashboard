@@ -10,8 +10,10 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - Example CORRECT: "twist blue wire with both hands".
 
 2. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
-   - Wire stripping: "hold blue wire with left hand, strip blue wire with pliers in right hand" (or "with shears in right hand").
-   - Wire folding: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands".
+   - Shears vs Pliers: "shears" and "pliers" are interchangeable valid object nouns for wire-cutting tools.
+   - Wire vs Cable: "wire" and "cable" are interchangeable valid object nouns for electrical conductors.
+   - Wire stripping: "hold blue wire with left hand, strip blue wire with shears in right hand" (or "with pliers in right hand").
+   - Multi-action cable sequence: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands".
 
 3. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS (PRIORITY RULE FOR NEEDLE/FABRIC CLIPS):
    - ALWAYS use specific compound noun "sewing needle" (NEVER generic "needle" or "thread").
@@ -38,7 +40,7 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
 6. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
-   - Off-hand clause: Always label what the other hand is doing (e.g. "hold blue wire with left hand, strip blue wire with pliers in right hand").
+   - Off-hand clause: Always label what the other hand is doing (e.g. "hold blue wire with left hand, strip blue wire with shears in right hand").
    - Hand-to-hand passes: ALWAYS describe when an object is passed from one hand to another ("pass cup from left hand to right hand").
 
 7. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
@@ -46,8 +48,8 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - ✅ USE SPECIFIC ALTERNATIVES: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "pull", "insert", "pick up".
 
 8. OBJECT NAMING TIPS & CONSISTENCY (PDF PAGE 4):
-   - Naming consistency: Maintain exact object/verb names throughout episode ("sewing needle", "cap", "papers", "blue wire").
-   - Object Noun Simplification: Use "bottle", "bag", "sachet", "cap", "sewing needle", "papers", "blue wire".
+   - Naming consistency: Maintain exact object/verb names throughout episode ("sewing needle", "cap", "papers", "blue wire", "shears").
+   - Object Noun Simplification: Use "bottle", "bag", "sachet", "cap", "sewing needle", "papers", "blue wire", "shears".
 
 9. BANNED BODY PARTS (HANDS ONLY - PDF PAGE 4):
    - ❌ NEVER mention body parts other than hands (e.g. "wash spoon with right hand", NOT "wash spoon with fingers").
@@ -74,6 +76,6 @@ OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
 - "id": string (the matching segment ID)
 - "correctedLabel": string (the exact corrected label adhering strictly to all rubric rules)
-- "visualEvidence": string (a short 1-sentence description of what visual movement/hands actions were observed in the video for this segment)
+- "visualEvidence": string (a short 1-sentence description of what visual movement/hands actions me observed in the video for this segment)
 - "analysisMode": string ("visual" if video frames were inspected, or "rubric" if text rubric applied)
 `.trim();
