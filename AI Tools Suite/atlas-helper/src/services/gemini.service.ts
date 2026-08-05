@@ -103,13 +103,16 @@ export class GeminiService {
 Here are the video segments to validate and correct according to the Atlas Label Rubric:
 ${JSON.stringify(segmentsPayload, null, 2)}
 
-Strictly adhere to the Atlas Label Rubric rules:
-1. Imperative voice, no articles (a, an, the).
-2. Name the acting hand clearly (left hand, right hand, both hands).
-3. Single separator (comma or "and").
-4. Every verb attaches to an object.
+Strictly adhere to all Atlas Label Rubric rules.
 
-Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
+Output raw JSON array strictly adhering to this schema:
+[
+  {
+    "id": "...",
+    "correctedLabel": "...",
+    "visualEvidence": "Short 1-sentence description of observed hands movement in this segment timeframe."
+  }
+]
 `;
 
     // 1. Try Gemini API Keys if available
@@ -148,7 +151,10 @@ Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
           const responseText = response.text || "[]";
           const parsedResults = JSON.parse(responseText);
           if (Array.isArray(parsedResults) && parsedResults.length > 0) {
-            return parsedResults;
+            return parsedResults.map((r: any) => ({
+              ...r,
+              analysisMode: isTextOnly ? "rubric" : "visual",
+            }));
           }
         } catch (err: any) {
           console.warn(`Gemini key ...${key.slice(-4)} model ${model} failed, trying next...`);
@@ -195,8 +201,13 @@ Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
             const content = data.choices?.[0]?.message?.content || "[]";
             const cleanedContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
             const parsed = JSON.parse(cleanedContent);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-            if (parsed.segments && Array.isArray(parsed.segments)) return parsed.segments;
+            const arrayRes = Array.isArray(parsed) ? parsed : (parsed.segments || []);
+            if (arrayRes.length > 0) {
+              return arrayRes.map((r: any) => ({
+                ...r,
+                analysisMode: "rubric",
+              }));
+            }
           }
         } catch (orErr) {
           console.warn("OpenRouter key iteration failed:", orErr);
@@ -204,39 +215,7 @@ Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
       }
     }
 
-    // 3. Try Existing GROQ_API_KEY if available
-    const groqKey = process.env.GROQ_API_KEY;
-    if (groqKey) {
-      try {
-        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            response_format: { type: "json_object" },
-          }),
-        });
-
-        if (groqResponse.ok) {
-          const data = await groqResponse.json();
-          const content = data.choices?.[0]?.message?.content || "[]";
-          const parsed = JSON.parse(content);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-          if (parsed.segments && Array.isArray(parsed.segments)) return parsed.segments;
-        }
-      } catch (groqErr) {
-        console.warn("Groq API fallback failed:", groqErr);
-      }
-    }
-
-    // 4. Guaranteed Rule-Based Rubric Fallback
+    // 3. Guaranteed Rule-Based Rubric Fallback
     return segments.map((s) => {
       let cleaned = s.currentLabel
         .replace(/\b(the|a|an)\b/gi, "")
@@ -246,6 +225,8 @@ Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
       return {
         id: s.id,
         correctedLabel: cleaned || s.currentLabel,
+        visualEvidence: "Applied ground-truth Atlas rubric syntax rules.",
+        analysisMode: "rubric",
       };
     });
   }
