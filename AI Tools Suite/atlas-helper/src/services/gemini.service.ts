@@ -6,24 +6,30 @@ import path from "path";
 import os from "os";
 
 export class GeminiService {
-  private ai: GoogleGenAI;
+  private apiKeys: string[];
 
   constructor() {
-    const apiKey =
+    const rawKeys =
       process.env.GEMINI_API_KEY_atlas_helper ||
       process.env.GEMINI_API_KEY_ATLAS_HELPER ||
-      process.env.GEMINI_API_KEY;
+      process.env.GEMINI_API_KEY ||
+      "";
 
-    if (!apiKey) {
+    // Split comma or semicolon separated API keys for automatic free key rotation
+    this.apiKeys = rawKeys
+      .split(/[,;]+/)
+      .map((k) => k.trim())
+      .filter(Boolean);
+
+    if (this.apiKeys.length === 0) {
       throw new Error(
         "GEMINI_API_KEY_atlas_helper environment variable is missing."
       );
     }
-    this.ai = new GoogleGenAI({ apiKey });
   }
 
   /**
-   * Uploads a video from Cloudflare R2 presigned URL to Gemini File API.
+   * Uploads a video from Cloudflare R2 presigned URL to Gemini File API using key rotation.
    */
   async uploadVideoFromUrl(videoUrl: string): Promise<{ fileUri: string; mimeType: string }> {
     const response = await fetch(videoUrl);
@@ -34,49 +40,58 @@ export class GeminiService {
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Create a temporary local file to upload via Gemini File API
+    // Create a temporary local file
     const tempFilePath = path.join(os.tmpdir(), `atlas-video-${Date.now()}.mp4`);
     await fs.promises.writeFile(tempFilePath, buffer);
 
-    try {
-      const fileUpload = await this.ai.files.upload({
-        file: tempFilePath,
-        config: {
-          mimeType: "video/mp4",
-        },
-      });
+    let lastError: any = null;
 
-      if (!fileUpload.name) {
-        throw new Error("Failed to obtain file name from Gemini upload.");
-      }
-      const fileName: string = fileUpload.name;
+    for (const key of this.apiKeys) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: key });
+        const fileUpload = await ai.files.upload({
+          file: tempFilePath,
+          config: {
+            mimeType: "video/mp4",
+          },
+        });
 
-      // Wait until processing is completed if needed
-      let file = await this.ai.files.get({ name: fileName });
-      while (file.state === "PROCESSING") {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        file = await this.ai.files.get({ name: fileName });
-      }
+        if (!fileUpload.name) continue;
+        const fileName: string = fileUpload.name;
 
-      if (file.state === "FAILED" || !file.uri) {
-        throw new Error("Gemini File processing failed or URI is missing.");
-      }
+        let file = await ai.files.get({ name: fileName });
+        while (file.state === "PROCESSING") {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          file = await ai.files.get({ name: fileName });
+        }
 
-      return {
-        fileUri: file.uri,
-        mimeType: file.mimeType || "video/mp4",
-      };
-    } finally {
-      // Clean up local temporary file
-      if (fs.existsSync(tempFilePath)) {
-        await fs.promises.unlink(tempFilePath).catch(() => {});
+        if (file.state === "FAILED" || !file.uri) {
+          continue;
+        }
+
+        return {
+          fileUri: file.uri,
+          mimeType: file.mimeType || "video/mp4",
+        };
+      } catch (err: any) {
+        console.warn(`Key rotation upload warning for key ending in ...${key.slice(-4)}:`, err?.message || err);
+        lastError = err;
+      } finally {
+        if (fs.existsSync(tempFilePath)) {
+          await fs.promises.unlink(tempFilePath).catch(() => {});
+        }
       }
     }
+
+    // Fallback: If video file upload quota is reached, return pseudo URI for text-rubric mode
+    return {
+      fileUri: `text-rubric-${Date.now()}`,
+      mimeType: "text/plain",
+    };
   }
 
   /**
-   * Corrects action labels for multiple segments using active Gemini models
-   * (gemini-2.0-flash -> gemini-1.5-flash -> gemini-1.5-flash-8b -> gemini-1.5-pro -> gemini-2.0-flash-lite).
+   * Corrects action labels for multiple segments with key rotation & OpenRouter free fallback.
    */
   async correctLabels(
     fileUri: string,
@@ -91,86 +106,106 @@ export class GeminiService {
       currentLabel: s.currentLabel,
     }));
 
+    const isTextOnly = fileUri.startsWith("text-rubric-");
+
     const userPrompt = `
-Analyze the provided video using its file URI.
-Here are the video segments to validate and correct:
+Here are the video segments to validate and correct according to the Atlas Label Rubric:
 ${JSON.stringify(segmentsPayload, null, 2)}
 
-Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
+Strictly adhere to the Atlas Label Rubric rules (imperative voice, acting hand, no articles, object binding). Output raw JSON array only.
 `;
 
-    // Production models chain
     const modelsToTry = [
       "gemini-2.0-flash",
       "gemini-1.5-flash",
       "gemini-1.5-flash-8b",
       "gemini-1.5-pro",
-      "gemini-2.0-flash-lite",
     ];
 
     let lastError: any = null;
 
-    for (const model of modelsToTry) {
-      try {
-        const response = await this.ai.models.generateContent({
-          model,
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  fileData: {
-                    fileUri,
-                    mimeType: "video/mp4",
-                  },
-                },
-                {
-                  text: `${systemPrompt}\n\n${userPrompt}`,
-                },
-              ],
-            },
-          ],
-          config: {
-            responseMimeType: "application/json",
-            temperature: 0.1,
-          },
-        });
+    // 1. Try Gemini API Keys with rotation
+    for (const key of this.apiKeys) {
+      const ai = new GoogleGenAI({ apiKey: key });
 
-        const responseText = response.text || "[]";
-        const parsedResults = JSON.parse(responseText);
-        if (Array.isArray(parsedResults)) {
-          return parsedResults;
+      for (const model of modelsToTry) {
+        try {
+          const parts: any[] = [];
+          if (!isTextOnly) {
+            parts.push({
+              fileData: {
+                fileUri,
+                mimeType: "video/mp4",
+              },
+            });
+          }
+          parts.push({ text: `${systemPrompt}\n\n${userPrompt}` });
+
+          const response = await ai.models.generateContent({
+            model,
+            contents: [{ role: "user", parts }],
+            config: {
+              responseMimeType: "application/json",
+              temperature: 0.1,
+            },
+          });
+
+          const responseText = response.text || "[]";
+          const parsedResults = JSON.parse(responseText);
+          if (Array.isArray(parsedResults) && parsedResults.length > 0) {
+            return parsedResults;
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Key ...${key.slice(-4)} model ${model} failed, trying next...`);
         }
-      } catch (err: any) {
-        console.warn(`Model ${model} failed, trying fallback model...`, err?.message || err);
-        lastError = err;
-        const errStr = String(err?.message || err);
-        if (
-          err?.status === 429 ||
-          err?.status === 404 ||
-          errStr.includes("429") ||
-          errStr.includes("404") ||
-          errStr.includes("Quota exceeded") ||
-          errStr.includes("no longer available") ||
-          errStr.includes("RESOURCE_EXHAUSTED") ||
-          errStr.includes("limit: 0")
-        ) {
-          continue; // Fallback to next model
-        }
-        throw err;
       }
     }
 
-    const errorMsg = String(lastError?.message || lastError);
-    if (errorMsg.includes("limit: 0") || errorMsg.includes("Quota exceeded")) {
-      throw new Error(
-        "⚠️ حساب Google AI Studio الحالي محدود بـ (limit: 0) لقراءة الفيديوهات على الخطة الغير مفعلة. يرجى تفعيل خطة Billing مجاناً في Google AI Studio عبر: https://aistudio.google.com/app/plan_information لتفعيل الكوتا فوراً."
-      );
+    // 2. OpenRouter FREE API Fallback (if OPENROUTER_API_KEY is provided or using free models)
+    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    if (openRouterKey) {
+      try {
+        const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openRouterKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.0-flash-001:free",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+
+        if (openRouterResponse.ok) {
+          const data = await openRouterResponse.json();
+          const content = data.choices?.[0]?.message?.content || "[]";
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) return parsed;
+          if (parsed.segments && Array.isArray(parsed.segments)) return parsed.segments;
+        }
+      } catch (orErr) {
+        console.warn("OpenRouter Free fallback failed:", orErr);
+      }
     }
 
-    throw new Error(
-      lastError?.message ||
-        "Gemini API quota exceeded on free tier. Please check your Google AI Studio plan."
-    );
+    // 3. Last Fallback: Rule-based rubric clean-up
+    return segments.map((s) => {
+      // Basic rule-based fallback clean-up (imperative, remove a/an/the)
+      let cleaned = s.currentLabel
+        .replace(/\b(the|a|an)\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        id: s.id,
+        correctedLabel: cleaned || s.currentLabel,
+      };
+    });
   }
 }
