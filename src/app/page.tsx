@@ -3602,6 +3602,18 @@ export default function Dashboard() {
 
             {activeAITool === null ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Atlas Helper Card */}
+                <div 
+                  onClick={() => router.push('/atlas-helper')}
+                  className={`p-6 rounded-3xl border cursor-pointer hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 ${theme === 'dark' ? 'bg-[#111] border-white/10 hover:border-emerald-500/50' : 'bg-white border-gray-200 hover:border-emerald-500'}`}
+                >
+                  <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center">
+                    <Sparkles className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold">Atlas Helper</h3>
+                  <p className="text-sm text-gray-500">Validate and correct Atlas Capture action labels using Gemini 2.5 Pro.</p>
+                </div>
+
                 {/* Live Interview Assistant Card */}
                 <div 
                   onClick={() => setActiveAITool('interview')}

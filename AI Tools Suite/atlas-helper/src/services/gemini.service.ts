@@ -35,18 +35,25 @@ export class GeminiService {
     try {
       const fileUpload = await this.ai.files.upload({
         file: tempFilePath,
-        mimeType: "video/mp4",
+        config: {
+          mimeType: "video/mp4",
+        },
       });
 
+      if (!fileUpload.name) {
+        throw new Error("Failed to obtain file name from Gemini upload.");
+      }
+      const fileName: string = fileUpload.name;
+
       // Wait until processing is completed if needed
-      let file = await this.ai.files.get({ name: fileUpload.name });
+      let file = await this.ai.files.get({ name: fileName });
       while (file.state === "PROCESSING") {
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        file = await this.ai.files.get({ name: fileUpload.name });
+        file = await this.ai.files.get({ name: fileName });
       }
 
-      if (file.state === "FAILED") {
-        throw new Error("Gemini File processing failed.");
+      if (file.state === "FAILED" || !file.uri) {
+        throw new Error("Gemini File processing failed or URI is missing.");
       }
 
       return {
