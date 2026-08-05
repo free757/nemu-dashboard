@@ -9,9 +9,15 @@ export class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey =
+      process.env.GEMINI_API_KEY_atlas_helper ||
+      process.env.GEMINI_API_KEY_ATLAS_HELPER ||
+      process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is missing.");
+      throw new Error(
+        "GEMINI_API_KEY_atlas_helper environment variable is missing."
+      );
     }
     this.ai = new GoogleGenAI({ apiKey });
   }
