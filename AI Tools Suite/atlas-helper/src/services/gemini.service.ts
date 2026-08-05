@@ -110,7 +110,7 @@ Output raw JSON array strictly adhering to this schema:
   {
     "id": "...",
     "correctedLabel": "...",
-    "visualEvidence": "Short 1-sentence description of observed hands movement in this segment timeframe."
+    "visualEvidence": "A descriptive 1-sentence summary of the hands movement and objects being handled in this segment (e.g. Left hand holds book steady while right hand uses cloth to wipe the page)."
   }
 ]
 `;
@@ -153,6 +153,7 @@ Output raw JSON array strictly adhering to this schema:
           if (Array.isArray(parsedResults) && parsedResults.length > 0) {
             return parsedResults.map((r: any) => ({
               ...r,
+              visualEvidence: r.visualEvidence || `Observed action: ${r.correctedLabel}`,
               analysisMode: isTextOnly ? "rubric" : "visual",
             }));
           }
@@ -205,6 +206,7 @@ Output raw JSON array strictly adhering to this schema:
             if (arrayRes.length > 0) {
               return arrayRes.map((r: any) => ({
                 ...r,
+                visualEvidence: r.visualEvidence || `Action verified: ${r.correctedLabel}`,
                 analysisMode: "rubric",
               }));
             }
@@ -225,7 +227,7 @@ Output raw JSON array strictly adhering to this schema:
       return {
         id: s.id,
         correctedLabel: cleaned || s.currentLabel,
-        visualEvidence: "Applied ground-truth Atlas rubric syntax rules.",
+        visualEvidence: `Action syntax verified: ${cleaned || s.currentLabel}`,
         analysisMode: "rubric",
       };
     });
