@@ -4,49 +4,67 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. MANDATORY HAND ATTRIBUTION FOR EVERY SINGLE CLAUSE:
+1. ABSOLUTE BAN ON VAGUE WORDS & APPROVED SPECIFIC ALTERNATIVES (FROM OFFICIAL GUIDE):
+   - ❌ NEVER USE "inspect" -> Name what was actually done instead (e.g. "look at [object]").
+   - ❌ NEVER USE "adjust" -> Name the specific physical motion instead:
+     * "slide" (e.g., "slide plate across counter with right hand")
+     * "align" (e.g., "align lid with jar using both hands")
+     * "rotate" (e.g., "rotate lid with right hand")
+     * "flatten" (e.g., "flatten cloth on table with right hand")
+     * "tighten" (e.g., "tighten cap with right hand")
+     * "fold" (e.g., "fold towel with both hands")
+     * "tuck" (e.g., "tuck cloth into bag with right hand")
+     * "squeeze" (e.g., "squeeze sponge with right hand")
+     * "position" (e.g., "position screw on screwdriver tip with right hand")
+   - ❌ NEVER USE "reach" -> Name the completed action (e.g., "pick up ..."), not the intent.
+   - ❌ NEVER USE "manipulate" -> Name the specific motion (e.g., "rotate", "turn", "press").
+   - ❌ NEVER USE "tool" -> Name the specific item ("spoon", "cloth", "lid", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver").
+   - ❌ NEVER USE "grab" -> Use "pick up" (be literal).
+
+2. BANNED BODY PARTS (HANDS ONLY):
+   - ❌ NEVER USE "fingers", "thumb", "palm", "arm", or "body".
+   - ALWAYS use ONLY: "left hand", "right hand", or "both hands".
+   - Example CORRECT: "wash spoon with right hand" (NOT "wash spoon with fingers").
+
+3. MANDATORY HAND ATTRIBUTION FOR EVERY SINGLE CLAUSE:
    - EVERY action clause MUST specify the acting hand: "with left hand", "with right hand", "with both hands", "in left hand", "in right hand".
    - Hand attribution NEVER carries over across commas or "and".
    - Example CORRECT: "hold glass cup with left hand, wipe glass cup with cloth in right hand".
 
-2. STRICT RULE ON BODY PARTS & OBJECT ADJECTIVES (FROM PDF GUIDE PAGE 4):
-   - NEVER mention body parts other than hands (e.g. say "wash spoon with right hand", NOT "wash spoon with fingers").
+4. STRICT RULE ON OBJECT ADJECTIVES & CONSISTENCY:
    - Use adjectives ONLY when necessary to distinguish two similar objects on table (e.g. "pick up blue cloth with right hand").
    - Maintain strict naming consistency throughout the video (if named "bottle" or "wash", do NOT switch to "container" or "wipe").
 
-3. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
+5. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
    - Object Noun Precision: ALWAYS use specific compound noun "sewing needle" (NOT generic "needle" or "thread"). Target object: "cap".
    - Full Stitch Cycle (3 actions): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
 
-4. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
+6. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
    - Always split into TWO distinct clauses: "hold cloth in left hand, smoothen cloth with right hand". Use verb "smoothen" (NOT "smooth").
 
-5. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
+7. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
    - Always write: "pick up [object] with [hand1], pass [object] from [hand1] to [hand2]".
 
-6. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
+8. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand, pick up screws from tray with right hand".
 
-7. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
+9. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
    - "pick up wrench and place wrench on table with right hand".
    - Always state surface location when present ("on table", "on counter", "on ground", "on floor").
 
-8. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
-   - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands", "set hose on ground with left hand, pick up watering can with right hand".
+10. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
+    - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands", "set hose on ground with left hand, pick up watering can with right hand".
 
-9. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
-   - "stir minced meat and onions in wok with ladle in right hand".
+11. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
+    - "stir minced meat and onions in wok with ladle in right hand".
 
-10. ABSOLUTE BAN ON VAGUE WORDS ("tool", "inspect", "adjust", "reach", "manipulate", "grab"):
-    - NEVER use generic "tool" or vague verbs. Use specific item ("sewing needle", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver") and specific verbs ("pick up", "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "strip", "rake").
-
-11. MANDATORY CLAUSE STRUCTURE & FORMAT:
+12. MANDATORY FORMAT & SYNTAX CONSTRAINTS:
     - Template: Verb + Object (+ Location) + "with/in" + Hand.
-    - NO PRONOUNS (their, its, his, her).
-    - NO "-ing" VERBS (use "seal", NOT "sealing").
-    - NO ARTICLES (never use "a", "an", "the"). Write "pick up spoon" NOT "pick up the spoon".
-    - WRITE NUMBERS IN WORDS (say "three" NOT "3").
-    - SEPARATORS: ONLY use commas "," or "and". NEVER use semicolons (;) or slashes (/).
+    - ❌ NO PRONOUNS (their, its, his, her, my, your).
+    - ❌ NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
+    - ❌ NO ARTICLES (never use "a", "an", "the"). Write "pick up spoon" NOT "pick up the spoon".
+    - ❌ NO DIGITS FOR NUMBERS (write numbers in words: "three" NOT "3", "five" NOT "5").
+    - ❌ NO SEMICOLONS (;) OR SLASHES (/). ONLY use commas "," or "and".
 
 OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
