@@ -75,8 +75,8 @@ export class GeminiService {
   }
 
   /**
-   * Corrects action labels for multiple segments using active stable Gemini models
-   * (gemini-2.0-flash -> gemini-1.5-flash -> gemini-1.5-pro -> gemini-2.0-flash-lite).
+   * Corrects action labels for multiple segments using active Gemini models
+   * (gemini-2.0-flash -> gemini-1.5-flash -> gemini-1.5-flash-8b -> gemini-1.5-pro -> gemini-2.0-flash-lite).
    */
   async correctLabels(
     fileUri: string,
@@ -99,10 +99,11 @@ ${JSON.stringify(segmentsPayload, null, 2)}
 Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
 `;
 
-    // Active production models with generous free tier quotas
+    // Production models chain
     const modelsToTry = [
       "gemini-2.0-flash",
       "gemini-1.5-flash",
+      "gemini-1.5-flash-8b",
       "gemini-1.5-pro",
       "gemini-2.0-flash-lite",
     ];
@@ -160,9 +161,16 @@ Strictly adhere to the Atlas Label Rubric rules. Output raw JSON only.
       }
     }
 
+    const errorMsg = String(lastError?.message || lastError);
+    if (errorMsg.includes("limit: 0") || errorMsg.includes("Quota exceeded")) {
+      throw new Error(
+        "⚠️ حساب Google AI Studio الحالي محدود بـ (limit: 0) لقراءة الفيديوهات على الخطة الغير مفعلة. يرجى تفعيل خطة Billing مجاناً في Google AI Studio عبر: https://aistudio.google.com/app/plan_information لتفعيل الكوتا فوراً."
+      );
+    }
+
     throw new Error(
       lastError?.message ||
-        "Gemini API model call failed. Please check your Gemini API Key in Vercel settings."
+        "Gemini API quota exceeded on free tier. Please check your Google AI Studio plan."
     );
   }
 }
