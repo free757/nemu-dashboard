@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../constants/atlas-prompts.ts";
-import { CorrectedSegmentResult, SegmentItem } from "../types/atlas.ts";
+import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../constants/atlas-prompts";
+import { CorrectedSegmentResult, SegmentItem } from "../types/atlas";
 import fs from "fs";
 import path from "path";
 import os from "os";
