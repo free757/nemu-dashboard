@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "../ui/Button";
-import { parseBulkSegmentsText, parseTimeRange } from "../../lib/utils";
+import { parseBulkSegmentsText, parseTimeRange, translateToArabic } from "../../lib/utils";
 import { ApiResponse, CorrectLabelsResponse, SegmentItem } from "../../types/atlas";
 import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../../constants/atlas-prompts";
 import {
@@ -17,7 +17,7 @@ import {
   Layers,
   AlertCircle,
   Eye,
-  CheckCircle2,
+  Languages,
 } from "lucide-react";
 
 interface BatchLabelFormProps {
@@ -33,6 +33,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [arabicMap, setArabicMap] = useState<Record<string, boolean>>({});
 
   const handleBulkTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -65,6 +66,10 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
     setSegments((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [key]: value } : s))
     );
+  };
+
+  const toggleArabicTranslation = (id: string) => {
+    setArabicMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleCorrectAll = async () => {
@@ -232,101 +237,133 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
           </div>
 
           <div className="grid gap-4">
-            {segments.map((seg, index) => (
-              <div
-                key={seg.id}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md space-y-3"
-              >
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                  <div className="space-y-2 flex-1 w-full">
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2 text-xs font-mono text-brand-400 bg-brand-950/60 border border-brand-800/40 px-2.5 py-1 rounded-md w-fit">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>
-                          Segment {index + 1}: {seg.startTime} – {seg.endTime}
-                        </span>
-                      </div>
-
-                      {seg.correctedLabel && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-0.5 rounded-full font-medium">
-                          <Eye className="w-3.5 h-3.5" />
+            {segments.map((seg, index) => {
+              const isArabic = !!arabicMap[seg.id];
+              return (
+                <div
+                  key={seg.id}
+                  className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md space-y-3"
+                >
+                  <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <div className="space-y-2 flex-1 w-full">
+                      <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                        <div className="flex items-center gap-2 text-xs font-mono text-brand-400 bg-brand-950/60 border border-brand-800/40 px-2.5 py-1 rounded-md w-fit">
+                          <Clock className="w-3.5 h-3.5" />
                           <span>
-                            {seg.analysisMode === "visual"
-                              ? "👁️ Verified Video Frames"
-                              : "✍️ Atlas Rubric Applied"}
+                            Segment {index + 1}: {seg.startTime} – {seg.endTime}
                           </span>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                      <div>
-                        <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                          Current AI Label
-                        </label>
-                        <input
-                          type="text"
-                          value={seg.currentLabel}
-                          onChange={(e) =>
-                            handleUpdateSegment(seg.id, "currentLabel", e.target.value)
-                          }
-                          className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs text-slate-300 font-mono focus:outline-none focus:ring-1 focus:ring-brand-500"
-                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleArabicTranslation(seg.id)}
+                            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md transition-all font-medium border ${
+                              isArabic
+                                ? "bg-amber-950/70 border-amber-500/50 text-amber-300"
+                                : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white"
+                            }`}
+                          >
+                            <Languages className="w-3.5 h-3.5" />
+                            <span>{isArabic ? "إخفاء الترجمة" : "🌐 ترجمة عربي"}</span>
+                          </button>
+
+                          {seg.correctedLabel && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-1 rounded-md font-medium">
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>
+                                {seg.analysisMode === "visual"
+                                  ? "👁️ Verified Video Frames"
+                                  : "✍️ Atlas Rubric Applied"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {seg.correctedLabel && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                         <div>
-                          <label className="block text-[11px] font-medium text-emerald-400 mb-1">
-                            Gemini Corrected Label
+                          <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                            Current AI Label
                           </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              readOnly
-                              value={seg.correctedLabel}
-                              className="w-full px-3 py-1.5 bg-emerald-950/30 border border-emerald-800/50 rounded-md text-xs text-emerald-300 font-mono font-semibold focus:outline-none"
-                            />
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleCopy(seg.id, seg.correctedLabel!)}
-                              icon={
-                                copiedId === seg.id ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5 text-slate-400" />
-                                )
-                              }
-                            >
-                              {copiedId === seg.id ? "Copied" : "Copy"}
-                            </Button>
+                          <input
+                            type="text"
+                            value={seg.currentLabel}
+                            onChange={(e) =>
+                              handleUpdateSegment(seg.id, "currentLabel", e.target.value)
+                            }
+                            className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-md text-xs text-slate-300 font-mono focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          />
+                          {isArabic && seg.currentLabel && (
+                            <p className="mt-1 text-xs text-amber-300/90 font-sans dir-rtl bg-slate-950/60 p-1.5 rounded border border-amber-500/20">
+                              🇸🇦 <strong>الترجمة:</strong> {translateToArabic(seg.currentLabel)}
+                            </p>
+                          )}
+                        </div>
+
+                        {seg.correctedLabel && (
+                          <div>
+                            <label className="block text-[11px] font-medium text-emerald-400 mb-1">
+                              Gemini Corrected Label
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={seg.correctedLabel}
+                                className="w-full px-3 py-1.5 bg-emerald-950/30 border border-emerald-800/50 rounded-md text-xs text-emerald-300 font-mono font-semibold focus:outline-none"
+                              />
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleCopy(seg.id, seg.correctedLabel!)}
+                                icon={
+                                  copiedId === seg.id ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                  )
+                                }
+                              >
+                                {copiedId === seg.id ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                            {isArabic && seg.correctedLabel && (
+                              <p className="mt-1 text-xs text-emerald-300/90 font-sans dir-rtl bg-emerald-950/40 p-1.5 rounded border border-emerald-500/30">
+                                🇸🇦 <strong>التسمية المصححة:</strong> {translateToArabic(seg.correctedLabel)}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visual Evidence / Proof Box */}
+                      {seg.visualEvidence && (
+                        <div className="mt-2 text-xs bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-slate-300 flex items-start gap-2">
+                          <Eye className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-brand-300">Visual Evidence: </span>
+                            <span>{seg.visualEvidence}</span>
+                            {isArabic && (
+                              <p className="mt-1 text-amber-200/90 font-sans dir-rtl bg-slate-900/80 p-1.5 rounded border border-amber-500/20">
+                                🇸🇦 <strong>الملاحظة البصرية:</strong> {translateToArabic(seg.visualEvidence)}
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Visual Evidence / Proof Box */}
-                    {seg.visualEvidence && (
-                      <div className="mt-2 text-xs bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-slate-300 flex items-start gap-2">
-                        <Eye className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold text-brand-300">Visual Evidence: </span>
-                          <span>{seg.visualEvidence}</span>
-                        </div>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleRemoveSegment(seg.id)}
+                      className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg transition-colors self-end md:self-center"
+                      title="Remove segment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => handleRemoveSegment(seg.id)}
-                    className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg transition-colors self-end md:self-center"
-                    title="Remove segment"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

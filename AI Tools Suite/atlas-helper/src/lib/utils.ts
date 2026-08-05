@@ -74,3 +74,102 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
 
   return segments;
 }
+
+/**
+ * Instant Arabic Translation Helper for Atlas Action Labels
+ */
+export function translateToArabic(englishText: string): string {
+  if (!englishText) return "";
+
+  let ar = englishText;
+
+  // Dictionary mappings
+  const dict: [RegExp, string][] = [
+    [/\bpick up\b/gi, "التقاط"],
+    [/\bplace\b/gi, "وضع"],
+    [/\bset\b/gi, "وضع"],
+    [/\bhold\b/gi, "إمساك"],
+    [/\bpass\b/gi, "تمرير"],
+    [/\bwipe\b/gi, "مسح/تنظيف"],
+    [/\brotate\b/gi, "تدوير"],
+    [/\bsmoothen\b/gi, "تنعيم/فرد"],
+    [/\bsmooth\b/gi, "تنعيم"],
+    [/\binsert\b/gi, "إدخال"],
+    [/\bpull\b/gi, "سحب"],
+    [/\bdig\b/gi, "حفر/تجريف"],
+    [/\bgather\b/gi, "تجميع"],
+    [/\bwater\b/gi, "ري/سقي"],
+    [/\bfill\b/gi, "ملء"],
+    [/\bstir\b/gi, "تقليب"],
+    [/\brake\b/gi, "تجريف/كنس"],
+    [/\balign\b/gi, "محاذاة"],
+    [/\bcut\b/gi, "قص/قطع"],
+    [/\bstrip\b/gi, "تقشير/تعرية"],
+    [/\bslide\b/gi, "سحب/انزلاق"],
+    [/\btighten\b/gi, "إحكام ربط"],
+    [/\bfold\b/gi, "طيّ"],
+    [/\btuck\b/gi, "ثني/إدخال"],
+    [/\bsqueeze\b/gi, "عصر/ضغط"],
+    [/\bposition\b/gi, "تثبيت دقيق"],
+
+    // Objects
+    [/\bsewing needle\b/gi, "إبرة الخياطة"],
+    [/\bneedle\b/gi, "إبرة"],
+    [/\bthread\b/gi, "خيط"],
+    [/\bcap\b/gi, "غطاء/قبعة"],
+    [/\bpatch\b/gi, "رقعة"],
+    [/\bglass cup\b/gi, "كأس زجاجي"],
+    [/\bglass jar\b/gi, "برطمان زجاجي"],
+    [/\bcup\b/gi, "كأس"],
+    [/\bjar\b/gi, "برطمان"],
+    [/\bcloth\b/gi, "قطعة قماش"],
+    [/\bpaper\b/gi, "ورقة"],
+    [/\bpapers\b/gi, "أوراق"],
+    [/\bscissors\b/gi, "مقص"],
+    [/\bhoe\b/gi, "فأس/مجرفة زراعية"],
+    [/\bhose\b/gi, "خرطوم المياه"],
+    [/\bwatering can\b/gi, "إبريق الري"],
+    [/\bbucket\b/gi, "دلو"],
+    [/\bsoil\b/gi, "التربة"],
+    [/\bleaves\b/gi, "أوراق الشجر"],
+    [/\bplant\b/gi, "نبتة"],
+    [/\bminced meat\b/gi, "لحم مفروم"],
+    [/\bonions\b/gi, "بصل"],
+    [/\bwok\b/gi, "مقلاة/وعاء الطهي"],
+    [/\bladle\b/gi, "مغرفة الطهي"],
+    [/\bscrewdriver\b/gi, "مفك براغي"],
+    [/\belectrical plug\b/gi, "فيشة كهربائية"],
+    [/\bplug\b/gi, "فيشة"],
+    [/\bscrews\b/gi, "براغي"],
+    [/\bscrew\b/gi, "برغي"],
+    [/\btray\b/gi, "صينية"],
+    [/\bbottle\b/gi, "زجاجة"],
+    [/\bsyrup bottle\b/gi, "زجاجة شربات"],
+    [/\bbag\b/gi, "كيس"],
+    [/\bsachet\b/gi, "كيس صغير"],
+    [/\bsnack bag\b/gi, "كيس وجبة تسالي"],
+    [/\bcounter\b/gi, "رخامة/منضدة العمل"],
+    [/\btable\b/gi, "طاولة"],
+    [/\bground\b/gi, "الأرض"],
+    [/\bfloor\b/gi, "الأرضية"],
+
+    // Hands
+    [/\bwith right hand\b/gi, "باليد اليمنى"],
+    [/\bwith left hand\b/gi, "باليد اليسرى"],
+    [/\bwith both hands\b/gi, "بكلتا اليدين"],
+    [/\bin right hand\b/gi, "في اليد اليمنى"],
+    [/\bin left hand\b/gi, "في اليد اليسرى"],
+    [/\bin both hands\b/gi, "في كلتا اليدين"],
+    [/\bfrom right hand to left hand\b/gi, "من اليد اليمنى إلى اليد اليسرى"],
+    [/\bfrom left hand to right hand\b/gi, "من اليد اليسرى إلى اليد اليمنى"],
+    [/\bfrom\b/gi, "من"],
+    [/\bto\b/gi, "إلى"],
+    [/\band\b/gi, "و"],
+  ];
+
+  for (const [regex, replacement] of dict) {
+    ar = ar.replace(regex, replacement);
+  }
+
+  return ar;
+}
