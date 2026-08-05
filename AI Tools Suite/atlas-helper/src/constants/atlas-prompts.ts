@@ -13,16 +13,19 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
    - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
-2. PAPER HANDLING & ALIGNMENT RULES (PLURAL "papers" + "align papers with both hands"):
+2. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS (STATIONARY HOLD VS ACTIVE ROTATION):
+   - Inspect whether the hand holding the container is stationary or actively turning:
+   - If hand keeps container stationary: "hold glass cup with left hand, wipe glass cup with cloth in right hand".
+   - If hand actively turns/rotates container while wiping: "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
+   - ❌ NEVER write "hold" if the hand is turning the item (Atlas flags: "'hold' does not describe what happens here: hands actively moving to rotate and wipe").
+
+3. PAPER HANDLING & ALIGNMENT RULES (PLURAL "papers" + "align papers with both hands"):
    - Object Noun: Use plural "papers" (NOT singular "paper") when handling sheets of paper.
    - Aligning Action: "hold scissors with right hand, align papers with both hands".
 
-3. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS REJECTION RULE):
+4. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS REJECTION RULE):
    - ❌ NEVER USE THE GENERIC WORD "tool" UNDER ANY CIRCUMSTANCES.
    - ✅ YOU MUST ALWAYS REPLACE "tool" WITH THE SPECIFIC EXACT ITEM NAME ("hoe", "trowel", "shears", "ladle", "knife", "spoon", "screwdriver", "pliers", "scissors").
-
-4. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS (MUST SPLIT INTO 2 CLAUSES):
-   - "hold glass cup with left hand, wipe glass cup with cloth in right hand" or "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
 
 5. CRITICAL: DO NOT SPLIT MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand".
