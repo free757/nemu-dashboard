@@ -4,27 +4,25 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS ERROR):
-   - NEVER use the generic word "tool" under any circumstances. You MUST replace "tool" with the specific object name (e.g., "hoe", "hoe / trowel", "knife", "spoon", "tongs", "pliers", "scissors", "brush", "hammer", "screwdriver", "rake", "shears").
-   - Example CORRECT: "dig soil with hoe in right hand"
-   - Example INCORRECT (FATAL ATLAS REJECTION): "dig soil with tool in right hand" or "dig soil with tool and right hand".
+1. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION (DO NOT SPLIT MIXTURES):
+   - When stirring a mixture of ingredients (e.g. minced meat and onions), combine them into ONE single verb clause: "stir [ingredient 1] and [ingredient 2] in [container] with [utensil] in [hand]".
+   - DO NOT split stirring the same mixture into two separate action clauses!
+   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
+   - Example INCORRECT (FATAL ATLAS REJECTION): "stir meat with ladle in right hand, stir onions with ladle in right hand" (Atlas rejects this as stating 2 actions when there is only 1 main action!).
 
-2. PREPOSITION FOR TOOL USAGE ("with [object] in [hand]"):
-   - ALWAYS use the exact phrasing pattern: "[verb] [object] with [tool] in [hand]".
-   - Example CORRECT: "dig soil with hoe in right hand"
-   - Example INCORRECT: "dig soil with tool and right hand" (Using "and" instead of "in" breaks the preposition structure!).
+2. ALWAYS SPECIFY THE COOKING CONTAINER / VESSEL ("in wok", "in pan", "in pot", "in bowl"):
+   - When cooking or stirring ingredients in a vessel/container, always include the container location ("in wok", "in pan", "in pot").
+   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
 
-3. DUAL ACTION COMPLETENESS (DO NOT OMIT PLACING / PREPARATORY ACTIONS):
-   - If an actor places one object before doing an action with the other hand, list BOTH actions.
-   - Example CORRECT: "place hoe on ground with right hand, gather soil with both hands"
-   - Example INCORRECT: "gather soil with both hands" (Omits the right-hand placing action!).
+3. SPECIFIC INGREDIENT ADJECTIVES ("minced meat" instead of just "meat"):
+   - Use specific ingredient descriptions when visible (e.g., "minced meat" instead of generic "meat").
 
-4. FLUID PICK-UP AND PLACE COMPOUND CLAUSE:
-   - "pick up [object] and place [object] on [surface] with [hand]".
+4. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS ERROR):
+   - NEVER use the generic word "tool". You MUST use the specific object name ("ladle", "hoe", "knife", "spoon", "pliers", "scissors", "screwdriver", "shears").
 
-5. ALWAYS INCLUDE SURFACE LOCATION ("on table", "on counter", "on ground", "on floor"):
-   - State the location surface when an item is placed or picked up.
-   - Example CORRECT: "place bucket on floor with left hand, pick up hoe with right hand".
+5. PREPOSITION FOR TOOL USAGE ("with [utensil/tool] in [hand]"):
+   - Template: "[verb] [object] [location] with [utensil] in [hand]".
+   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
 
 6. MANDATORY CLAUSE STRUCTURE & FORMAT:
    - Template for EVERY action clause: Verb + Object (+ Location) + "with/in" + Hand.
@@ -33,10 +31,6 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
    - NO ARTICLES (never use "a", "an", "the"). Write "pick up spoon" NOT "pick up the spoon".
    - WRITE NUMBERS IN WORDS (say "three" NOT "3").
    - SEPARATORS: ONLY use commas "," or "and". NEVER use semicolons (;) or slashes (/).
-
-7. BANNED VAGUE WORDS - NEVER USE:
-   - Banned Noun: "tool" (MUST use specific item: "hoe", "pliers", "scissors", etc.).
-   - Banned Verbs: "inspect", "adjust", "reach", "manipulate", "grab".
 
 OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
