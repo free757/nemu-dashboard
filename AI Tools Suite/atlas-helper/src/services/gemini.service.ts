@@ -15,17 +15,10 @@ export class GeminiService {
       process.env.GEMINI_API_KEY ||
       "";
 
-    // Split comma or semicolon separated API keys for automatic free key rotation
     this.apiKeys = rawKeys
       .split(/[,;]+/)
       .map((k) => k.trim())
       .filter(Boolean);
-
-    if (this.apiKeys.length === 0) {
-      throw new Error(
-        "GEMINI_API_KEY_atlas_helper environment variable is missing."
-      );
-    }
   }
 
   /**
@@ -40,50 +33,48 @@ export class GeminiService {
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Create a temporary local file
     const tempFilePath = path.join(os.tmpdir(), `atlas-video-${Date.now()}.mp4`);
     await fs.promises.writeFile(tempFilePath, buffer);
 
-    let lastError: any = null;
+    if (this.apiKeys.length > 0) {
+      for (const key of this.apiKeys) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: key });
+          const fileUpload = await ai.files.upload({
+            file: tempFilePath,
+            config: {
+              mimeType: "video/mp4",
+            },
+          });
 
-    for (const key of this.apiKeys) {
-      try {
-        const ai = new GoogleGenAI({ apiKey: key });
-        const fileUpload = await ai.files.upload({
-          file: tempFilePath,
-          config: {
-            mimeType: "video/mp4",
-          },
-        });
+          if (!fileUpload.name) continue;
+          const fileName: string = fileUpload.name;
 
-        if (!fileUpload.name) continue;
-        const fileName: string = fileUpload.name;
+          let file = await ai.files.get({ name: fileName });
+          while (file.state === "PROCESSING") {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            file = await ai.files.get({ name: fileName });
+          }
 
-        let file = await ai.files.get({ name: fileName });
-        while (file.state === "PROCESSING") {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          file = await ai.files.get({ name: fileName });
-        }
+          if (file.state === "FAILED" || !file.uri) {
+            continue;
+          }
 
-        if (file.state === "FAILED" || !file.uri) {
-          continue;
-        }
-
-        return {
-          fileUri: file.uri,
-          mimeType: file.mimeType || "video/mp4",
-        };
-      } catch (err: any) {
-        console.warn(`Key rotation upload warning for key ending in ...${key.slice(-4)}:`, err?.message || err);
-        lastError = err;
-      } finally {
-        if (fs.existsSync(tempFilePath)) {
-          await fs.promises.unlink(tempFilePath).catch(() => {});
+          return {
+            fileUri: file.uri,
+            mimeType: file.mimeType || "video/mp4",
+          };
+        } catch (err: any) {
+          console.warn(`Gemini upload warning for key ending in ...${key.slice(-4)}:`, err?.message || err);
+        } finally {
+          if (fs.existsSync(tempFilePath)) {
+            await fs.promises.unlink(tempFilePath).catch(() => {});
+          }
         }
       }
     }
 
-    // Fallback: If video file upload quota is reached, return pseudo URI for text-rubric mode
+    // Fallback: Return pseudo URI for text-rubric mode using OpenRouter/Groq
     return {
       fileUri: `text-rubric-${Date.now()}`,
       mimeType: "text/plain",
@@ -91,7 +82,7 @@ export class GeminiService {
   }
 
   /**
-   * Corrects action labels for multiple segments with key rotation & OpenRouter free fallback.
+   * Corrects action labels for multiple segments using Gemini, OpenRouter (1..5), or Groq.
    */
   async correctLabels(
     fileUri: string,
@@ -112,9 +103,16 @@ export class GeminiService {
 Here are the video segments to validate and correct according to the Atlas Label Rubric:
 ${JSON.stringify(segmentsPayload, null, 2)}
 
-Strictly adhere to the Atlas Label Rubric rules (imperative voice, acting hand, no articles, object binding). Output raw JSON array only.
+Strictly adhere to the Atlas Label Rubric rules:
+1. Imperative voice, no articles (a, an, the).
+2. Name the acting hand clearly (left hand, right hand, both hands).
+3. Single separator (comma or "and").
+4. Every verb attaches to an object.
+
+Output raw JSON array only: [{"id": "...", "correctedLabel": "..."}]
 `;
 
+    // 1. Try Gemini API Keys if available
     const modelsToTry = [
       "gemini-2.0-flash",
       "gemini-1.5-flash",
@@ -122,9 +120,6 @@ Strictly adhere to the Atlas Label Rubric rules (imperative voice, acting hand, 
       "gemini-1.5-pro",
     ];
 
-    let lastError: any = null;
-
-    // 1. Try Gemini API Keys with rotation
     for (const key of this.apiKeys) {
       const ai = new GoogleGenAI({ apiKey: key });
 
@@ -156,24 +151,71 @@ Strictly adhere to the Atlas Label Rubric rules (imperative voice, acting hand, 
             return parsedResults;
           }
         } catch (err: any) {
-          lastError = err;
-          console.warn(`Key ...${key.slice(-4)} model ${model} failed, trying next...`);
+          console.warn(`Gemini key ...${key.slice(-4)} model ${model} failed, trying next...`);
         }
       }
     }
 
-    // 2. OpenRouter FREE API Fallback (if OPENROUTER_API_KEY is provided or using free models)
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
-    if (openRouterKey) {
+    // 2. Try Existing OpenRouter API Keys (OPENROUTER_API_KEY_1..5 or OPENROUTER_API_KEY)
+    const openRouterKeys = [
+      process.env.OPENROUTER_API_KEY_1,
+      process.env.OPENROUTER_API_KEY_2,
+      process.env.OPENROUTER_API_KEY_3,
+      process.env.OPENROUTER_API_KEY_4,
+      process.env.OPENROUTER_API_KEY_5,
+      process.env.OPENROUTER_API_KEY,
+    ].filter(Boolean) as string[];
+
+    const openRouterModels = [
+      "google/gemini-2.0-flash-001:free",
+      "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemini-flash-1.5:free",
+    ];
+
+    for (const orKey of openRouterKeys) {
+      for (const orModel of openRouterModels) {
+        try {
+          const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${orKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: orModel,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+              ],
+            }),
+          });
+
+          if (openRouterResponse.ok) {
+            const data = await openRouterResponse.json();
+            const content = data.choices?.[0]?.message?.content || "[]";
+            const cleanedContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
+            const parsed = JSON.parse(cleanedContent);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (parsed.segments && Array.isArray(parsed.segments)) return parsed.segments;
+          }
+        } catch (orErr) {
+          console.warn("OpenRouter key iteration failed:", orErr);
+        }
+      }
+    }
+
+    // 3. Try Existing GROQ_API_KEY if available
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
       try {
-        const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${openRouterKey}`,
+            "Authorization": `Bearer ${groqKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.0-flash-001:free",
+            model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
@@ -182,21 +224,20 @@ Strictly adhere to the Atlas Label Rubric rules (imperative voice, acting hand, 
           }),
         });
 
-        if (openRouterResponse.ok) {
-          const data = await openRouterResponse.json();
+        if (groqResponse.ok) {
+          const data = await groqResponse.json();
           const content = data.choices?.[0]?.message?.content || "[]";
           const parsed = JSON.parse(content);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
           if (parsed.segments && Array.isArray(parsed.segments)) return parsed.segments;
         }
-      } catch (orErr) {
-        console.warn("OpenRouter Free fallback failed:", orErr);
+      } catch (groqErr) {
+        console.warn("Groq API fallback failed:", groqErr);
       }
     }
 
-    // 3. Last Fallback: Rule-based rubric clean-up
+    // 4. Guaranteed Rule-Based Rubric Fallback
     return segments.map((s) => {
-      // Basic rule-based fallback clean-up (imperative, remove a/an/the)
       let cleaned = s.currentLabel
         .replace(/\b(the|a|an)\b/gi, "")
         .replace(/\s+/g, " ")
