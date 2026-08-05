@@ -4,7 +4,7 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. ABSOLUTE BAN ON VAGUE WORDS & APPROVED SPECIFIC ALTERNATIVES (FROM OFFICIAL GUIDE):
+1. ABSOLUTE BAN ON VAGUE WORDS & APPROVED SPECIFIC ALTERNATIVES (FROM OFFICIAL GUIDE PAGE 3 & 4):
    - ❌ NEVER USE "inspect" -> Name what was actually done instead (e.g. "look at [object]").
    - ❌ NEVER USE "adjust" -> Name the specific physical motion instead:
      * "slide" (e.g., "slide plate across counter with right hand")
@@ -21,7 +21,7 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
    - ❌ NEVER USE "tool" -> Name the specific item ("spoon", "cloth", "lid", "hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver").
    - ❌ NEVER USE "grab" -> Use "pick up" (be literal).
 
-2. BANNED BODY PARTS (HANDS ONLY):
+2. BANNED BODY PARTS (HANDS ONLY - PDF PAGE 4):
    - ❌ NEVER USE "fingers", "thumb", "palm", "arm", or "body".
    - ALWAYS use ONLY: "left hand", "right hand", or "both hands".
    - Example CORRECT: "wash spoon with right hand" (NOT "wash spoon with fingers").
@@ -31,34 +31,40 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
    - Hand attribution NEVER carries over across commas or "and".
    - Example CORRECT: "hold glass cup with left hand, wipe glass cup with cloth in right hand".
 
-4. STRICT RULE ON OBJECT ADJECTIVES & CONSISTENCY:
+4. NO ACTION & 5-SECOND IDLE RULE (FROM PDF PAGE 3):
+   - Output "No Action" ONLY when ego hands touch nothing or are idle/unrelated to task for AT LEAST FIVE SECONDS (>= 5s).
+   - Shorter idle pauses (< 5s) stay inside an adjacent work segment.
+   - NEVER mix "No Action" with real action clauses (e.g. NEVER write "No Action, pick up cup with right hand" — it is EITHER "No Action" OR the real action label).
+   - A task-relevant hold (e.g., holding chopsticks or pot) is NOT No Action (label as "hold [object] with [hand]").
+
+5. STRICT RULE ON OBJECT ADJECTIVES & CONSISTENCY (PDF PAGE 4):
    - Use adjectives ONLY when necessary to distinguish two similar objects on table (e.g. "pick up blue cloth with right hand").
    - Maintain strict naming consistency throughout the video (if named "bottle" or "wash", do NOT switch to "container" or "wipe").
 
-5. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
+6. SEWING NEEDLE ACTIONS ("sewing needle", "insert sewing needle", "pull sewing needle"):
    - Object Noun Precision: ALWAYS use specific compound noun "sewing needle" (NOT generic "needle" or "thread"). Target object: "cap".
    - Full Stitch Cycle (3 actions): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
 
-6. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
+7. HOLDING & SMOOTHENING ACTIONS ("hold ... in/with [hand1], smoothen ... with [hand2]"):
    - Always split into TWO distinct clauses: "hold cloth in left hand, smoothen cloth with right hand". Use verb "smoothen" (NOT "smooth").
 
-7. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
+8. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
    - Always write: "pick up [object] with [hand1], pass [object] from [hand1] to [hand2]".
 
-8. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
+9. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand, pick up screws from tray with right hand".
 
-9. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
-   - "pick up wrench and place wrench on table with right hand".
-   - Always state surface location when present ("on table", "on counter", "on ground", "on floor").
+10. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
+    - "pick up wrench and place wrench on table with right hand".
+    - Always state surface location when present ("on table", "on counter", "on ground", "on floor").
 
-10. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
+11. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
     - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands", "set hose on ground with left hand, pick up watering can with right hand".
 
-11. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
+12. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
     - "stir minced meat and onions in wok with ladle in right hand".
 
-12. MANDATORY FORMAT & SYNTAX CONSTRAINTS:
+13. MANDATORY FORMAT & SYNTAX CONSTRAINTS (PDF PAGE 1 & 2):
     - Template: Verb + Object (+ Location) + "with/in" + Hand.
     - ❌ NO PRONOUNS (their, its, his, her, my, your).
     - ❌ NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
