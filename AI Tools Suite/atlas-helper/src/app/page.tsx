@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { VideoUploader } from "@/components/atlas/VideoUploader";
-import { BatchLabelForm } from "@/components/atlas/BatchLabelForm";
+import { VideoUploader } from "../components/atlas/VideoUploader";
+import { BatchLabelForm } from "../components/atlas/BatchLabelForm";
 import { Sparkles, ShieldCheck, Cpu } from "lucide-react";
 
 export default function HomePage() {

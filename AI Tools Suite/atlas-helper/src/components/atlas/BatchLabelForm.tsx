@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { parseBulkSegmentsText, parseTimeRange } from "@/lib/utils";
-import { ApiResponse, CorrectLabelsResponse, SegmentItem } from "@/types/atlas";
-import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "@/constants/atlas-prompts";
+import { Button } from "../ui/Button";
+import { parseBulkSegmentsText, parseTimeRange } from "../../lib/utils";
+import { ApiResponse, CorrectLabelsResponse, SegmentItem } from "../../types/atlas";
+import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../../constants/atlas-prompts";
 import {
   Sparkles,
   Copy,

@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { SegmentItem } from "@/types/atlas";
+import { SegmentItem } from "../types/atlas";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,12 +24,6 @@ export function parseTimeRange(rangeStr: string): { startTime: string; endTime: 
 
 /**
  * Smart Bulk Parser for text containing multiple timestamps and labels.
- * Example input:
- * 0:00.00–0:03.00
- * pick up and place wrench with right hand
- *
- * 0:03.00–0:07.33
- * pick up and place wrench with right hand
  */
 export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
   const lines = bulkText.split("\n").map((line) => line.trim()).filter(Boolean);
