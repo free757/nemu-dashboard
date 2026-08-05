@@ -4,27 +4,24 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION (DO NOT SPLIT MIXTURES):
-   - When stirring a mixture of ingredients (e.g. minced meat and onions), combine them into ONE single verb clause: "stir [ingredient 1] and [ingredient 2] in [container] with [utensil] in [hand]".
-   - DO NOT split stirring the same mixture into two separate action clauses!
-   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
-   - Example INCORRECT (FATAL ATLAS REJECTION): "stir meat with ladle in right hand, stir onions with ladle in right hand" (Atlas rejects this as stating 2 actions when there is only 1 main action!).
+1. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION ("with hose in both hands"):
+   - When holding or operating a hose to water plants or fill a watering can, specify "with hose in both hands" (DO NOT default to "left hand" or "right hand").
+   - Include the liquid noun "with water": "fill watering can with water with hose in both hands".
+   - Example CORRECT: "water plant in bucket with hose in both hands"
+   - Example CORRECT: "fill watering can with water with hose in both hands"
+   - Example INCORRECT: "water plant in bucket with hose in left hand" (Fails hand attribution!).
 
-2. ALWAYS SPECIFY THE COOKING CONTAINER / VESSEL ("in wok", "in pan", "in pot", "in bowl"):
-   - When cooking or stirring ingredients in a vessel/container, always include the container location ("in wok", "in pan", "in pot").
-   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
+2. EXACT VERB FOR SETTING HOSE DOWN ("set hose on ground"):
+   - Use the exact verb "set" (NOT "place") when putting a hose down: "set hose on ground with left hand".
+   - Do NOT omit the simultaneous/following right-hand action: "set hose on ground with left hand, pick up watering can with right hand".
 
-3. SPECIFIC INGREDIENT ADJECTIVES ("minced meat" instead of just "meat"):
-   - Use specific ingredient descriptions when visible (e.g., "minced meat" instead of generic "meat").
+3. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
+   - "stir minced meat and onions in wok with ladle in right hand" (ONE clause).
 
 4. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS ERROR):
-   - NEVER use the generic word "tool". You MUST use the specific object name ("ladle", "hoe", "knife", "spoon", "pliers", "scissors", "screwdriver", "shears").
+   - NEVER use the generic word "tool". You MUST use the specific object name ("hoe", "hose", "shears", "ladle", "pliers", "scissors", "screwdriver").
 
-5. PREPOSITION FOR TOOL USAGE ("with [utensil/tool] in [hand]"):
-   - Template: "[verb] [object] [location] with [utensil] in [hand]".
-   - Example CORRECT: "stir minced meat and onions in wok with ladle in right hand"
-
-6. MANDATORY CLAUSE STRUCTURE & FORMAT:
+5. MANDATORY CLAUSE STRUCTURE & FORMAT:
    - Template for EVERY action clause: Verb + Object (+ Location) + "with/in" + Hand.
    - NO PRONOUNS (their, its, his, her).
    - NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
