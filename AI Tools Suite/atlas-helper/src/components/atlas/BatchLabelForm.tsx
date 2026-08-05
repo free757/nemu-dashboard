@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Eye,
   Languages,
+  Cpu,
 } from "lucide-react";
 
 interface BatchLabelFormProps {
@@ -123,6 +124,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
             correctedLabel: res?.correctedLabel || s.currentLabel,
             visualEvidence: res?.visualEvidence,
             analysisMode: res?.analysisMode || "visual",
+            usedModel: res?.usedModel,
             status: "success",
           };
         })
@@ -210,7 +212,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
             disabled={!isLoaded}
             icon={<Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />}
           >
-            ✨ Verify & Correct All Segments with Gemini 2.5 Pro
+            ✨ Verify & Correct All Segments with AI
           </Button>
           {!isLoaded && (
             <p className="text-xs text-center text-amber-400/80 mt-2 flex items-center justify-center gap-1">
@@ -255,6 +257,13 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
                         </div>
 
                         <div className="flex items-center gap-2">
+                          {seg.usedModel && (
+                            <div className="flex items-center gap-1 text-[11px] text-indigo-300 bg-indigo-950/60 border border-indigo-800/40 px-2.5 py-0.5 rounded-md font-mono">
+                              <Cpu className="w-3 h-3 text-indigo-400" />
+                              <span>{seg.usedModel}</span>
+                            </div>
+                          )}
+
                           <button
                             onClick={() => toggleArabicTranslation(seg.id)}
                             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md transition-all font-medium border ${
@@ -303,7 +312,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
                         {seg.correctedLabel && (
                           <div>
                             <label className="block text-[11px] font-medium text-emerald-400 mb-1">
-                              Gemini Corrected Label
+                              Corrected Action Label
                             </label>
                             <div className="flex items-center gap-2">
                               <input

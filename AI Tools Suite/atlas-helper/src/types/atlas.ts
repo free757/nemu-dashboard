@@ -6,6 +6,7 @@ export interface SegmentItem {
   correctedLabel?: string;
   visualEvidence?: string;
   analysisMode?: "visual" | "rubric";
+  usedModel?: string;
   status?: "idle" | "loading" | "success" | "error";
   error?: string;
 }
@@ -36,6 +37,7 @@ export interface CorrectedSegmentResult {
   correctedLabel: string;
   visualEvidence?: string;
   analysisMode?: "visual" | "rubric";
+  usedModel?: string;
   explanation?: string;
 }
 

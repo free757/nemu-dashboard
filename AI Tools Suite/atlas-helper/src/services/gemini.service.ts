@@ -110,7 +110,7 @@ Output raw JSON array strictly adhering to this schema:
   {
     "id": "...",
     "correctedLabel": "...",
-    "visualEvidence": "A descriptive 1-sentence summary of the hands movement and objects being handled in this segment (e.g. Left hand holds book steady while right hand uses cloth to wipe the page)."
+    "visualEvidence": "A descriptive 1-sentence summary of the hands movement and objects being handled in this segment."
   }
 ]
 `;
@@ -155,6 +155,7 @@ Output raw JSON array strictly adhering to this schema:
               ...r,
               visualEvidence: r.visualEvidence || `Observed action: ${r.correctedLabel}`,
               analysisMode: isTextOnly ? "rubric" : "visual",
+              usedModel: model,
             }));
           }
         } catch (err: any) {
@@ -208,6 +209,7 @@ Output raw JSON array strictly adhering to this schema:
                 ...r,
                 visualEvidence: r.visualEvidence || `Action verified: ${r.correctedLabel}`,
                 analysisMode: "rubric",
+                usedModel: orModel,
               }));
             }
           }
@@ -229,6 +231,7 @@ Output raw JSON array strictly adhering to this schema:
         correctedLabel: cleaned || s.currentLabel,
         visualEvidence: `Action syntax verified: ${cleaned || s.currentLabel}`,
         analysisMode: "rubric",
+        usedModel: "rule-engine",
       };
     });
   }
