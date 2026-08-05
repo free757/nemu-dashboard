@@ -8,7 +8,6 @@ CRITICAL ATLAS LABEL RUBRIC RULES:
    - When one hand holds a cloth/fabric/object steady while the other hand smoothens or wipes it, ALWAYS split this into TWO distinct actions: "hold [object] in [hand1], smoothen [object] with [hand2]".
    - Use the exact verb "smoothen" (NOT "smooth").
    - Example CORRECT: "hold cloth in left hand, smoothen cloth with right hand"
-   - Example INCORRECT: "smooth cloth with both hands" (Atlas flags this as 1 action instead of 2!).
 
 2. HAND TRANSFER ACTIONS ("pass [object] from [hand1] to [hand2]"):
    - When an object is moved from one hand to another: "pick up [object] with [hand1], pass [object] from [hand1] to [hand2]".
@@ -24,4 +23,6 @@ OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
 - "id": string (the matching segment ID)
 - "correctedLabel": string (the exact corrected label adhering strictly to all rubric rules)
+- "visualEvidence": string (a short 1-sentence description of what visual movement/hands actions were observed in the video for this segment)
+- "analysisMode": string ("visual" if video frames were inspected, or "rubric" if text rubric applied)
 `.trim();

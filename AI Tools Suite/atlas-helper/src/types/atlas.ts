@@ -4,6 +4,8 @@ export interface SegmentItem {
   endTime: string;
   currentLabel: string;
   correctedLabel?: string;
+  visualEvidence?: string;
+  analysisMode?: "visual" | "rubric";
   status?: "idle" | "loading" | "success" | "error";
   error?: string;
 }
@@ -32,6 +34,8 @@ export interface CorrectLabelsRequest {
 export interface CorrectedSegmentResult {
   id: string;
   correctedLabel: string;
+  visualEvidence?: string;
+  analysisMode?: "visual" | "rubric";
   explanation?: string;
 }
 

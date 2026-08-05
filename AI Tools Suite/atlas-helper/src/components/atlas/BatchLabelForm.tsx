@@ -16,6 +16,8 @@ import {
   Clock,
   Layers,
   AlertCircle,
+  Eye,
+  CheckCircle2,
 } from "lucide-react";
 
 interface BatchLabelFormProps {
@@ -32,7 +34,6 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Parse bulk text whenever changed
   const handleBulkTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setBulkText(text);
@@ -72,7 +73,6 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
       return;
     }
 
-    // Try parsing bulk text if segments array is empty
     let activeSegments = segments;
     if (activeSegments.length === 0 && bulkText.trim()) {
       activeSegments = parseBulkSegmentsText(bulkText);
@@ -106,17 +106,21 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
         throw new Error(result.error || "Failed to correct labels.");
       }
 
-      // Map corrected labels back to segments
       const correctedMap = new Map(
-        result.data.segments.map((res) => [res.id, res.correctedLabel])
+        result.data.segments.map((res) => [res.id, res])
       );
 
       setSegments((prev) =>
-        prev.map((s) => ({
-          ...s,
-          correctedLabel: correctedMap.get(s.id) || s.currentLabel,
-          status: "success",
-        }))
+        prev.map((s) => {
+          const res = correctedMap.get(s.id);
+          return {
+            ...s,
+            correctedLabel: res?.correctedLabel || s.currentLabel,
+            visualEvidence: res?.visualEvidence,
+            analysisMode: res?.analysisMode || "visual",
+            status: "success",
+          };
+        })
       );
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred during AI label correction.");
@@ -148,7 +152,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
         </button>
       </div>
 
-      {/* Custom Prompt Settings Modal/Panel */}
+      {/* Custom Prompt Settings Panel */}
       {showSettings && (
         <div className="bg-slate-950 border border-brand-500/30 p-4 rounded-xl space-y-2">
           <div className="flex justify-between items-center">
@@ -231,15 +235,28 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
             {segments.map((seg, index) => (
               <div
                 key={seg.id}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md"
+                className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md space-y-3"
               >
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                   <div className="space-y-2 flex-1 w-full">
-                    <div className="flex items-center gap-2 text-xs font-mono text-brand-400 bg-brand-950/60 border border-brand-800/40 px-2.5 py-1 rounded-md w-fit">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>
-                        Segment {index + 1}: {seg.startTime} – {seg.endTime}
-                      </span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 text-xs font-mono text-brand-400 bg-brand-950/60 border border-brand-800/40 px-2.5 py-1 rounded-md w-fit">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>
+                          Segment {index + 1}: {seg.startTime} – {seg.endTime}
+                        </span>
+                      </div>
+
+                      {seg.correctedLabel && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-950/50 border border-emerald-800/40 px-2.5 py-0.5 rounded-full font-medium">
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>
+                            {seg.analysisMode === "visual"
+                              ? "👁️ Verified Video Frames"
+                              : "✍️ Atlas Rubric Applied"}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
@@ -287,6 +304,17 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
                         </div>
                       )}
                     </div>
+
+                    {/* Visual Evidence / Proof Box */}
+                    {seg.visualEvidence && (
+                      <div className="mt-2 text-xs bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-slate-300 flex items-start gap-2">
+                        <Eye className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold text-brand-300">Visual Evidence: </span>
+                          <span>{seg.visualEvidence}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button
