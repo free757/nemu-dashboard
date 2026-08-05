@@ -4,50 +4,33 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. MANDATORY CLAUSE STRUCTURE & FORMAT:
+1. COMBINING MULTIPLE OBJECTS HELD BY THE SAME HAND:
+   - When a SINGLE hand holds multiple items at once (e.g., screwdriver AND electrical plug), DO NOT split them into separate clauses. Combine them with "and".
+   - Example CORRECT: "hold screwdriver and electrical plug with left hand, pick up screws from tray with right hand"
+   - Example INCORRECT (DO NOT DO THIS): "hold screwdriver with left hand, hold electrical plug with left hand" (Atlas flags this as splitting 1 clause into 2!).
+
+2. FINE-MOTOR PRECISION VERBS ("position [object] on [target]"):
+   - For precision alignment or placing an item onto a tool (e.g., placing a screw onto a screwdriver bit): use "position [object] on [target] with [hand]".
+   - Example CORRECT: "position screw on screwdriver tip with right hand"
+
+3. BOTH HANDS ATTRIBUTION (OFF-HAND + ACTIVE HAND):
+   - Always state what BOTH hands are doing in the segment. If left hand holds objects and right hand holds or picks up screws: "hold screwdriver and electrical plug with left hand, hold screws with right hand".
+
+4. MANDATORY CLAUSE STRUCTURE & FORMAT:
    - Template for EVERY action clause: Verb + Object (+ Location) + "with" + Hand.
-   - Example CORRECT: "pick up spoon with right hand", "place cup on table with left hand".
    - NO PRONOUNS (their, its, his, her).
    - NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
    - NO ARTICLES (never use "a", "an", "the"). Write "pick up spoon" NOT "pick up the spoon".
    - WRITE NUMBERS IN WORDS (say "three" NOT "3", e.g., "pick up three knives").
    - SEPARATORS: ONLY use commas "," or "and". NEVER use semicolons (;) or slashes (/).
 
-2. MANDATORY HAND ATTRIBUTION FOR EVERY SINGLE ACTION:
-   - EVERY action clause MUST specify the acting hand: "left hand", "right hand", or "both hands".
-   - Hand attributions DO NOT carry over across commas or "and". Every verb clause requires its own explicit hand clause.
-   - Example CORRECT: "pick up fork with right hand, place fork on table with right hand".
-
-3. BANNED VAGUE VERBS & APPROVED SPECIFIC ALTERNATIVES:
+5. BANNED VAGUE VERBS & APPROVED SPECIFIC ALTERNATIVES:
    - NEVER use these banned words: "inspect", "adjust", "reach", "manipulate", "tool", "grab".
-   - Use specific literal verbs instead:
-     * Instead of "grab" -> use "pick up"
-     * Instead of "adjust" -> use specific motion: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze".
-       - Example: "slide plate across counter with right hand"
-       - Example: "align lid with jar using both hands"
-       - Example: "rotate lid with right hand"
-       - Example: "flatten cloth on table with right hand"
-       - Example: "tighten cap with right hand"
-       - Example: "fold towel with both hands"
-       - Example: "tuck cloth into bag with right hand"
-       - Example: "squeeze sponge with right hand"
-     * Instead of "reach" -> name the completed action (e.g. "pick up ..."), not the intent.
-     * Instead of "tool" -> name the exact item ("spoon", "cloth", "lid", "glass cup").
+   - Use specific literal verbs: "pick up", "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position".
 
-4. OFF-HAND CLAUSES & HAND PASSES:
-   - Always label what the off-hand is doing: "hold carrot with left hand, cut carrot with right hand".
-   - Hand-to-hand passes MUST be explicit: "pass cup from left hand to right hand".
-   - HOLDING & SMOOTHENING: "hold cloth in left hand, smoothen cloth with right hand" (use "smoothen", not "smooth").
-
-5. LOCATION & OBJECT CONSISTENCY:
-   - Always state location when present ("place cup on table with left hand", "place cup in bin with right hand").
-   - Use adjectives to differentiate similar objects: "pick up blue cloth with right hand".
-   - Do NOT mention body parts other than hands (e.g., say "wash spoon with right hand", NOT "wash spoon with fingers").
-
-6. NO ACTION & 5-SECOND RULE:
-   - Output "No Action" ONLY when ego is idle, hands touch nothing, or behavior is unrelated for at least 5 seconds.
-   - NEVER mix "No Action" with real actions (it's either "No Action" OR the action label, never combined).
-   - A task-relevant hold is NOT No Action (label as "hold [object] with [hand]").
+6. LOCATION & OBJECT CONSISTENCY:
+   - Always state location when present ("place screws on table with right hand").
+   - Use standard names ("screws", "screw", "screwdriver", "electrical plug", "tray").
 
 OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
