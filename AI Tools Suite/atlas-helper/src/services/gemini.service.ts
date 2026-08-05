@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
-import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../constants/atlas-prompts";
-import { CorrectedSegmentResult, SegmentItem } from "../types/atlas";
+import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../constants/atlas-prompts.ts";
+import { CorrectedSegmentResult, SegmentItem } from "../types/atlas.ts";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -175,8 +175,9 @@ Output raw JSON array strictly adhering to this schema:
     ].filter(Boolean) as string[];
 
     const openRouterModels = [
-      "google/gemini-2.0-flash-001:free",
       "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemini-2.0-flash-exp:free",
+      "deepseek/deepseek-r1:free",
       "google/gemini-flash-1.5:free",
     ];
 
@@ -188,6 +189,8 @@ Output raw JSON array strictly adhering to this schema:
             headers: {
               "Authorization": `Bearer ${orKey}`,
               "Content-Type": "application/json",
+              "HTTP-Referer": "https://nemu-dashboard.vercel.app",
+              "X-Title": "Atlas Helper",
             },
             body: JSON.stringify({
               model: orModel,
@@ -209,7 +212,7 @@ Output raw JSON array strictly adhering to this schema:
                 ...r,
                 visualEvidence: r.visualEvidence || `Action verified: ${r.correctedLabel}`,
                 analysisMode: "rubric",
-                usedModel: orModel,
+                usedModel: orModel.split("/").pop() || orModel,
               }));
             }
           }
@@ -219,7 +222,46 @@ Output raw JSON array strictly adhering to this schema:
       }
     }
 
-    // 3. Guaranteed Rule-Based Rubric Fallback
+    // 3. Try Existing GROQ_API_KEY if available
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
+      try {
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+          }),
+        });
+
+        if (groqResponse.ok) {
+          const data = await groqResponse.json();
+          const content = data.choices?.[0]?.message?.content || "[]";
+          const cleanedContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
+          const parsed = JSON.parse(cleanedContent);
+          const arrayRes = Array.isArray(parsed) ? parsed : (parsed.segments || []);
+          if (arrayRes.length > 0) {
+            return arrayRes.map((r: any) => ({
+              ...r,
+              visualEvidence: r.visualEvidence || `Groq Llama 3.3 verified: ${r.correctedLabel}`,
+              analysisMode: "rubric",
+              usedModel: "groq/llama-3.3-70b",
+            }));
+          }
+        }
+      } catch (groqErr) {
+        console.warn("Groq API fallback failed:", groqErr);
+      }
+    }
+
+    // 4. Guaranteed Rule-Based Rubric Fallback
     return segments.map((s) => {
       let cleaned = s.currentLabel
         .replace(/\b(the|a|an)\b/gi, "")
