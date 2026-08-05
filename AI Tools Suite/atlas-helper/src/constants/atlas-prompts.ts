@@ -13,50 +13,50 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
    - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
-2. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS (STATIONARY HOLD VS ACTIVE ROTATION):
-   - Inspect whether the hand holding the container is stationary or actively turning:
-   - If hand keeps container stationary: "hold glass cup with left hand, wipe glass cup with cloth in right hand".
-   - If hand actively turns/rotates container while wiping: "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
-   - ❌ NEVER write "hold" if the hand is turning the item (Atlas flags: "'hold' does not describe what happens here: hands actively moving to rotate and wipe").
+2. HAND-TO-HAND PASSES & DUAL-HAND ATTRIBUTION:
+   - When an object is handed over/transferred from one hand to another: ALWAYS include the explicit hand transfer clause: "pass [object] from [hand1] to [hand2]".
+   - Example CORRECT: "pick up bottle with right hand, pass bottle from right hand to left hand".
+   - If object was passed to left hand, subsequent placing MUST specify left hand: "place bottle on counter with left hand".
 
-3. PAPER HANDLING & ALIGNMENT RULES (PLURAL "papers" + "align papers with both hands"):
-   - Object Noun: Use plural "papers" (NOT singular "paper") when handling sheets of paper.
-   - Aligning Action: "hold scissors with right hand, align papers with both hands".
+3. OBJECT NOUN SIMPLIFICATION (GENERIC OBJECT NOUNS):
+   - Simplify over-descriptive brand/flavor/color nouns unless necessary to distinguish two similar objects.
+   - Use "bottle" instead of "syrup bottle".
+   - Use "bag" or "sachet" instead of "red snack bag" / "orange snack bag".
+   - Example CORRECT: "pick up sachet with right hand, place sachet on counter with right hand".
 
-4. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS REJECTION RULE):
-   - ❌ NEVER USE THE GENERIC WORD "tool" UNDER ANY CIRCUMSTANCES.
-   - ✅ YOU MUST ALWAYS REPLACE "tool" WITH THE SPECIFIC EXACT ITEM NAME ("hoe", "trowel", "shears", "ladle", "knife", "spoon", "screwdriver", "pliers", "scissors").
+4. CRITICAL: WIPING / CLEANING / ROTATING CONTAINERS (STATIONARY HOLD VS ACTIVE ROTATION):
+   - "hold glass cup with left hand, wipe glass cup with cloth in right hand" or "rotate glass cup with left hand, wipe glass cup with cloth in right hand".
 
-5. CRITICAL: DO NOT SPLIT MULTIPLE OBJECTS HELD BY THE SAME HAND:
+5. PAPER HANDLING & ALIGNMENT RULES (PLURAL "papers" + "align papers with both hands"):
+   - "hold scissors with right hand, align papers with both hands".
+
+6. ABSOLUTE BAN ON THE WORD "tool" (FATAL ATLAS REJECTION RULE):
+   - ❌ NEVER USE THE GENERIC WORD "tool". Always use exact item name ("hoe", "trowel", "shears", "ladle", "knife", "spoon", "screwdriver", "pliers", "scissors").
+
+7. CRITICAL: DO NOT SPLIT MULTIPLE OBJECTS HELD BY THE SAME HAND:
    - "hold screwdriver and electrical plug with left hand".
 
-6. FARMING & GARDENING SPECIFIC ACTION RULES:
+8. FARMING & GARDENING SPECIFIC ACTION RULES:
    - "dig soil with hoe in right hand", "place hoe on ground with right hand, gather soil with both hands".
 
-7. ABSOLUTE BAN ON OTHER VAGUE VERBS & APPROVED ALTERNATIVES:
+9. ABSOLUTE BAN ON OTHER VAGUE VERBS & APPROVED ALTERNATIVES:
    - ❌ NEVER USE "inspect", "adjust", "reach", "manipulate", "grab".
    - ✅ USE SPECIFIC ALTERNATIVES: "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "pick up".
 
-8. BANNED BODY PARTS (HANDS ONLY):
-   - ❌ NEVER USE "fingers", "thumb", "palm", "arm", "body". ONLY USE: "left hand", "right hand", "both hands".
+10. BANNED BODY PARTS (HANDS ONLY):
+    - ❌ NEVER USE "fingers", "thumb", "palm", "arm", "body". ONLY USE: "left hand", "right hand", "both hands".
 
-9. NO ACTION & 5-SECOND IDLE RULE (PDF PAGE 3):
-   - Output "No Action" ONLY when ego hands touch nothing for >= 5s.
+11. NO ACTION & 5-SECOND IDLE RULE (PDF PAGE 3):
+    - Output "No Action" ONLY when ego hands touch nothing for >= 5s.
 
-10. SEWING NEEDLE ACTIONS:
+12. SEWING NEEDLE ACTIONS:
     - "sewing needle", "cap", "insert sewing needle into cap with right hand", "pull sewing needle with right hand".
 
-11. HOLDING & SMOOTHENING ACTIONS:
+13. HOLDING & SMOOTHENING ACTIONS:
     - "hold cloth in left hand, smoothen cloth with right hand" (use "smoothen").
 
-12. HAND TRANSFER ACTIONS:
-    - "pass [object] from left hand to right hand".
-
-13. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
+14. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
     - "pick up wrench and place wrench on table with right hand".
-
-14. HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION:
-    - "water plant in bucket with hose in both hands", "fill watering can with water with hose in both hands".
 
 15. COMBINE MIXED INGREDIENTS INTO A SINGLE STIRRING ACTION:
     - "stir minced meat and onions in wok with ladle in right hand".
