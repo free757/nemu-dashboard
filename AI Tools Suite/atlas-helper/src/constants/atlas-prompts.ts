@@ -4,25 +4,20 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
 
-1. OUTDOOR & GROUND LOCATION PREFERENCE ("on ground"):
-   - When actions like raking, sweeping, or picking up items from the floor/ground occur outdoor or on the floor: ALWAYS include "on ground" as the location.
-   - Example CORRECT: "rake leaves on ground with rake in both hands"
-   - Example ACCEPTABLE MATCH: "rake leaves with rake in both hands"
+1. FLUID PICK-UP AND PLACE COMPOUND CLAUSE ("pick up [object] and place [object] on [surface] with [hand]"):
+   - When a single hand picks up an object and immediately places it on a surface in one fluid motion, join the two verbs with "and" into a single clause: "pick up [object] and place [object] on [surface] with [hand]".
+   - Example CORRECT: "pick up wrench and place wrench on table with right hand"
+   - Example CORRECT: "pick up metal pin and place metal pin on table with right hand"
+   - Example INCORRECT (DO NOT SPLIT): "pick up wrench with right hand, place wrench with right hand" (Splitting creates redundant hand clauses and omits location!).
 
-2. WIRE STRIPPING & CUTTING ACTIONS ("strip ... with shears in [hand]"):
-   - When stripping or cutting wire/cable: ALWAYS keep the action verb "strip" or "cut". Use tool noun "shears" (NOT "pliers").
-   - Example CORRECT: "hold blue wire with left hand, strip blue wire with shears in right hand"
+2. ALWAYS INCLUDE SURFACE LOCATION ("on table", "on counter", "on ground"):
+   - Always state the location surface when an item is placed or picked up from a surface.
+   - Example CORRECT: "place wrench on table with right hand" (NOT just "place wrench").
 
-3. DO NOT ADD REDUNDANT HOLD CLAUSES FOR BOTH-HAND ACTIONS:
-   - When an action uses both hands (e.g., "rake leaves on ground with rake in both hands"), DO NOT insert a redundant "hold rake with both hands" clause before it.
+3. HAND TRANSFER & OFF-HAND CLAUSES:
+   - When an item is held by one hand and handed over to another: "hold [object] with left hand, pass [object] from left hand to right hand, place [object] on table with right hand".
 
-4. HAND TRANSFER & OFF-HAND CLAUSES:
-   - Always state what BOTH hands are doing.
-   - Hand transfer clause: "pass [object] from [hand1] to [hand2]".
-   - Paper alignment: "align papers with both hands".
-   - Holding & smoothening: "hold cloth in left hand, smoothen cloth with right hand".
-
-5. MANDATORY CLAUSE STRUCTURE & FORMAT:
+4. MANDATORY CLAUSE STRUCTURE & FORMAT:
    - Template for EVERY action clause: Verb + Object (+ Location) + "with" + Hand.
    - NO PRONOUNS (their, its, his, her).
    - NO "-ing" VERBS (use "seal", NOT "sealing"; "pick up", NOT "picking up").
@@ -30,7 +25,7 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES:
    - WRITE NUMBERS IN WORDS (say "three" NOT "3", e.g., "pick up three knives").
    - SEPARATORS: ONLY use commas "," or "and". NEVER use semicolons (;) or slashes (/).
 
-6. BANNED VAGUE VERBS & APPROVED SPECIFIC ALTERNATIVES:
+5. BANNED VAGUE VERBS & APPROVED SPECIFIC ALTERNATIVES:
    - NEVER use these banned words: "inspect", "adjust", "reach", "manipulate", "tool", "grab".
    - Use specific literal verbs: "pick up", "slide", "align", "rotate", "flatten", "tighten", "fold", "tuck", "squeeze", "position", "strip", "rake".
 
