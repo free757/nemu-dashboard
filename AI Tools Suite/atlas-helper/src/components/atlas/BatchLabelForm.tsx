@@ -15,6 +15,7 @@ import {
   FileText,
   Clock,
   Layers,
+  AlertCircle,
 } from "lucide-react";
 
 interface BatchLabelFormProps {
@@ -38,6 +39,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
     const parsed = parseBulkSegmentsText(text);
     if (parsed.length > 0) {
       setSegments(parsed);
+      setError(null);
     }
   };
 
@@ -66,12 +68,21 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
 
   const handleCorrectAll = async () => {
     if (!fileUri) {
-      setError("Please load a video URL first.");
+      setError("⚠️ Please load a Cloudflare R2 video URL first in Step 1.");
       return;
     }
 
-    if (segments.length === 0) {
-      setError("Please add at least one segment to correct.");
+    // Try parsing bulk text if segments array is empty
+    let activeSegments = segments;
+    if (activeSegments.length === 0 && bulkText.trim()) {
+      activeSegments = parseBulkSegmentsText(bulkText);
+      if (activeSegments.length > 0) {
+        setSegments(activeSegments);
+      }
+    }
+
+    if (activeSegments.length === 0) {
+      setError("⚠️ Please paste your segment timestamps and labels in the text box.");
       return;
     }
 
@@ -84,7 +95,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fileUri,
-          segments,
+          segments: activeSegments,
           customPrompt: showSettings ? customPrompt : undefined,
         }),
       });
@@ -161,13 +172,13 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
       )}
 
       {/* Bulk Input Box */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-slate-200 flex items-center gap-2">
             <FileText className="w-4 h-4 text-brand-500" />
-            Bulk Paste Segments Text (Time Ranges + Current Labels)
+            Paste Segments Text (Time Ranges + Current AI Labels)
           </label>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-brand-400 bg-brand-950/60 border border-brand-800/40 px-2.5 py-1 rounded-md font-mono">
             {segments.length} segment(s) detected
           </span>
         </div>
@@ -175,16 +186,37 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
           value={bulkText}
           onChange={handleBulkTextChange}
           placeholder={`Paste your segment text block here, e.g.:\n\n0:00.00–0:03.00\npick up and place wrench with right hand\n\n0:03.00–0:07.33\npick up and place wrench with right hand`}
-          rows={5}
+          rows={6}
           className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all font-mono"
         />
+
+        {/* ALWAYS VISIBLE MAIN ACTION BUTTON */}
+        <div className="pt-2">
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full py-3.5 text-base font-bold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 shadow-xl shadow-brand-500/25 transition-all"
+            onClick={handleCorrectAll}
+            isLoading={isLoading}
+            disabled={!isLoaded}
+            icon={<Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />}
+          >
+            ✨ Verify & Correct All Segments with Gemini 2.5 Pro
+          </Button>
+          {!isLoaded && (
+            <p className="text-xs text-center text-amber-400/80 mt-2 flex items-center justify-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" />
+              Please paste and load your video URL in Step 1 first to enable AI correction.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Segments Cards / Edit List */}
       {segments.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-300">Parsed Segments to Process</h3>
+            <h3 className="text-sm font-medium text-slate-300">Parsed Segments Details</h3>
             <Button
               variant="outline"
               size="sm"
@@ -199,7 +231,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
             {segments.map((seg, index) => (
               <div
                 key={seg.id}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700"
+                className="bg-slate-900 border border-slate-800 rounded-xl p-4 transition-all hover:border-slate-700 shadow-md"
               >
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                   <div className="space-y-2 flex-1 w-full">
@@ -268,26 +300,13 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
               </div>
             ))}
           </div>
-
-          <div className="pt-2">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full shadow-lg shadow-brand-600/25"
-              onClick={handleCorrectAll}
-              isLoading={isLoading}
-              disabled={!isLoaded}
-              icon={<Sparkles className="w-5 h-5 text-amber-300" />}
-            >
-              Verify & Correct All Segments with Gemini 2.5 Pro
-            </Button>
-          </div>
         </div>
       )}
 
       {error && (
-        <div className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg text-xs text-red-400">
-          {error}
+        <div className="p-3.5 bg-red-950/50 border border-red-800/60 rounded-xl text-xs text-red-300 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+          <span>{error}</span>
         </div>
       )}
     </div>
