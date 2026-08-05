@@ -76,7 +76,7 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
 }
 
 /**
- * Instant Arabic Translation Helper for Atlas Action Labels
+ * Instant Arabic Translation Helper for Atlas Action Labels & Visual Evidence
  */
 export function translateToArabic(englishText: string): string {
   if (!englishText) return "";
@@ -90,6 +90,11 @@ export function translateToArabic(englishText: string): string {
 
   // Dictionary mappings
   const dict: [RegExp, string][] = [
+    [/Action syntax verified:\s*/gi, "تم فحص وتأكيد حركة اليدين: "],
+    [/Observed action:\s*/gi, "ملاحظة حركة اليدين في المشهد: "],
+    [/Action verified:\s*/gi, "تم تأكيد الحركة في المشهد: "],
+
+    // Actions
     [/\bpick up\b/gi, "التقاط"],
     [/\bplace\b/gi, "وضع"],
     [/\bset\b/gi, "وضع"],
