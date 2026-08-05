@@ -9,13 +9,20 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - Example WRONG: "hold blue wire with both hands, twist blue wire with both hands".
    - Example CORRECT: "twist blue wire with both hands".
 
-2. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
+2. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
+   - When hands tap, adjust, align, or arrange sheets of paper together (even while right hand holds scissors):
+     * Ground Truth Action: "hold scissors with right hand, align papers with both hands"
+     * Holding Action: "hold papers with left hand, hold scissors with right hand"
+   - ❌ NEVER write "cut papers" if the hands are tapping/arranging/aligning paper edges together.
+
+3. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
    - Shears vs Pliers: "shears" and "pliers" are interchangeable valid object nouns for wire-cutting tools.
    - Wire vs Cable: "wire" and "cable" are interchangeable valid object nouns for electrical conductors.
    - Wire stripping: "hold blue wire with left hand, strip blue wire with shears in right hand" (or "with pliers in right hand").
    - Multi-action cable sequence: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands".
 
-3. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS (PRIORITY RULE FOR NEEDLE/FABRIC CLIPS):
+4. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS (PRIORITY RULE FOR NEEDLE/FABRIC CLIPS):
    - ALWAYS use specific compound noun "sewing needle" (NEVER generic "needle" or "thread").
    - ALWAYS use "cap" as the target object (NEVER "patch" or "fabric").
    - STRICT STITCH CYCLE ACTION SEQUENCE:
@@ -23,12 +30,6 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
      * Pulling needle out: "pull sewing needle with right hand" (NEVER use "insert" when pulling out!).
      * Full 3-Action Stitch Cycle (in ~8s-10s segments): "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
    - ❌ NEVER use banned verb "reposition".
-
-4. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
-   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
-   - When hands tap, adjust, or arrange sheets of paper together (even while holding scissors):
-     * "hold scissors with right hand, align papers with both hands"
-     * "hold papers with left hand, hold scissors with right hand"
 
 5. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
    - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
@@ -76,6 +77,6 @@ OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
 - "id": string (the matching segment ID)
 - "correctedLabel": string (the exact corrected label adhering strictly to all rubric rules)
-- "visualEvidence": string (a short 1-sentence description of what visual movement/hands actions me observed in the video for this segment)
+- "visualEvidence": string (a short 1-sentence description of what visual movement/hands actions were observed in the video for this segment)
 - "analysisMode": string ("visual" if video frames were inspected, or "rubric" if text rubric applied)
 `.trim();
