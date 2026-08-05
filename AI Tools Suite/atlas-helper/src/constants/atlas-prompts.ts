@@ -4,61 +4,66 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: FARMING & GARDENING RULES (BANNED "tool" -> USE "hoe"):
+1. CRITICAL: BOOK WIPING RULES (ALWAYS "hold book", NEVER "rotate", NEVER "page"):
+   - Object Noun Simplification: ALWAYS use "book" (❌ NEVER write "page" or "book cover").
+   - Action Clause Format for all segments: "hold book with left hand, wipe book with cloth in right hand".
+   - ❌ NEVER use "rotate book" (books stay stationary on the table while held: expected "hold", not "rotate").
+
+2. CRITICAL: FARMING & GARDENING RULES (BANNED "tool" -> USE "hoe"):
    - ❌ NEVER use generic word "tool" -> ALWAYS use specific tool name "hoe".
    - Digging action: "dig soil with hoe in right hand".
    - Placing hoe to gather soil: ALWAYS include explicit placing clause before gathering:
      * Ground Truth Action: "place hoe on ground with right hand, gather soil with both hands".
 
-2. CRITICAL: CONTAINER WIPING & ROTATION SEQUENCE:
-   - Initial Wiping Segment: "hold glass cup with left hand, wipe glass cup with cloth in right hand"
-   - Active Continuous Wiping Segments (when hands turn the cup to wipe around it):
-     * Ground Truth Action: "rotate glass cup with left hand, wipe glass cup with cloth in right hand"
-     * ❌ NEVER use "hold" on subsequent wiping segments if the hand is turning/rotating the cup while wiping.
+3. CRITICAL: CONTAINER WIPING & ROTATION SEQUENCE (3D ROUND CONTAINERS ONLY):
+   - For 3D round containers (glass cups, jars, bottles):
+     * Initial Wiping Segment: "hold glass cup with left hand, wipe glass cup with cloth in right hand"
+     * Continuous Turning Wiping: "rotate glass cup with left hand, wipe glass cup with cloth in right hand"
+   - Note: Only apply "rotate" to 3D round containers, NEVER to flat objects like books.
 
-3. CRITICAL: HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION & SEQUENTIAL PICKUP:
+4. CRITICAL: HOSE & WATERING CAN BOTH-HANDS ATTRIBUTION & SEQUENTIAL PICKUP:
    - When watering plants or filling cans with a hose: ALWAYS specify "hose in both hands".
      * "water plant in bucket with hose in both hands"
      * "fill watering can with water with hose in both hands"
    - Placing hose while picking up watering can: ALWAYS use verb "set" for hose and include pickup:
      * "set hose on ground with left hand, pick up watering can with right hand"
 
-4. CRITICAL: OBJECT NOUN SIMPLIFICATION & SPECIFIC ITEM NAMES:
+5. CRITICAL: OBJECT NOUN SIMPLIFICATION & SPECIFIC ITEM NAMES:
    - ❌ NEVER use over-descriptive color, flavor, or brand adjectives unless necessary to distinguish two identical items.
    - ❌ NEVER write "syrup bottle" -> ALWAYS write simple "bottle".
    - ❌ NEVER write "red snack bag" / "orange snack bag" -> ALWAYS write simple "sachet" or "bag".
    - ❌ NEVER write generic "tool" -> ALWAYS use specific item ("hoe", "shears", "screwdriver", "ladle", "pliers", "scissors").
 
-5. CRITICAL: HAND-TO-HAND PASSES & SEQUENTIAL PLACING:
+6. CRITICAL: HAND-TO-HAND PASSES & SEQUENTIAL PLACING:
    - When an object is transferred/handed over from one hand to another: ALWAYS include explicit transfer clause "pass [object] from [hand1] to [hand2]".
    - Example CORRECT: "pick up bottle with right hand, pass bottle from right hand to left hand".
    - If an object was passed to the left hand, the subsequent placing action MUST specify the left hand: "place bottle on counter with left hand".
 
-6. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
+7. NO REDUNDANT "HOLD" PREPENDING TO ACTIVE MOTION VERBS:
    - ❌ NEVER prepend "hold [object]" before an active motion verb ("twist", "fold", "strip", "cut", "squeeze") acting on the SAME object.
    - Example WRONG: "hold blue wire with both hands, twist blue wire with both hands".
    - Example CORRECT: "twist blue wire with both hands".
 
-7. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+8. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
    - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
    - When hands tap, adjust, align, or arrange sheets of paper together (even while right hand holds scissors):
      * Ground Truth Action: "hold scissors with right hand, align papers with both hands"
      * Holding Action: "hold papers with left hand, hold scissors with right hand"
 
-8. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
+9. CRITICAL: WIRE & CABLE STRIPPING / TWISTING / FOLDING:
    - Shears vs Pliers: "shears" and "pliers" are interchangeable valid object nouns for wire-cutting tools.
    - Wire stripping: "hold blue wire with left hand, strip blue wire with shears in right hand" (or "with pliers in right hand").
    - Multi-action cable sequence: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands".
 
-9. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS:
-   - ALWAYS use specific compound noun "sewing needle" (NEVER generic "needle" or "thread").
-   - ALWAYS use "cap" as the target object (NEVER "patch" or "fabric").
-   - STRICT STITCH CYCLE ACTION SEQUENCE:
-     * Inserting needle: "insert sewing needle into cap with right hand"
-     * Pulling needle out: "pull sewing needle with right hand".
-     * Full 3-Action Stitch Cycle: "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
+10. CRITICAL: SEWING & STITCHING NEEDLE ACTIONS:
+    - ALWAYS use specific compound noun "sewing needle" (NEVER generic "needle" or "thread").
+    - ALWAYS use "cap" as the target object (NEVER "patch" or "fabric").
+    - STRICT STITCH CYCLE ACTION SEQUENCE:
+      * Inserting needle: "insert sewing needle into cap with right hand"
+      * Pulling needle out: "pull sewing needle with right hand".
+      * Full 3-Action Stitch Cycle: "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand".
 
-10. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
+11. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
     - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
     - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands".
     - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER use semicolons (;) or slashes (/).
@@ -67,19 +72,19 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
     - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
     - NO MORE THAN 5 IDENTICAL LABELS IN A ROW: Vary labels dynamically across long episodes if actions shift.
 
-11. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
+12. OFF-HAND CLAUSE & HAND-TO-HAND PASSES (PDF PAGE 2):
     - Off-hand clause: Always label what the other hand is doing (e.g. "hold blue wire with left hand, strip blue wire with shears in right hand").
 
-12. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
+13. ABSOLUTE BAN ON VAGUE WORDS & APPROVED ALTERNATIVES (PDF PAGE 3 & 4):
     - ❌ NEVER USE "inspect", "adjust", "reposition", "reach", "manipulate", "tool", "grab".
 
-13. COMBining MULTIPLE OBJECTS HELD BY THE SAME HAND:
+14. COMBining MULTIPLE OBJECTS HELD BY THE SAME HAND:
     - "hold screwdriver and electrical plug with left hand".
 
-14. HOLDING & SMOOTHENING ACTIONS:
+15. HOLDING & SMOOTHENING ACTIONS:
     - "hold cloth in left hand, smoothen cloth with right hand" (use "smoothen").
 
-15. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
+16. FLUID COMPOUND CLAUSE & SURFACE LOCATION:
     - "pick up wrench and place wrench on table with right hand". Always state location when present ("on table", "on counter", "on ground", "on floor", "in bin").
 
 OUTPUT FORMAT:
