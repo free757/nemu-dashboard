@@ -4,12 +4,13 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES:
-   - Compound Pick-and-Place: ALWAYS combine single-hand pick-and-place into a fluid compound clause:
-     * Ground Truth Action: "pick up wrench and place wrench on table with right hand"
-     * ❌ Replace separate comma clause ("pick up wrench with right hand, place wrench on table with right hand") with fluid compound "and" clause.
-   - Hand Transfer Pick-and-Place: When passed from left hand to right hand:
-     * Ground Truth Action: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand".
+1. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
+   - Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass):
+     * Input: "pick up and place wrench with right hand"
+     * Ground Truth: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
+   - Segments 2, 3, 4 (0:03.00+ fluid compound pick-and-place):
+     * Input: "pick up and place wrench with right hand"
+     * Ground Truth: "pick up wrench and place wrench on table with right hand"
 
 2. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES:
    - Segment 1: "hold screwdriver with left hand, pick up screws from tray with right hand"
