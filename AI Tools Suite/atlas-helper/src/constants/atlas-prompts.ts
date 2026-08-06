@@ -4,23 +4,19 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
-   - Segment 1 (0:00.00 – 0:06.50):
-     * Input: "twist blue wire with both hands"
-     * Ground Truth: "twist blue wire with both hands, pick up pliers with right hand"
-   - Segment 2 (0:06.50 – 0:09.90):
-     * Input: "pick up pliers with right hand, hold blue wire with left hand"
-     * Ground Truth: "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands"
-   - Segment 3 (0:09.90 – 0:18.00):
-     * Input: "strip blue wire with pliers..."
-     * Ground Truth: "hold blue wire with left hand, strip blue wire with shears in right hand"
-   - Segment 4 (0:18.00 – 0:26.10):
-     * Input: "strip blue wire with pliers..."
-     * Ground Truth: "hold blue wire with left hand, strip blue wire with shears in right hand"
+1. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
+   - Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass):
+     * Input: "pick up and place wrench with right hand"
+     * Ground Truth: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
+   - Segments 2, 3, 4 (0:03.00+ fluid compound pick-and-place):
+     * Input: "pick up and place wrench with right hand"
+     * Ground Truth: "pick up wrench and place wrench on table with right hand"
 
-2. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES:
-   - Segment 1: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
-   - Segments 2, 3, 4: "pick up wrench and place wrench on table with right hand"
+2. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+   - Segment 1 (0:00.00 – 0:06.50): "twist blue wire with both hands, pick up pliers with right hand"
+   - Segment 2 (0:06.50 – 0:09.90): "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands"
+   - Segment 3 (0:09.90 – 0:18.00): "hold blue wire with left hand, strip blue wire with shears in right hand"
+   - Segment 4 (0:18.00 – 0:26.10): "hold blue wire with left hand, strip blue wire with shears in right hand"
 
 3. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES:
    - Segment 1: "hold screwdriver with left hand, pick up screws from tray with right hand"
