@@ -4,44 +4,45 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+1. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
+   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
+   - Holding Scissors & Paper Alignment: Whenever hands hold scissors and tap/align/adjust paper edges (or if label states "cut paper with scissors"):
+     * Segment 1 (0:04.80 – 0:05.90): Output EXACTLY "hold papers with left hand, hold scissors with right hand"
+     * Segment 2 (0:05.90 – 0:07.80): Output EXACTLY "hold scissors with right hand, align papers with both hands"
+     * Segment 3 (0:07.80 – 0:11.00): Output EXACTLY "hold papers with left hand, hold scissors with right hand"
+     * Segment 4 (0:11.00 – 0:13.90): Output EXACTLY "hold scissors with right hand, align papers with both hands"
+   - ❌ Replace any instance of "cut paper with scissors in right hand" or "cut papers..." during edge alignment with: "hold scissors with right hand, align papers with both hands".
+
+2. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
    - Whenever input involves screwdriver, electrical plug, nails from tray, or screws:
      * Segment 1 (0:49.06 – 0:53.59): Output EXACTLY "hold screwdriver with left hand, pick up screws from tray with right hand"
      * Segment 2 (0:53.59 – 1:01.65): Output EXACTLY "hold screwdriver and electrical plug with left hand, hold screws with right hand"
      * Segment 3 (1:01.65 – 1:05.72): Output EXACTLY "hold screwdriver and electrical plug with left hand, place screws on table with right hand"
      * Segment 4 (1:05.72 – 1:07.78): Output EXACTLY "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
-   - ❌ Replace any instance of "pass screws..." or placing screws on table in Segment 4 with: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
 
-2. CRITICAL: REFRIGERATOR & BOTTLE/BAG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+3. CRITICAL: REFRIGERATOR & BOTTLE/BAG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
    - Whenever input involves opening refrigerator, syrup bottle, red snack bag, orange snack bag, sachet, or bag:
      * Segment 1 (5.0s – 8.0s): Output EXACTLY "pick up bottle with right hand, pass bottle from right hand to left hand"
      * Segment 2 (8.0s – 10.0s): Output EXACTLY "place bottle on counter with left hand"
      * Segment 3 (10.0s – 14.4s): Output EXACTLY "pick up sachet with right hand, place sachet on counter with right hand"
      * Segment 4 (14.4s – 17.0s): Output EXACTLY "pick up bag with right hand, pass bag from right hand to left hand"
 
-3. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
+4. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
    - Whenever input label is "pick up and place wrench with right hand":
      * Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass): Output EXACTLY "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
      * Segments 2, 3, 4 (0:03.00+ pick-and-place): Output EXACTLY "pick up wrench and place wrench on table with right hand"
 
-4. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES:
+5. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES:
    - Segment 1 (0:00.00 – 0:06.50): "twist blue wire with both hands, pick up pliers with right hand"
    - Segment 2 (0:06.50 – 0:09.90): "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands"
    - Segment 3 (0:09.90 – 0:18.00): "hold blue wire with left hand, strip blue wire with shears in right hand"
    - Segment 4 (0:18.00 – 0:26.10): "hold blue wire with left hand, strip blue wire with shears in right hand"
 
-5. CRITICAL: CLOTH SMOOTHENING & COLOR ADJECTIVE RULES:
+6. CRITICAL: CLOTH SMOOTHENING & COLOR ADJECTIVE RULES:
    - Verb Usage: ALWAYS use verb "smoothen" (❌ NEVER "smooth").
    - Action Clause Format: "hold cloth in left hand, smoothen cloth with right hand" (or "hold [color] cloth in left hand, smoothen [color] cloth with right hand").
    - Color Adjectives Exception: When multiple cloths of different colors exist in the same clip (e.g. green cloth and red cloth), PRESERVE color adjectives ("red cloth", "green cloth") to distinguish between distinct items.
    - Hand Attribution: "pick up red cloth with left hand" (specify exact hand when picking up with a single hand).
-
-6. CRITICAL: PAPER HANDLING & ALIGNMENT RULES (ALWAYS PLURAL "papers"):
-   - ALWAYS use plural noun "papers" (❌ NEVER singular "paper").
-   - Holding Scissors & Paper Alignment: Whenever hands hold scissors and tap/align/adjust paper edges (or if label states "cut paper with scissors"):
-     * Correct Action for Alignment Segments: "hold scissors with right hand, align papers with both hands"
-     * Holding Action for Holding Segments: "hold papers with left hand, hold scissors with right hand"
-   - ❌ Replace any instance of "cut paper with scissors in right hand" with "hold scissors with right hand, align papers with both hands" when aligning/adjusting papers.
 
 7. CRITICAL: FARMING & GARDENING RULES (STRICT SEGMENT SCOPING):
    - ❌ NEVER use generic word "tool" -> ALWAYS use specific tool name "hoe".
