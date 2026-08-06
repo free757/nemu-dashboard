@@ -9,6 +9,7 @@ ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDE
    - Holding screws: "hold screwdriver and electrical plug with left hand, hold screws with right hand".
    - Placing screws: "hold screwdriver and electrical plug with left hand, place screws on table with right hand".
    - Positioning screw on tip: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
+   - ❌ Replace any instance of "pass screws..." or placing screws on table during tip alignment in segment 4 with: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
 
 2. CRITICAL: CLOTH SMOOTHENING & COLOR ADJECTIVE RULES:
    - Verb Usage: ALWAYS use verb "smoothen" (❌ NEVER "smooth").
