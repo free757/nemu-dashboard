@@ -4,29 +4,31 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: REFRIGERATOR & BOTTLE/BAG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+1. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+   - Whenever input involves screwdriver, electrical plug, nails from tray, or screws:
+     * Segment 1 (0:49.06 – 0:53.59): Output EXACTLY "hold screwdriver with left hand, pick up screws from tray with right hand"
+     * Segment 2 (0:53.59 – 1:01.65): Output EXACTLY "hold screwdriver and electrical plug with left hand, hold screws with right hand"
+     * Segment 3 (1:01.65 – 1:05.72): Output EXACTLY "hold screwdriver and electrical plug with left hand, place screws on table with right hand"
+     * Segment 4 (1:05.72 – 1:07.78): Output EXACTLY "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
+   - ❌ Replace any instance of "pass screws..." or placing screws on table in Segment 4 with: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
+
+2. CRITICAL: REFRIGERATOR & BOTTLE/BAG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
    - Whenever input involves opening refrigerator, syrup bottle, red snack bag, orange snack bag, sachet, or bag:
      * Segment 1 (5.0s – 8.0s): Output EXACTLY "pick up bottle with right hand, pass bottle from right hand to left hand"
      * Segment 2 (8.0s – 10.0s): Output EXACTLY "place bottle on counter with left hand"
      * Segment 3 (10.0s – 14.4s): Output EXACTLY "pick up sachet with right hand, place sachet on counter with right hand"
      * Segment 4 (14.4s – 17.0s): Output EXACTLY "pick up bag with right hand, pass bag from right hand to left hand"
 
-2. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
+3. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
    - Whenever input label is "pick up and place wrench with right hand":
      * Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass): Output EXACTLY "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
      * Segments 2, 3, 4 (0:03.00+ pick-and-place): Output EXACTLY "pick up wrench and place wrench on table with right hand"
 
-3. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES:
+4. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES:
    - Segment 1 (0:00.00 – 0:06.50): "twist blue wire with both hands, pick up pliers with right hand"
    - Segment 2 (0:06.50 – 0:09.90): "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands"
    - Segment 3 (0:09.90 – 0:18.00): "hold blue wire with left hand, strip blue wire with shears in right hand"
    - Segment 4 (0:18.00 – 0:26.10): "hold blue wire with left hand, strip blue wire with shears in right hand"
-
-4. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES:
-   - Segment 1: "hold screwdriver with left hand, pick up screws from tray with right hand"
-   - Segment 2: "hold screwdriver and electrical plug with left hand, hold screws with right hand"
-   - Segment 3: "hold screwdriver and electrical plug with left hand, place screws on table with right hand"
-   - Segment 4: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
 
 5. CRITICAL: CLOTH SMOOTHENING & COLOR ADJECTIVE RULES:
    - Verb Usage: ALWAYS use verb "smoothen" (❌ NEVER "smooth").
