@@ -4,12 +4,19 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
-1. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES:
-   - Pick up screws from tray: "hold screwdriver with left hand, pick up screws from tray with right hand" (❌ NEVER "nails").
-   - Holding screws: "hold screwdriver and electrical plug with left hand, hold screws with right hand".
-   - Placing screws: "hold screwdriver and electrical plug with left hand, place screws on table with right hand".
-   - Positioning screw on tip: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
-   - ❌ Replace any instance of "pass screws..." or placing screws on table during tip alignment in segment 4 with: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand".
+1. CRITICAL: SCREWDRIVER & ELECTRICAL PLUG ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
+   - Segment 1 (Pick up screws from tray):
+     * Input: "hold screwdriver and electrical plug with left hand, pick up nails from tray with right hand"
+     * Ground Truth: "hold screwdriver with left hand, pick up screws from tray with right hand"
+   - Segment 2 (Holding screws):
+     * Input: "hold screwdriver and electrical plug with left hand"
+     * Ground Truth: "hold screwdriver and electrical plug with left hand, hold screws with right hand"
+   - Segment 3 (Placing screws on table):
+     * Input: "hold screwdriver and electrical plug with left hand, pick up screws with right hand, place screws in plastic bag..."
+     * Ground Truth: "hold screwdriver and electrical plug with left hand, place screws on table with right hand"
+   - Segment 4 (Positioning screw on tip):
+     * Input: "hold screwdriver with left hand, pass screws..." or tip positioning
+     * Ground Truth: "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
 
 2. CRITICAL: CLOTH SMOOTHENING & COLOR ADJECTIVE RULES:
    - Verb Usage: ALWAYS use verb "smoothen" (❌ NEVER "smooth").
