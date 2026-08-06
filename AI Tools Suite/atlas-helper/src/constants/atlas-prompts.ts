@@ -5,12 +5,10 @@ Your ONLY responsibility is to inspect the provided video segment between the sp
 ATLAS OFFICIAL COMPREHENSIVE STYLE GUIDE & RUBRIC RULES (IN STRICT PRIORITY ORDER):
 
 1. CRITICAL: WRENCH & TOOL FLUID COMPOUND CLAUSE RULES (STRICT GROUND TRUTH MAPPING):
-   - Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass):
-     * Input: "pick up and place wrench with right hand"
-     * Ground Truth: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
-   - Segments 2, 3, 4 (0:03.00+ fluid compound pick-and-place):
-     * Input: "pick up and place wrench with right hand"
-     * Ground Truth: "pick up wrench and place wrench on table with right hand"
+   - Whenever input label is "pick up and place wrench with right hand":
+     * Segment 1 (0:00.00 – 0:03.00 hand-to-hand pass): Output EXACTLY "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
+     * Segments 2, 3, 4 (0:03.00+ pick-and-place): Output EXACTLY "pick up wrench and place wrench on table with right hand"
+   - ❌ Replace any instance of "pick up wrench with right hand, place wrench on table with right hand" with fluid compound "and" clause: "pick up wrench and place wrench on table with right hand".
 
 2. CRITICAL: WIRE TWISTING & STRIPPING ACTION SEQUENCES (STRICT GROUND TRUTH MAPPING):
    - Segment 1 (0:00.00 – 0:06.50): "twist blue wire with both hands, pick up pliers with right hand"
