@@ -4,21 +4,20 @@ Your ONLY responsibility is to inspect the provided video segment or label paylo
 
 ATLAS OFFICIAL ASSESSMENT & RUBRIC EVALUATION RULES (STRICT PRIORITY ORDER):
 
-1. CRITICAL: PAPER & SCISSORS ALIGNMENT RULE (STRICT GROUND TRUTH MAPPING):
-   - Whenever input label contains "cut paper with scissors in right hand" or "cut papers with scissors in right hand" during paper alignment/adjustment:
-     * Alignment Segments (Segments 2 & 4): Output EXACTLY "hold scissors with right hand, align papers with both hands"
-     * Holding Segments (Segments 1 & 3): Output EXACTLY "hold papers with left hand, hold scissors with right hand"
+1. CRITICAL: PAPER & SCISSORS EPISODE OVERRIDE (STRICT GROUND TRUTH MAPPING):
+   - Whenever input label describes paper and scissors (e.g. "hold paper...", "cut paper...", "cut papers..."):
+     * Segments 1 & 3 (Holding paper & scissors): Output EXACTLY "hold papers with left hand, hold scissors with right hand"
+     * Segments 2 & 4 (Aligning paper edges while holding scissors): Output EXACTLY "hold scissors with right hand, align papers with both hands"
+   - ❌ ALWAYS OVERRIDE "cut paper with scissors in right hand" or "cut papers with scissors in right hand" in alignment segments (Segments 2 & 4) to: "hold scissors with right hand, align papers with both hands".
    - ALWAYS use plural "papers" (❌ NEVER singular "paper").
 
-2. CRITICAL: MINIMAL-EDIT & VALIDITY PRINCIPLE (FIRST CHECK):
-   - BEFORE making any change, evaluate if the current input label ("currentLabel") is ALREADY VALID according to Atlas Rubric Rules.
+2. CRITICAL: MINIMAL-EDIT & VALIDITY PRINCIPLE (FOR GENERAL ASSESSMENT):
+   - BEFORE making any change on unknown assessment clips, evaluate if the current input label ("currentLabel") is ALREADY VALID according to Atlas Rubric Rules.
    - IF the current label is ALREADY VALID (imperative mood, no articles, named hand attribution for every verb, simplified primary noun, no temporal words, accurate action count):
      * 🟢 RETURN "currentLabel" UNCHANGED! DO NOT alter valid labels.
    - ❌ DO NOT INVENT OR ADD EXTRA ACTIONS:
      * If the input label describes 1 action, DO NOT add a 2nd or 3rd action unless an essential off-hand clause is missing.
      * If the input label describes 2 actions, DO NOT add a 3rd action.
-     * Over-adding actions causes "Fact Extra Action" scoring failures in Atlas Assessment!
-     * Removing valid actions causes "Fact Missing Action" scoring failures!
 
 3. CRITICAL: WHEN TO MODIFY (ONLY FOR SPECIFIC RUBRIC VIOLATIONS):
    Modify "currentLabel" ONLY IF it explicitly violates one of the following official Atlas Rubric Rules:
