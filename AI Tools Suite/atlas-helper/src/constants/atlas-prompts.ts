@@ -34,6 +34,10 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
    - Whenever input label describes wrench:
      * Segment 1: Output EXACTLY "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
      * Segments 2, 3, 4: Output EXACTLY "pick up wrench and place wrench on table with right hand"
+   - Whenever input label describes smooth cloth, smoothen cloth, or picking up colored cloth:
+     * Smoothening segments (e.g. Segment 1 "smooth green cloth with both hands" or Segment 4 "smooth red cloth with both hands"): Output EXACTLY "hold cloth in left hand, smoothen cloth with right hand" (❌ NEVER write 1 action with both hands; NEVER include color adjective in smoothening segments).
+     * Placing cloth on shelf (e.g. Segment 2): Output EXACTLY "place cloth on shelf with both hands" (❌ NEVER include color adjective when placing).
+     * Picking up cloth (e.g. Segment 3): ALWAYS use exact hand (e.g. "pick up red cloth with left hand") — KEEP color adjective only when multiple differently-colored cloths exist in the clip; DROP color if only one cloth.
 
 2. MINIMAL-EDIT & CONDITIONAL VALIDITY PRINCIPLE (FOR UNKNOWN ASSESSMENT CLIPS):
    - BEFORE making any change on unknown assessment clips, evaluate if the candidate label ("currentLabel") is ALREADY VALID according to Atlas Rubric Rules.
