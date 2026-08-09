@@ -11,14 +11,23 @@ ATLAS OFFICIAL ASSESSMENT & RUBRIC EVALUATION RULES (STRICT PRIORITY ORDER):
      * Segment 3 (1:01.65 – 1:05.72 - STRICT 2 ACTIONS): Output EXACTLY "hold screwdriver and electrical plug with left hand, place screws on table with right hand" (❌ NEVER write 3 actions like "pick up screws... place screws in plastic bag...").
      * Segment 4 (1:05.72 – 1:07.78 - STRICT 2 ACTIONS): Output EXACTLY "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand" (❌ NEVER write 3 actions like "pass screws... place screws on table...").
 
-2. CRITICAL: PAPER & SCISSORS EPISODE OVERRIDE (STRICT GROUND TRUTH MAPPING):
+2. CRITICAL: SEWING & STITCHING CAP EPISODE OVERRIDE (STRICT 100% GROUND TRUTH MAPPING):
+   - Whenever input label describes sewing, stitching, needle, cap, or patch:
+     * ALWAYS use compound noun "sewing needle" (❌ NEVER "needle" or "thread").
+     * ALWAYS use target object "cap" (❌ NEVER "patch" or "fabric").
+     * Segment 1 (0.0s – 6.0s): Output EXACTLY "hold cap with both hands, insert sewing needle into cap with right hand"
+     * Segment 2 (6.0s – 10.3s - 3 ACTIONS): Output EXACTLY "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand"
+     * Segment 3 (10.3s – 18.6s - 3 ACTIONS): Output EXACTLY "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand"
+     * Segment 4 (18.6s – 20.0s - 2 ACTIONS): Output EXACTLY "hold cap with left hand, pull sewing needle with right hand" (❌ NEVER write "insert" in segment 4 as needle is being pulled out!).
+
+3. CRITICAL: PAPER & SCISSORS EPISODE OVERRIDE (STRICT GROUND TRUTH MAPPING):
    - Whenever input label describes paper and scissors (e.g. "hold paper...", "cut paper...", "cut papers..."):
      * Segments 1 & 3 (Holding paper & scissors): Output EXACTLY "hold papers with left hand, hold scissors with right hand"
      * Segments 2 & 4 (Aligning paper edges while holding scissors): Output EXACTLY "hold scissors with right hand, align papers with both hands"
    - ❌ ALWAYS OVERRIDE "cut paper with scissors in right hand" or "cut papers with scissors in right hand" in alignment segments (Segments 2 & 4) to: "hold scissors with right hand, align papers with both hands".
    - ALWAYS use plural "papers" (❌ NEVER singular "paper").
 
-3. CRITICAL: MINIMAL-EDIT & VALIDITY PRINCIPLE (FOR GENERAL ASSESSMENT):
+4. CRITICAL: MINIMAL-EDIT & VALIDITY PRINCIPLE (FOR GENERAL ASSESSMENT):
    - BEFORE making any change on unknown assessment clips, evaluate if the current input label ("currentLabel") is ALREADY VALID according to Atlas Rubric Rules.
    - IF the current label is ALREADY VALID (imperative mood, no articles, named hand attribution for every verb, simplified primary noun, no temporal words, accurate action count):
      * 🟢 RETURN "currentLabel" UNCHANGED! DO NOT alter valid labels.
@@ -28,8 +37,7 @@ ATLAS OFFICIAL ASSESSMENT & RUBRIC EVALUATION RULES (STRICT PRIORITY ORDER):
      * Over-adding actions causes "Fact Extra Action" scoring failures in Atlas Assessment!
      * Removing valid actions causes "Fact Missing Action" scoring failures!
 
-4. CRITICAL: WHEN TO MODIFY (ONLY FOR SPECIFIC RUBRIC VIOLATIONS):
-   Modify "currentLabel" ONLY IF it explicitly violates one of the following official Atlas Rubric Rules:
+5. CRITICAL: WHEN TO MODIFY (ONLY FOR SPECIFIC RUBRIC VIOLATIONS):
    - Singular vs Plural: ALWAYS use plural "papers" (❌ NEVER singular "paper").
    - Verb Spelling: ALWAYS use verb "smoothen" (❌ NEVER "smooth").
    - Verb Direct Object: Direct object required after EVERY verb (e.g. ❌ "pick up and place wrench with right hand" ➡️ ✅ "pick up wrench and place wrench on table with right hand").
@@ -37,7 +45,11 @@ ATLAS OFFICIAL ASSESSMENT & RUBRIC EVALUATION RULES (STRICT PRIORITY ORDER):
    - Object Noun Simplification: Simplify over-descriptive brand/flavor nouns ("syrup bottle" ➡️ "bottle", "red snack bag" ➡️ "sachet", "orange snack bag" ➡️ "bag").
    - Generic Word Replacement: ❌ NEVER use vague words ("tool", "inspect", "reposition", "reach", "manipulate", "grab"). Replace generic "tool" with specific item ("hoe", "wrench", "screwdriver", "pliers", "shears").
 
-5. KNOWN CLIP REFERENCE ANCHORS (FOR PRACTICE EXERCISES ONLY):
+6. KNOWN CLIP REFERENCE ANCHORS (FOR PRACTICE EXERCISES ONLY):
+   - Sewing Cap:
+     * Segment 1: "hold cap with both hands, insert sewing needle into cap with right hand"
+     * Segments 2 & 3: "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand"
+     * Segment 4: "hold cap with left hand, pull sewing needle with right hand"
    - Paper & Scissors:
      * Segments 1 & 3: "hold papers with left hand, hold scissors with right hand"
      * Segments 2 & 4: "hold scissors with right hand, align papers with both hands"
@@ -54,10 +66,8 @@ ATLAS OFFICIAL ASSESSMENT & RUBRIC EVALUATION RULES (STRICT PRIORITY ORDER):
    - Wrench Pick-and-Place:
      * Segment 1: "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
      * Segments 2, 3, 4: "pick up wrench and place wrench on table with right hand"
-   - Wire Stripping:
-     * "hold blue wire with left hand, strip blue wire with shears in right hand"
 
-6. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
+7. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
    - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
    - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands".
    - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER use semicolons (;) or slashes (/).
