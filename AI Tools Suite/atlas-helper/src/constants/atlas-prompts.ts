@@ -55,13 +55,38 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
    - Object Noun Simplification: Simplify over-descriptive brand/flavor nouns ("syrup bottle" ➡️ "bottle", "red snack bag" ➡️ "sachet", "orange snack bag" ➡️ "bag").
    - Vague Words Removal: ❌ NEVER use vague words ("inspect", "adjust", "reposition", "reach", "manipulate", "grab", "tool").
 
-4. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS):
-   - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs without articles (e.g. "pick up spoon with right hand", NOT "picks up the spoon").
-   - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands".
-   - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER use semicolons (;) or slashes (/).
+4. MANDATORY ATLAS RUBRIC BULLETS (OFFICIAL REQUIREMENTS — FROM OFFICIAL ATLAS PDF):
+   - IMPERATIVE VOICE, NO ARTICLES: Direct action verbs, no pronouns, no "-ing" verbs, no articles ("the", "a", "an").
+     ✅ "pick up spoon with right hand" ❌ "picking up the spoon with their hand"
+   - NAME THE ACTING HAND: Always specify "left hand", "right hand", or "both hands" for EVERY verb.
+   - ONE SEPARATOR BETWEEN ACTIONS: Use ONLY a comma "," or "and". NEVER semicolons (;) or slashes (/).
    - EVERY VERB ATTACHES TO AN OBJECT: Direct object required after every verb.
    - NO NUMERALS: Spell all numbers out in words (e.g. "three" NOT "3", "five" NOT "5").
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
+   - ALWAYS STATE LOCATION WHEN PRESENT: If an object is placed/put somewhere visible, include the location.
+     ✅ "place cup on table with right hand" ✅ "place cup in bin with left hand" ❌ "place cup with right hand"
+   - OFF-HAND CLAUSE (CRITICAL): ALWAYS label what the OTHER hand is doing — holds, passes, or secondary actions.
+     ✅ "hold carrot with left hand, cut carrot with right hand" ❌ "cut carrot with right hand" (missing left hand!)
+     This is why smoothening always needs 2 actions: "hold cloth in left hand, smoothen cloth with right hand"
+   - HAND-TO-HAND PASSES: ALWAYS describe when an object is passed from one hand to the other.
+     ✅ "pass cup from left hand to right hand" ❌ "hold cup with right hand" (if it was just passed!)
+   - NO ACTION RULE: Use "No Action" ONLY when both hands are completely idle (not touching task objects) for 5+ seconds.
+     ❌ NEVER mix "No Action" with real actions — it's one or the other.
+     A task-relevant hold (e.g. holding chopsticks while other hand acts) is NOT "No Action" — label both actions.
+   - "ADJUST" IS BANNED — use specific motion verbs instead:
+     * slide (e.g. "slide plate across counter with right hand")
+     * align (e.g. "align lid with jar with both hands")
+     * rotate (e.g. "rotate lid with right hand")
+     * flatten (e.g. "flatten cloth on table with right hand")
+     * tighten (e.g. "tighten cap with right hand")
+     * fold (e.g. "fold towel with both hands")
+     * tuck (e.g. "tuck cloth into bag with right hand")
+     * squeeze (e.g. "squeeze sponge with right hand")
+   - OBJECT NAMING RULES:
+     * Use adjectives ONLY to tell apart two similar objects (e.g. "blue cloth" vs "red cloth")
+     * Stay consistent — if called "bottle" once, always call it "bottle"
+     * ❌ NEVER mention body parts other than hands ("wash spoon with fingers" ➡️ "wash spoon with right hand")
+     * "grab" ➡️ "pick up" (always be literal)
 
 OUTPUT FORMAT:
 Return ONLY a raw JSON array of objects (no markdown blocks, no conversational preamble), where each object has:
