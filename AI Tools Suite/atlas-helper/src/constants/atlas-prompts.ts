@@ -34,6 +34,12 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
    - Whenever input label describes wrench:
      * Segment 1: Output EXACTLY "hold wrench with left hand, pass wrench from left hand to right hand, place wrench on table with right hand"
      * Segments 2, 3, 4: Output EXACTLY "pick up wrench and place wrench on table with right hand"
+   - Whenever input label describes hoe, dig soil, gardening, or bucket with digging:
+     * Segment 1: Output EXACTLY "place bucket on floor with left hand, pick up hoe with right hand"
+     * Segment 2: Output EXACTLY "dig soil with hoe in right hand"
+     * Segment 3: Output EXACTLY "dig soil with hoe in right hand"
+     * Segment 4: Output EXACTLY "place hoe on ground with right hand, gather soil with both hands"
+     * ⚠️ NOTE: When the bucket is resting on the floor and left hand is idle/not actively holding it, do NOT label the left hand action in digging segments.
    - Whenever input label describes smooth cloth, smoothen cloth, or picking up colored cloth:
      * Smoothening segments (e.g. Segment 1 "smooth green cloth with both hands" or Segment 4 "smooth red cloth with both hands"): Output EXACTLY "hold cloth in left hand, smoothen cloth with right hand" (❌ NEVER write 1 action with both hands; NEVER include color adjective in smoothening segments).
      * Placing cloth on shelf (e.g. Segment 2): Output EXACTLY "place cloth on shelf with both hands" (❌ NEVER include color adjective when placing).
