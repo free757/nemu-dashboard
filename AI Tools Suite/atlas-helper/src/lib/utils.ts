@@ -36,6 +36,16 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // Filter out common Atlas web page UI noise lines
+    if (
+      /^(AI|Play segment \d+|Segment \d+|Step \d+|Label rubric|Correct the AI labels|Practice assessment|Assessment|PROGRESS|How it works|Learn to label|How to label|The exact format|Start paid work|Payments processed|Scene:.*|Try another clip|Submit practice clip|Exit|•)$/i.test(
+        line
+      )
+    ) {
+      continue;
+    }
+
     const timeMatch = parseTimeRange(line);
 
     if (timeMatch) {
@@ -56,7 +66,7 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
         });
         pendingTime = null;
       } else {
-        // Timestamps are on their own line; label is expected on the next line
+        // Timestamps are on their own line; label is expected on the next non-noise line
         pendingTime = timeMatch;
       }
     } else if (pendingTime) {
