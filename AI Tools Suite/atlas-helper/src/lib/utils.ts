@@ -100,6 +100,10 @@ export function translateToArabic(englishText: string): string {
 
   // Dictionary mappings
   const dict: [RegExp, string][] = [
+    [/ground truth matched for scenario:\s*/gi, "تمت مطابقة الإجابة الرسمية للسيناريو: "],
+    [/ground truth matched\s*/gi, "تمت مطابقة الإجابة الرسمية "],
+    [/ground truth\s*/gi, "الإجابة الرسمية"],
+    [/practice clip\s*/gi, "كليب التدريب "],
     [/Action syntax verified:\s*/gi, "تم فحص وتأكيد حركة اليدين: "],
     [/Observed action:\s*/gi, "ملاحظة حركة اليدين في المشهد: "],
     [/Action verified:\s*/gi, "تم تأكيد الحركة في المشهد: "],
@@ -156,6 +160,7 @@ export function translateToArabic(englishText: string): string {
     [/\bleaves\b/gi, "أوراق الشجر"],
     [/\bplant\b/gi, "نبتة"],
     [/\bminced meat\b/gi, "لحم مفروم"],
+    [/\bmeat\b/gi, "لحم"],
     [/\bonions\b/gi, "بصل"],
     [/\bwok\b/gi, "مقلاة/وعاء الطهي"],
     [/\bladle\b/gi, "مغرفة الطهي"],
@@ -184,6 +189,9 @@ export function translateToArabic(englishText: string): string {
     [/\bin both hands\b/gi, "في كلتا اليدين"],
     [/\bfrom right hand to left hand\b/gi, "من اليد اليمنى إلى اليد اليسرى"],
     [/\bfrom left hand to right hand\b/gi, "من اليد اليسرى إلى اليد اليمنى"],
+    [/\bin\b/gi, "في"],
+    [/\bon\b/gi, "على"],
+    [/\binto\b/gi, "في"],
     [/\bwith\b/gi, "بـ"],
     [/\bfrom\b/gi, "من"],
     [/\bto\b/gi, "إلى"],
