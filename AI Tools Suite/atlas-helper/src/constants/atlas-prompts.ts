@@ -40,13 +40,16 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
      * Segment 3: Output EXACTLY "dig soil with hoe in right hand"
      * Segment 4: Output EXACTLY "place hoe on ground with right hand, gather soil with both hands"
      * ⚠️ NOTE: When the bucket is resting on the floor and left hand is idle/not actively holding it, do NOT label the left hand action in digging segments.
-   - Whenever input label describes wipe cup, wipe glass, wipe jar, or glass cup with cloth:
+   - Whenever input label EXPLICITLY mentions "cup", "glass cup", "jar", or "mug" as the object being wiped:
      * Segment 1: Output EXACTLY "hold glass cup with left hand, wipe glass cup with cloth in right hand"
      * Segment 2: Output EXACTLY "rotate glass cup with left hand, wipe glass cup with cloth in right hand"
      * Segment 3: Output EXACTLY "rotate glass cup with left hand, wipe glass cup with cloth in right hand"
      * Segment 4: Output EXACTLY "hold glass cup with left hand, wipe glass cup with cloth in right hand"
-     * ⚠️ KEY RULE: Left hand holds/rotates the CUP (not cloth!). Right hand holds cloth for wiping. Never write "hold cloth in left hand" when wiping cups.
-     * ⚠️ Object name: Always "glass cup" (NEVER "jar" or just "cup" alone — use adjective "glass").
+     * ⚠️ KEY RULE: Left hand holds/rotates the CUP (not cloth!). Right hand holds cloth for wiping.
+     * ⚠️ ONLY trigger this anchor if the object is clearly cup/jar/mug. If object is "book", "page", "surface", do NOT use this anchor.
+   - Whenever input label describes book, wipe book, or wipe page with cloth:
+     * All segments: Output EXACTLY "hold book with left hand, wipe book with cloth in right hand"
+     * ⚠️ KEY RULE: object must be "book" consistently — NEVER use "page" as the object (use "book" throughout for consistency).
    - Whenever input label describes smooth cloth, smoothen cloth, or picking up colored cloth:
      * Smoothening segments (e.g. Segment 1 "smooth green cloth with both hands" or Segment 4 "smooth red cloth with both hands"): Output EXACTLY "hold cloth in left hand, smoothen cloth with right hand" (❌ NEVER write 1 action with both hands; NEVER include color adjective in smoothening segments).
      * Placing cloth on shelf (e.g. Segment 2): Output EXACTLY "place cloth on shelf with both hands" (❌ NEVER include color adjective when placing).
