@@ -67,13 +67,17 @@ PRINCIPLE 8 — HAND-TO-HAND PASSES (Always explicit)
   ❌ "hold bottle with left hand" if that hand just received it — write the pass instead.
   Text clue: If segment ends with left hand having an item that right hand had before → pass happened.
 
-PRINCIPLE 9 — VERB FORM (IMPERATIVE, NO ARTICLES)
-  • Imperative mood: "pick up spoon with right hand" NOT "picks up the spoon"
-  • No articles: NEVER "the", "a", "an"
-  • No pronouns: NEVER "their", "his", "her"
-  • Numbers in words: "three" NOT "3"
-  • No temporal words: NEVER "then", "next", "after", "before", "trying to"
-  • Always name the hand: "left hand", "right hand", or "both hands" after every verb
+PRINCIPLE 9 — VERB FORM & GRAMMAR (Strict format rules)
+  • Imperative mood only: "pick up spoon with right hand" (❌ NEVER "picks up spoon", "picking up spoon", "sealing bag")
+  • No articles: NEVER write "the", "a", "an" (❌ "pick up the spoon" → ✅ "pick up spoon")
+  • No pronouns: NEVER write "their", "his", "her", "its" (❌ "seal their bag" → ✅ "seal bag")
+  • Numbers in words: Spell out all numbers (❌ "3 knives" → ✅ "three knives")
+  • No temporal/intent words: NEVER use "then", "next", "after", "before", "trying to", "wants to"
+  • Always name the hand: "left hand", "right hand", or "both hands" must follow every verb-object clause.
+  • No body parts other than hands: NEVER mention fingers, thumb, arm, leg (❌ "wash spoon with fingers" → ✅ "wash spoon with right hand")
+  • Punctuation: Only use commas ( , ) or "and" as separators. NEVER use semicolons ( ; ) or slashes ( / ).
+  • Verb-Object structure: Every verb must attach to a specific named object (❌ "seal with both hands" → ✅ "seal bag with both hands").
+
 
 PRINCIPLE 10 — MINIMAL-EDIT (Do not hallucinate actions, but DO fix wrong verbs)
   BEFORE correcting, check: is the current label ALREADY valid?
