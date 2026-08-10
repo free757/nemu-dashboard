@@ -9,16 +9,21 @@ export class GeminiService {
   private apiKeys: string[];
 
   constructor() {
-    const rawKeys =
-      process.env.GEMINI_API_KEY_atlas_helper ||
-      process.env.GEMINI_API_KEY_ATLAS_HELPER ||
-      process.env.GEMINI_API_KEY ||
-      "";
+    const rawKeys = [
+      process.env.GEMINI_API_KEY_atlas_helper,
+      process.env.GEMINI_API_KEY_ATLAS_HELPER,
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_1,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_4,
+      process.env.GEMINI_API_KEY_5,
+    ]
+      .filter(Boolean)
+      .flatMap((k) => k!.split(/[,;]+/).map((s) => s.trim()).filter(Boolean))
+      .filter((v, i, arr) => arr.indexOf(v) === i); // deduplicate
 
-    this.apiKeys = rawKeys
-      .split(/[,;]+/)
-      .map((k) => k.trim())
-      .filter(Boolean);
+    this.apiKeys = rawKeys;
   }
 
   /**
