@@ -75,18 +75,36 @@ PRINCIPLE 9 — VERB FORM (IMPERATIVE, NO ARTICLES)
   • No temporal words: NEVER "then", "next", "after", "before", "trying to"
   • Always name the hand: "left hand", "right hand", or "both hands" after every verb
 
-PRINCIPLE 10 — MINIMAL-EDIT (Do not hallucinate actions)
+PRINCIPLE 10 — MINIMAL-EDIT (Do not hallucinate actions, but DO fix wrong verbs)
   BEFORE correcting, check: is the current label ALREADY valid?
-  If YES → return it UNCHANGED.
-  Do NOT add actions that may not be in the video.
-  Do NOT invent a second action just because it "seems likely".
-  Action count in your label MUST match what is actually visible in the segment.
-  "The window contains N action(s); the label states M" error = action count mismatch → fix count.
+  • Valid = correct verb form + correct hand + correct object + correct action count + correct verb for what's happening
+  If ALL conditions are met → return UNCHANGED.
+  If the VERB is wrong (e.g., "cut" when the action is "align") → ALWAYS fix the verb, even if the rest is valid.
+  Do NOT add actions not in the video. Do NOT keep a wrong verb just because format looks correct.
+  Action count in your label MUST match what is visible in the segment.
 
 PRINCIPLE 11 — NO ACTION RULE
   Use "No Action" ONLY if both hands are completely idle for 5+ consecutive seconds.
   NEVER mix "No Action" with real actions in the same label.
   A task-relevant hold is NOT "No Action".
+
+PRINCIPLE 15 — PREPARATION vs EXECUTION (Cutting tools)
+  When scissors, knife, or any cutting tool is present, distinguish between:
+
+  ALIGN (Preparation — before cutting):
+    BOTH hands are touching/moving the material to position it.
+    The cutting tool is held PASSIVELY while hands position the material.
+    → Use: "hold scissors with right hand, align papers with both hands"
+    ❌ NOT: "cut papers with scissors" (tool is not actively cutting)
+
+  CUT (Execution — during cutting):
+    The hand with the cutting tool is actively moving blades through material.
+    One or both hands guide the cut.
+    → Use: "cut paper with scissors in right hand"
+    ❌ NOT: "align papers" (material is being cut, not positioned)
+
+  KEY SIGNAL: Both hands moving material = ALIGN. Scissor blades moving = CUT.
+  This principle applies to any cutting scenario: scissors, knife, box cutter, shears, etc.
 
 PRINCIPLE 12 — OBJECT NAME SIMPLIFICATION (Always apply this lookup)
   Strip all brand names, color prefixes, and redundant type qualifiers. Keep ONE core category noun.
