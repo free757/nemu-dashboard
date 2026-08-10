@@ -56,7 +56,9 @@ export default function HomePage() {
           onVideoLoaded={handleVideoLoaded}
           isLoaded={Boolean(fileUri)}
           loadedUrl={loadedUrl}
+          fileUri={fileUri}
         />
+
 
         {/* Step 2: Batch Segments Form */}
         <BatchLabelForm fileUri={fileUri} isLoaded={Boolean(fileUri)} />
