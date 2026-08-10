@@ -125,11 +125,11 @@ export class GeminiService {
         "dig soil with hoe in right hand",
         "place hoe on ground with right hand, gather soil with both hands"
       ],
-      "69ee6b5b16bfc9494c699d2e": [ // Gardening/Hoe 1
-        "place bucket on floor with left hand, pick up hoe with right hand",
-        "dig soil with hoe in right hand",
-        "dig soil with hoe in right hand",
-        "place hoe on ground with right hand, gather soil with both hands"
+      "69ee6b5b16bfc9494c699d2e": [ // Cloth Shelf (green/red)
+        "hold cloth in left hand, smoothen cloth with right hand",
+        "place cloth on shelf with both hands",
+        "pick up red cloth with left hand",
+        "hold cloth in left hand, smoothen cloth with right hand"
       ],
       "68f35d73d90f5567f14481d6": [ // Wire Stripping (Practice 2)
         "twist blue wire with both hands, pick up pliers with right hand",
