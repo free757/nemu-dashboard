@@ -131,11 +131,11 @@ export class GeminiService {
         "dig soil with hoe in right hand",
         "place hoe on ground with right hand, gather soil with both hands"
       ],
-      "68f35d73d90f5567f14481d6": [ // Screwdriver + Plug (Practice 1)
-        "hold screwdriver with left hand, pick up screws from tray with right hand",
-        "hold screwdriver and electrical plug with left hand, hold screws with right hand",
-        "hold screwdriver and electrical plug with left hand, place screws on table with right hand",
-        "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
+      "68f35d73d90f5567f14481d6": [ // Wire Stripping (Practice 2)
+        "twist blue wire with both hands, pick up pliers with right hand",
+        "hold shears with right hand, twist blue cable with both hands, fold blue cable with both hands",
+        "hold blue wire with left hand, strip blue wire with shears in right hand",
+        "hold blue wire with left hand, strip blue wire with shears in right hand"
       ],
       "69816242ce83c74926fe80a5": [ // Screwdriver + Plug (Practice 2)
         "hold screwdriver with left hand, pick up screws from tray with right hand",
