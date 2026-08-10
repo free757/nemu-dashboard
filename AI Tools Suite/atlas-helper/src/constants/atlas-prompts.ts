@@ -60,10 +60,12 @@ PRINCIPLE 7 — VERB SELECTION PRECISION
   • gather (NOT collect) — for scooping with hands
   BANNED VERBS (never use): adjust, inspect, reach, manipulate, grab, reposition, tool
 
-PRINCIPLE 8 — HAND-TO-HAND PASSES
-  ALWAYS describe passing an object from one hand to the other explicitly.
-  ✅ "pass bottle from right hand to left hand"
-  ❌ Just "hold bottle with left hand" if the hand just received it from the other
+PRINCIPLE 8 — HAND-TO-HAND PASSES (Always explicit)
+  ALWAYS label passing an object from one hand to the other as a distinct action.
+  ✅ "pick up bottle with right hand, pass bottle from right hand to left hand"
+  ❌ "pick up bottle with right hand" (missing the pass if it happened!)
+  ❌ "hold bottle with left hand" if that hand just received it — write the pass instead.
+  Text clue: If segment ends with left hand having an item that right hand had before → pass happened.
 
 PRINCIPLE 9 — VERB FORM (IMPERATIVE, NO ARTICLES)
   • Imperative mood: "pick up spoon with right hand" NOT "picks up the spoon"
@@ -85,6 +87,31 @@ PRINCIPLE 11 — NO ACTION RULE
   Use "No Action" ONLY if both hands are completely idle for 5+ consecutive seconds.
   NEVER mix "No Action" with real actions in the same label.
   A task-relevant hold is NOT "No Action".
+
+PRINCIPLE 12 — OBJECT NAME SIMPLIFICATION
+  Use the SIMPLEST standard category name. Drop brand, color, and type qualifiers when the object is uniquely identifiable.
+  ❌ "syrup bottle" → ✅ "bottle"
+  ❌ "orange snack bag" → ✅ "bag"
+  ❌ "red sachet packet" → ✅ "sachet"
+  ❌ "glass drinking cup" → ✅ "glass cup" (keep only one descriptive adjective max)
+  Keep color/adjective ONLY for disambiguation (when multiple similar objects are present in the clip).
+  Standard category terms: bottle, bag, sachet (small flat packet), cup, bowl, cloth, towel, book, box, tray.
+
+PRINCIPLE 13 — SEQUENTIAL HAND INFERENCE (Cross-segment logic)
+  Use the SEQUENCE of segments to infer which hand has the object:
+  • If segment N ends with "pass [object] from right hand to left hand"
+    → segment N+1 action on that object MUST use LEFT HAND.
+  • If segment N ends with "place [object] with right hand"
+    → right hand is now free; next pick-up can use either hand.
+  Apply this logic to correct wrong hand attributions even in text-only mode.
+  EXAMPLE: Seg1 = "pass bottle from right hand to left hand" → Seg2 = "place bottle on counter with LEFT hand" (NOT right hand!)
+
+PRINCIPLE 14 — ENVIRONMENTAL ACTIONS (What NOT to label)
+  Do NOT label environmental setup actions if the segment also contains primary task actions.
+  ENVIRONMENTAL (skip if task actions exist): open door, close door, pull drawer, open lid, open fridge
+  ✅ Segment has "open fridge door" + "pick up bottle" → ONLY label "pick up bottle"
+  ✅ Segment is ONLY door opening (no item handling) → label "open refrigerator door with right hand"
+  Rule: Atlas labels TASK ACTIONS (what is done to an item), not environment navigation.
 
 ════════════════════════════════════════════
 KNOWN PRACTICE CLIP REFERENCE (illustrative examples only)
