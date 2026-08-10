@@ -137,6 +137,13 @@ export class GeminiService {
         "hold screwdriver and electrical plug with left hand, place screws on table with right hand",
         "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
       ],
+      "69816242ce83c74926fe80a5": [ // Screwdriver + Plug (Practice 2)
+        "hold screwdriver with left hand, pick up screws from tray with right hand",
+        "hold screwdriver and electrical plug with left hand, hold screws with right hand",
+        "hold screwdriver and electrical plug with left hand, place screws on table with right hand",
+        "hold screwdriver and electrical plug with left hand, position screw on screwdriver tip with right hand"
+      ],
+
       "6a04941d9d148ab71cfcdd88": [ // Paper + Scissors
         "hold papers with left hand, hold scissors with right hand",
         "hold scissors with right hand, align papers with both hands",
