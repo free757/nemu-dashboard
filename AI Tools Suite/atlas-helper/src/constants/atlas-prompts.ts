@@ -47,9 +47,13 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
      * Segment 4: Output EXACTLY "hold glass cup with left hand, wipe glass cup with cloth in right hand"
      * ⚠️ KEY RULE: Left hand holds/rotates the CUP (not cloth!). Right hand holds cloth for wiping.
      * ⚠️ ONLY trigger this anchor if the object is clearly cup/jar/mug. If object is "book", "page", "surface", do NOT use this anchor.
-   - Whenever input label describes book, wipe book, or wipe page with cloth:
+   - Whenever input label describes wipe book, wipe page, or book with cloth:
      * All segments: Output EXACTLY "hold book with left hand, wipe book with cloth in right hand"
-     * ⚠️ KEY RULE: object must be "book" consistently — NEVER use "page" as the object (use "book" throughout for consistency).
+     * ⚠️ KEY RULE: object must be "book" consistently — NEVER use "page" (use "book" throughout for consistency).
+   - Whenever input label describes stir meat, stir onions, stir wok, or stirring with ladle:
+     * All segments: Output EXACTLY "stir minced meat and onions in wok with ladle in right hand"
+     * ⚠️ CRITICAL: This is 1 action only — NEVER split into "hold ladle + stir" as 2 actions! The verb "stir" already implies holding the ladle.
+     * ⚠️ Include full object description: "minced meat and onions" (NOT just "meat and onions"), and always include location "in wok".
    - Whenever input label describes smooth cloth, smoothen cloth, or picking up colored cloth:
      * Smoothening segments (e.g. Segment 1 "smooth green cloth with both hands" or Segment 4 "smooth red cloth with both hands"): Output EXACTLY "hold cloth in left hand, smoothen cloth with right hand" (❌ NEVER write 1 action with both hands; NEVER include color adjective in smoothening segments).
      * Placing cloth on shelf (e.g. Segment 2): Output EXACTLY "place cloth on shelf with both hands" (❌ NEVER include color adjective when placing).
@@ -81,9 +85,13 @@ ATLAS DYNAMIC EVALUATION & CORRECTION RULES (STRICT PRIORITY ORDER):
    - NO INTENT, THINKING, OR TEMPORAL WORDS: ❌ NEVER use "then", "next", "other", "after", "before", "trying to", "wants to".
    - ALWAYS STATE LOCATION WHEN PRESENT: If an object is placed/put somewhere visible, include the location.
      ✅ "place cup on table with right hand" ✅ "place cup in bin with left hand" ❌ "place cup with right hand"
-   - OFF-HAND CLAUSE (CRITICAL): ALWAYS label what the OTHER hand is doing — holds, passes, or secondary actions.
-     ✅ "hold carrot with left hand, cut carrot with right hand" ❌ "cut carrot with right hand" (missing left hand!)
-     This is why smoothening always needs 2 actions: "hold cloth in left hand, smoothen cloth with right hand"
+   - OFF-HAND CLAUSE (CRITICAL — READ CAREFULLY):
+     * ONLY label what the OTHER (non-primary) hand is doing IF it is actively doing something task-relevant.
+     * ✅ CORRECT: "hold carrot with left hand, cut carrot with right hand" (left hand holds, right hand cuts — two different hands)
+     * ❌ WRONG: "hold ladle with right hand, stir soup with ladle in right hand" (SAME hand listed twice! This is ONE action: "stir soup with ladle in right hand")
+     * ❌ WRONG: Adding "hold [tool] with right hand" when the same right hand is already using that tool for the main action.
+     * ⚠️ RULE: When ONE hand does ONE action (stir, dig, wipe, cut), that's 1 label — NOT "hold tool + action" split into 2!
+     * ⚠️ RULE: If the off-hand is idle or passively resting (not actively holding a task object), do NOT label it.
    - HAND-TO-HAND PASSES: ALWAYS describe when an object is passed from one hand to the other.
      ✅ "pass cup from left hand to right hand" ❌ "hold cup with right hand" (if it was just passed!)
    - NO ACTION RULE: Use "No Action" ONLY when both hands are completely idle (not touching task objects) for 5+ seconds.
