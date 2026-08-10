@@ -151,11 +151,12 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
       `### 🎥 Video URL:\n${videoUrl || "Not Loaded"}`,
       `\n### 📋 Corrected Segments Details:`,
       ...segments.map((seg, idx) => {
+        const isSegArabic = !!arabicMap[seg.id];
         const modelStr = seg.usedModel ? ` [Model: ${seg.usedModel}]` : "";
         const modeStr = seg.analysisMode === "visual" ? " (👁️ Verified Video Frames)" : " (✍️ Atlas Rubric Applied)";
-        const arabicCurrent = isArabic ? `\n🇸🇦 الترجمة: ${translateToArabic(seg.currentLabel)}` : "";
-        const arabicCorrected = isArabic && seg.correctedLabel ? `\n🇸🇦 التسمية المصححة: ${translateToArabic(seg.correctedLabel)}` : "";
-        const arabicEvidence = isArabic && seg.visualEvidence ? `\n🇸🇦 الملاحظة البصرية: ${translateToArabic(seg.visualEvidence)}` : "";
+        const arabicCurrent = isSegArabic ? `\n🇸🇦 الترجمة: ${translateToArabic(seg.currentLabel)}` : "";
+        const arabicCorrected = isSegArabic && seg.correctedLabel ? `\n🇸🇦 التسمية المصححة: ${translateToArabic(seg.correctedLabel)}` : "";
+        const arabicEvidence = isSegArabic && seg.visualEvidence ? `\n🇸🇦 الملاحظة البصرية: ${translateToArabic(seg.visualEvidence)}` : "";
 
         return `\n**Segment ${idx + 1} (${seg.startTime} – ${seg.endTime})**${modelStr}${modeStr}\n` +
           `- **Current AI Label:** ${seg.currentLabel}${arabicCurrent}\n` +
