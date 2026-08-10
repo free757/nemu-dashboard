@@ -149,6 +149,13 @@ export class GeminiService {
         "pick up wrench and place wrench on table with right hand",
         "pick up wrench and place wrench on table with right hand"
       ],
+      "69e23406993d6740d9e7caf3": [ // Sewing (needle + cap)
+        "hold cap with both hands, insert sewing needle into cap with right hand",
+        "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand",
+        "hold cap with left hand, pull sewing needle with right hand, insert sewing needle into cap with right hand",
+        "hold cap with left hand, pull sewing needle with right hand"
+      ],
+
 
 
       "6a04941d9d148ab71cfcdd88": [ // Paper + Scissors
