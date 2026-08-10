@@ -61,7 +61,8 @@ export default function HomePage() {
 
 
         {/* Step 2: Batch Segments Form */}
-        <BatchLabelForm fileUri={fileUri} isLoaded={Boolean(fileUri)} />
+        <BatchLabelForm fileUri={fileUri} isLoaded={Boolean(fileUri)} videoUrl={loadedUrl} />
+
       </div>
 
       {/* Footer */}

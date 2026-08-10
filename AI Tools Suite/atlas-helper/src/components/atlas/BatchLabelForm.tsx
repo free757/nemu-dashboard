@@ -24,9 +24,10 @@ import {
 interface BatchLabelFormProps {
   fileUri: string | null;
   isLoaded: boolean;
+  videoUrl: string;
 }
 
-export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoaded }) => {
+export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoaded, videoUrl }) => {
   const [segments, setSegments] = useState<SegmentItem[]>([]);
   const [bulkText, setBulkText] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>(DEFAULT_ATLAS_SYSTEM_PROMPT);
@@ -34,7 +35,9 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedReport, setCopiedReport] = useState<boolean>(false);
   const [arabicMap, setArabicMap] = useState<Record<string, boolean>>({});
+
 
   const handleBulkTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -142,6 +145,31 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleCopyFullReport = () => {
+    if (segments.length === 0) return;
+    const reportText = [
+      `### 🎥 Video URL:\n${videoUrl || "Not Loaded"}`,
+      `\n### 📋 Corrected Segments Details:`,
+      ...segments.map((seg, idx) => {
+        const modelStr = seg.usedModel ? ` [Model: ${seg.usedModel}]` : "";
+        const modeStr = seg.analysisMode === "visual" ? " (👁️ Verified Video Frames)" : " (✍️ Atlas Rubric Applied)";
+        const arabicCurrent = isArabic ? `\n🇸🇦 الترجمة: ${translateToArabic(seg.currentLabel)}` : "";
+        const arabicCorrected = isArabic && seg.correctedLabel ? `\n🇸🇦 التسمية المصححة: ${translateToArabic(seg.correctedLabel)}` : "";
+        const arabicEvidence = isArabic && seg.visualEvidence ? `\n🇸🇦 الملاحظة البصرية: ${translateToArabic(seg.visualEvidence)}` : "";
+
+        return `\n**Segment ${idx + 1} (${seg.startTime} – ${seg.endTime})**${modelStr}${modeStr}\n` +
+          `- **Current AI Label:** ${seg.currentLabel}${arabicCurrent}\n` +
+          `- **Corrected Action Label:** ${seg.correctedLabel || "Not Corrected"}${arabicCorrected}\n` +
+          (seg.visualEvidence ? `- **Visual Evidence:** ${seg.visualEvidence}${arabicEvidence}\n` : "");
+      })
+    ].join("\n");
+
+    navigator.clipboard.writeText(reportText);
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2000);
+  };
+
+
   return (
     <div className="space-y-6">
       {/* Settings Toggle Bar */}
@@ -228,15 +256,29 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
         <div className="space-y-4 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-slate-300">Parsed Segments Details</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddSingleSegment}
-              icon={<Plus className="w-3.5 h-3.5" />}
-            >
-              Add Segment
-            </Button>
+            <div className="flex items-center gap-2">
+              {segments.some((s) => s.correctedLabel) && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleCopyFullReport}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold border-emerald-700"
+                  icon={copiedReport ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                >
+                  {copiedReport ? "Report Copied!" : "📋 Copy Full Report"}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddSingleSegment}
+                icon={<Plus className="w-3.5 h-3.5" />}
+              >
+                Add Segment
+              </Button>
+            </div>
           </div>
+
 
           <div className="grid gap-4">
             {segments.map((seg, index) => {
