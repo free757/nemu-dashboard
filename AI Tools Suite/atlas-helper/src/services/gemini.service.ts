@@ -129,6 +129,8 @@ Output raw JSON array strictly adhering to this schema:
 
     // 1. Try Gemini API Keys if available
     const modelsToTry = [
+      "gemini-3.5-flash",
+      "gemini-flash-latest",
       "gemini-2.5-flash-preview-05-20",
       "gemini-2.5-pro-preview-06-05",
       "gemini-2.0-flash",
@@ -136,6 +138,7 @@ Output raw JSON array strictly adhering to this schema:
       "gemini-1.5-flash-8b",
       "gemini-1.5-pro",
     ];
+
 
     for (const key of this.apiKeys) {
       const ai = new GoogleGenAI({
