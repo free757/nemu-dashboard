@@ -129,6 +129,8 @@ Output raw JSON array strictly adhering to this schema:
 
     // 1. Try Gemini API Keys if available
     const modelsToTry = [
+      "gemini-2.5-flash-preview-05-20",
+      "gemini-2.5-pro-preview-06-05",
       "gemini-2.0-flash",
       "gemini-1.5-flash",
       "gemini-1.5-flash-8b",
@@ -178,10 +180,11 @@ Output raw JSON array strictly adhering to this schema:
             }));
           }
         } catch (err: any) {
-          console.warn(`Gemini key ...${key.slice(-4)} model ${model} failed, trying next...`);
+          console.error(`[Gemini] key=...${key.slice(-4)} model=${model} FAILED: ${err?.message || err}`);
         }
       }
     }
+
 
     // 2. Try Existing OpenRouter API Keys (OPENROUTER_API_KEY_1..5 or OPENROUTER_API_KEY)
     const openRouterKeys = [
