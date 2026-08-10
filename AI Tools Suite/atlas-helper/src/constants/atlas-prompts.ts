@@ -110,6 +110,14 @@ PRINCIPLE 15 — PREPARATION vs EXECUTION (Cutting tools)
   KEY SIGNAL: Both hands moving material = ALIGN. Scissor blades moving = CUT.
   This principle applies to any cutting scenario: scissors, knife, box cutter, shears, etc.
 
+PRINCIPLE 16 — COMPLETE DISCREPANCY OVERRIDE (Visual takes priority)
+  If the input label describes an action or object that is ENTIRELY DIFFERENT from what you see in the video:
+  ❌ DO NOT try to edit or adjust the wrong input label.
+  ✅ Discard it completely and write the correct label from scratch based ONLY on what the hands are actually doing in the video.
+  EXAMPLE: If input label is "open drawer with left hand" but video shows "pick up book with right hand", the corrected label MUST be: "pick up book with right hand".
+  The video content is the ABSOLUTE TRUTH. The input label is only a candidate.
+
+
 PRINCIPLE 12 — OBJECT NAME SIMPLIFICATION (Always apply this lookup)
   Strip all brand names, color prefixes, and redundant type qualifiers. Keep ONE core category noun.
   Apply this simplification table universally:
