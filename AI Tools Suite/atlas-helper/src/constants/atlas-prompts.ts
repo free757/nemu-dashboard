@@ -88,14 +88,39 @@ PRINCIPLE 11 — NO ACTION RULE
   NEVER mix "No Action" with real actions in the same label.
   A task-relevant hold is NOT "No Action".
 
-PRINCIPLE 12 — OBJECT NAME SIMPLIFICATION
-  Use the SIMPLEST standard category name. Drop brand, color, and type qualifiers when the object is uniquely identifiable.
-  ❌ "syrup bottle" → ✅ "bottle"
-  ❌ "orange snack bag" → ✅ "bag"
-  ❌ "red sachet packet" → ✅ "sachet"
-  ❌ "glass drinking cup" → ✅ "glass cup" (keep only one descriptive adjective max)
-  Keep color/adjective ONLY for disambiguation (when multiple similar objects are present in the clip).
-  Standard category terms: bottle, bag, sachet (small flat packet), cup, bowl, cloth, towel, book, box, tray.
+PRINCIPLE 12 — OBJECT NAME SIMPLIFICATION (Always apply this lookup)
+  Strip all brand names, color prefixes, and redundant type qualifiers. Keep ONE core category noun.
+  Apply this simplification table universally:
+
+  CONTAINERS & BOTTLES:
+    syrup bottle / oil bottle / juice bottle / water bottle → bottle
+    plastic bottle / glass bottle / spray bottle         → bottle
+    snack bag / candy bag / chip bag / food bag          → bag
+    small flat packet / foil packet / seasoning sachet   → sachet
+    plastic bag / shopping bag / grocery bag             → bag
+
+  CUPS & DISHES:
+    glass cup / mug / drinking cup / ceramic cup         → cup  (keep "glass" only if next to ceramic/plastic cup)
+    bowl / mixing bowl / soup bowl                       → bowl
+    plate / dinner plate / small plate                   → plate
+
+  TOOLS & UTENSILS:
+    metal ladle / wooden spoon / cooking spoon           → ladle / spoon (use the most specific tool name)
+    garden hoe / long-handled hoe / digging tool         → hoe
+    wire stripper / pliers / cutting tool                → shears / pliers (identify exactly)
+    flat screwdriver / cross screwdriver                 → screwdriver
+
+  FABRIC & TEXTILE:
+    white cloth / cleaning cloth / wiping cloth          → cloth  (drop color unless 2+ cloths of different colors)
+    red bag / orange bag / green bag                     → bag    (drop color unless disambiguating)
+
+  GENERAL RULE:
+    [color] + [type] + [category] → keep ONLY [category] (or [type] if it clarifies what it is)
+    EXCEPTION: Keep color ONLY when 2+ visually similar objects exist simultaneously in the clip.
+
+  ✅ "pick up bottle with right hand"         (NOT "pick up syrup bottle with right hand")
+  ✅ "place bag on counter with right hand"   (NOT "place orange snack bag on counter with right hand")
+  ✅ "pick up sachet with right hand"         (NOT "pick up red sachet packet with right hand")
 
 PRINCIPLE 13 — SEQUENTIAL HAND INFERENCE (Cross-segment logic)
   Use the SEQUENCE of segments to infer which hand has the object:
