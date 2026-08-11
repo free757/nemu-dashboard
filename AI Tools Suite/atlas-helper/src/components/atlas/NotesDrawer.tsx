@@ -33,6 +33,7 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({ isOpen, onClose }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedNotes, setExpandedNotes] = useState<Record<number, boolean>>({});
 
   const fetchNotes = async () => {
     setIsLoading(true);
@@ -226,9 +227,40 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({ isOpen, onClose }) => 
                       <span>{note.title}</span>
                     </h4>
 
-                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
-                      {note.content}
-                    </p>
+                    {(() => {
+                      const isLong = note.content.length > 120 || note.content.split("\n").length > 3;
+                      const isExpanded = !!expandedNotes[note.id];
+                      
+                      // Safely truncate by characters or lines
+                      let displayedContent = note.content;
+                      if (isLong && !isExpanded) {
+                        const lines = note.content.split("\n");
+                        if (lines.length > 3) {
+                          displayedContent = lines.slice(0, 3).join("\n");
+                        }
+                        if (displayedContent.length > 120) {
+                          displayedContent = displayedContent.slice(0, 120) + "...";
+                        } else if (lines.length > 3) {
+                          displayedContent += "...";
+                        }
+                      }
+
+                      return (
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+                            {displayedContent}
+                          </p>
+                          {isLong && (
+                            <button
+                              onClick={() => setExpandedNotes(prev => ({ ...prev, [note.id]: !prev[note.id] }))}
+                              className="text-[10px] text-brand-400 hover:text-brand-300 font-bold focus:outline-none mt-1 select-none"
+                            >
+                              {isExpanded ? "عرض أقل ▲" : "عرض المزيد ▼"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <div className="text-[10px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-900">
                       <span>بواسطة الأداة المشتركة</span>
