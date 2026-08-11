@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  User, Wallet, Clock, LogOut, CheckCircle2, 
-  XCircle, AlertCircle, Calendar, History, Sparkles, 
-  RefreshCw, Edit2, Check, X 
+  Lock, Sparkles, AlertCircle, ArrowLeft, User, Wallet, 
+  Clock, LogOut, CheckCircle2, XCircle, Calendar, 
+  History, RefreshCw, Edit2, Check, X, Coins 
 } from 'lucide-react';
+
+const PIN_LENGTH = 4;
 
 interface Account {
   id: string;
@@ -17,17 +19,18 @@ interface Account {
   rejected_hours: number;
   in_review_hours: number;
   wallet_address: string;
+  amount_paid: number;
   created_at: string;
 }
 
 interface Payout {
   id: string;
-  account_name?: string; // we can join or lookup from local accounts map
   account_id: string;
   accepted_hours: number;
   rejected_hours: number;
   in_review_hours: number;
   wallet_address: string;
+  amount_paid: number;
   created_at: string;
 }
 
@@ -36,36 +39,118 @@ interface WorkerSession {
   username: string;
 }
 
-export default function WorkerDashboardPage() {
+export default function AtlasAccountsUnifiedPage() {
   const router = useRouter();
+  
+  // Authentication State
   const [worker, setWorker] = useState<WorkerSession | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // Login PIN States
+  const [pin, setPin] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState(false);
+  const [loginErrorMsg, setLoginErrorMsg] = useState('');
+  const [currentTime, setCurrentTime] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
+  const shakeKey = useRef(0);
+
+  // Dashboard Data States
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Edit Account Form States
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editWalletValue, setEditWalletValue] = useState('');
+  const [editAmountPaid, setEditAmountPaid] = useState<number>(0);
   const [editHours, setEditHours] = useState({
     accepted: 0,
     rejected: 0,
     in_review: 0
   });
-  const [updatingWalletId, setUpdatingWalletId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Authenticate from sessionStorage
+  // 1. Clock Setup (Login View)
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }));
+      setCurrentDate(now.toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' }));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // 2. Authentication Check
   useEffect(() => {
     const authData = sessionStorage.getItem('worker_auth');
-    if (!authData) {
-      router.push('/worker-login');
-      return;
+    if (authData) {
+      setWorker(JSON.parse(authData) as WorkerSession);
+    } else {
+      setWorker(null);
     }
-    const session = JSON.parse(authData) as WorkerSession;
-    setWorker(session);
-  }, [router]);
+    setAuthChecking(false);
+  }, []);
 
-  // Load accounts and payout records using worker_id
-  const loadData = useCallback(async (workerId: string) => {
+  // 3. Login PIN Auto-submit
+  useEffect(() => {
+    if (pin.length === PIN_LENGTH) {
+      handleLogin(pin);
+    }
+  }, [pin]);
+
+  const handleLogin = async (enteredPin: string) => {
+    setLoginLoading(true);
+    setLoginError(false);
+    setLoginErrorMsg('');
+
+    try {
+      const { data, error } = await supabase
+        .from('atlas_workers')
+        .select('id, username, pin, is_blocked')
+        .eq('pin', enteredPin)
+        .single();
+
+      if (error || !data) {
+        shakeKey.current += 1;
+        setLoginError(true);
+        setLoginErrorMsg('الرمز التعريفي (PIN) غير صحيح. حاول مجدداً.');
+        setTimeout(() => {
+          setPin('');
+          setLoginError(false);
+          setLoginErrorMsg('');
+        }, 800);
+      } else if (data.is_blocked) {
+        shakeKey.current += 1;
+        setLoginError(true);
+        setLoginErrorMsg('هذا الحساب معطل من قبل الإدارة.');
+        setTimeout(() => {
+          setPin('');
+          setLoginError(false);
+          setLoginErrorMsg('');
+        }, 1200);
+      } else {
+        const session = { id: data.id, username: data.username };
+        sessionStorage.setItem('worker_auth', JSON.stringify(session));
+        setWorker(session);
+        setPin('');
+      }
+    } catch (err) {
+      setLoginError(true);
+      setLoginErrorMsg('خطأ في الاتصال بالسيرفر. يرجى المحاولة لاحقاً.');
+      setTimeout(() => { setPin(''); setLoginError(false); }, 1000);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // 4. Load Dashboard Data
+  const loadDashboardData = useCallback(async (workerId: string) => {
+    setDataLoading(true);
     try {
       // Query accounts
       const { data: accountsData, error: accountsErr } = await supabase
@@ -87,19 +172,19 @@ export default function WorkerDashboardPage() {
       if (payoutsErr) throw payoutsErr;
       setPayouts(payoutsData || []);
     } catch (error) {
-      console.error('Error loading worker dashboard data:', error);
+      console.error('Error loading worker data:', error);
       showFeedback('error', 'حدث خطأ أثناء تحميل البيانات. يرجى التحديث.');
     } finally {
-      setLoading(false);
+      setDataLoading(false);
       setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     if (worker) {
-      loadData(worker.id);
+      loadDashboardData(worker.id);
     }
-  }, [worker, loadData]);
+  }, [worker, loadDashboardData]);
 
   const showFeedback = (type: 'success' | 'error', text: string) => {
     setFeedbackMsg({ type, text });
@@ -109,12 +194,13 @@ export default function WorkerDashboardPage() {
   const handleRefresh = async () => {
     if (!worker || refreshing) return;
     setRefreshing(true);
-    await loadData(worker.id);
+    await loadDashboardData(worker.id);
   };
 
-  const startEditWallet = (account: Account) => {
+  const startEditAccount = (account: Account) => {
     setEditingAccountId(account.id);
     setEditWalletValue(account.wallet_address || '');
+    setEditAmountPaid(account.amount_paid || 0);
     setEditHours({
       accepted: account.accepted_hours,
       rejected: account.rejected_hours,
@@ -122,66 +208,211 @@ export default function WorkerDashboardPage() {
     });
   };
 
-  const saveWalletAddress = async (accountId: string) => {
+  const saveAccountDetails = async (accountId: string) => {
     if (!worker) return;
-    setUpdatingWalletId(accountId);
+    setUpdatingId(accountId);
     try {
       const { error } = await supabase
         .from('atlas_accounts')
         .update({ 
-          wallet_address: editWalletValue,
+          wallet_address: editWalletValue.trim(),
           accepted_hours: Number(editHours.accepted),
           rejected_hours: Number(editHours.rejected),
           in_review_hours: Number(editHours.in_review),
+          amount_paid: Number(editAmountPaid),
           updated_at: new Date().toISOString()
         })
         .eq('id', accountId);
 
       if (error) throw error;
 
-      // Update state
+      // Update state locally
       setAccounts(prev => prev.map(acc => 
         acc.id === accountId ? { 
           ...acc, 
-          wallet_address: editWalletValue,
+          wallet_address: editWalletValue.trim(),
           accepted_hours: Number(editHours.accepted),
           rejected_hours: Number(editHours.rejected),
-          in_review_hours: Number(editHours.in_review)
+          in_review_hours: Number(editHours.in_review),
+          amount_paid: Number(editAmountPaid)
         } : acc
       ));
       setEditingAccountId(null);
-      showFeedback('success', 'تم تحديث الساعات والمحفظة بنجاح.');
+      showFeedback('success', 'تم حفظ الساعات والمبالغ بنجاح.');
     } catch (err) {
       console.error(err);
       showFeedback('error', 'فشل في حفظ البيانات. حاول مجدداً.');
     } finally {
-      setUpdatingWalletId(null);
+      setUpdatingId(null);
     }
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem('worker_auth');
-    router.push('/worker-login');
+    setWorker(null);
   };
 
-  // Find account name by ID for payouts history
-  const getAccountName = (accountId: string) => {
-    const acc = accounts.find(a => a.id === accountId);
-    return acc ? acc.account_name : 'حساب محذوف أو تالف';
+  const handleKeyPress = (digit: string) => {
+    if (loginLoading || loginError) return;
+    if (pin.length < PIN_LENGTH) {
+      setPin(prev => prev + digit);
+    }
   };
 
-  if (loading || !worker) {
+  const handleBackspace = () => {
+    if (loginLoading || loginError) return;
+    setPin(prev => prev.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    if (loginLoading || loginError) return;
+    setPin('');
+  };
+
+  if (authChecking) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-400">
         <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-        <span className="text-sm font-medium">جاري تحميل بيانات الموظف...</span>
+        <span className="text-sm font-medium">جاري التحقق من الجلسة...</span>
+      </div>
+    );
+  }
+
+  // ==================== VIEW 1: PIN LOGIN ====================
+  if (!worker) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-between p-6 relative overflow-hidden selection:bg-indigo-500/30">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0,transparent_60%)] pointer-events-none" />
+
+        {/* Top Bar with Clock */}
+        <div className="w-full max-w-md flex justify-between items-center z-10">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors bg-slate-900/60 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-lg"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>الرئيسية</span>
+          </button>
+          <div className="text-right">
+            <div className="text-sm font-semibold tracking-wide text-indigo-400">{currentTime}</div>
+            <div className="text-[10px] text-slate-500 font-medium">{currentDate}</div>
+          </div>
+        </div>
+
+        {/* PIN Box */}
+        <div className="w-full max-w-md my-auto flex flex-col items-center justify-center z-10 relative">
+          <motion.div
+            key={shakeKey.current}
+            animate={loginError ? { x: [-10, 10, -10, 10, 0] } : {}}
+            transition={{ duration: 0.4 }}
+            className="w-full bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-8 flex flex-col items-center shadow-2xl"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-4">
+              <Lock className="w-8 h-8 text-indigo-400" />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-white mb-1">
+              تسجيل دخول الموظفين
+            </h2>
+            <p className="text-xs text-slate-400 mb-6 text-center">
+              أدخل الرمز التعريفي (PIN) لرؤية حساباتك وتعديل ساعاتها
+            </p>
+
+            {/* Dots */}
+            <div className="flex gap-4 mb-6">
+              {Array.from({ length: PIN_LENGTH }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-3.5 h-3.5 rounded-full border transition-all duration-200 ${
+                    idx < pin.length
+                      ? 'bg-indigo-500 border-indigo-400 shadow-lg shadow-indigo-500/50 scale-110'
+                      : 'bg-slate-950 border-slate-700'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Error Message */}
+            <AnimatePresence>
+              {loginError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg w-full mb-6 justify-center"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{loginErrorMsg}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Loading */}
+            {loginLoading && (
+              <div className="flex items-center justify-center gap-2 py-2 mb-4">
+                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            )}
+
+            {/* Keyboard */}
+            <div className="grid grid-cols-3 gap-3.5 w-full">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  onClick={() => handleKeyPress(digit)}
+                  className="h-14 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 active:bg-slate-900 hover:bg-slate-900/40 text-lg font-semibold flex items-center justify-center transition-all duration-150"
+                >
+                  {digit}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={handleClear}
+                className="h-14 rounded-xl bg-slate-950/40 border border-slate-900 text-xs font-semibold text-slate-500 hover:text-slate-300 flex items-center justify-center transition-colors"
+              >
+                مسح الكل
+              </button>
+              <button
+                type="button"
+                onClick={() => handleKeyPress('0')}
+                className="h-14 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 active:bg-slate-900 hover:bg-slate-900/40 text-lg font-semibold flex items-center justify-center transition-all duration-150"
+              >
+                0
+              </button>
+              <button
+                type="button"
+                onClick={handleBackspace}
+                className="h-14 rounded-xl bg-slate-950/40 border border-slate-900 text-xs font-semibold text-slate-500 hover:text-slate-300 flex items-center justify-center transition-colors"
+              >
+                مسح
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-[10px] text-slate-600 flex items-center gap-1.5 z-10">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-500/60" />
+          <span>بوابة حسابات أطلس ادفينشر للموظفين</span>
+        </div>
+      </main>
+    );
+  }
+
+  // ==================== VIEW 2: WORKER DASHBOARD ====================
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-400">
+        <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
+        <span className="text-sm font-medium">جاري تحميل بيانات الموظف وسجلاته...</span>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-x-hidden selection:bg-indigo-500/30">
-      {/* Background radial glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.06)_0,transparent_50%)] pointer-events-none" />
 
       {/* Navigation Header */}
@@ -193,7 +424,7 @@ export default function WorkerDashboardPage() {
             </div>
             <div>
               <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                أطلس ادفينشر
+                حسابات أطلس
                 <span className="text-[9px] font-semibold text-indigo-400 bg-indigo-950/50 border border-indigo-900 px-2 py-0.5 rounded-full">
                   بوابة الموظف
                 </span>
@@ -244,7 +475,7 @@ export default function WorkerDashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Dashboard Title & Overview Card */}
+        {/* Overview Card */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/30 border border-slate-900 rounded-2xl p-6">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -252,7 +483,7 @@ export default function WorkerDashboardPage() {
               ملخص حساب الموظف
             </h2>
             <p className="text-xs text-slate-400">
-              تابع ساعات عملك المسجلة وعناوين الدفع وعمليات التصفير الأخيرة
+              تابع ساعات عملك المسجلة، وأدخل المبالغ المستلمة من المنصة، والمحفظة الخاصة بك.
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs bg-slate-950/60 border border-slate-900 rounded-xl px-4 py-3">
@@ -262,8 +493,8 @@ export default function WorkerDashboardPage() {
             </div>
             <div className="w-px h-8 bg-slate-800" />
             <div className="text-right">
-              <span className="block text-[10px] text-slate-500 font-semibold">تاريخ التسجيل</span>
-              <span className="text-xs font-semibold text-slate-300">نشط</span>
+              <span className="block text-[10px] text-slate-500 font-semibold">حالة الحساب</span>
+              <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-900 px-2 py-0.5 rounded-full">نشط</span>
             </div>
           </div>
         </div>
@@ -279,7 +510,7 @@ export default function WorkerDashboardPage() {
             <div className="bg-slate-900/20 border border-slate-900/60 rounded-2xl p-12 text-center text-slate-500">
               <AlertCircle className="w-10 h-10 mx-auto text-slate-600 mb-3" />
               <p className="text-sm">لم يتم ربط أي حسابات عمل بهذا الموظف بعد.</p>
-              <p className="text-xs text-slate-600 mt-1">يرجى التواصل مع المدير (الأدمن) لربط حساباتك.</p>
+              <p className="text-xs text-slate-600 mt-1">يرجى التواصل مع الأدمن لربط حساباتك وإدخل ساعاتك.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -288,7 +519,7 @@ export default function WorkerDashboardPage() {
                   (account.accepted_hours + account.rejected_hours + account.in_review_hours).toFixed(2)
                 );
                 const isEditing = editingAccountId === account.id;
-                const isUpdating = updatingWalletId === account.id;
+                const isUpdating = updatingId === account.id;
 
                 return (
                   <motion.div
@@ -302,15 +533,26 @@ export default function WorkerDashboardPage() {
                         <h4 className="text-sm font-bold text-white">{account.account_name}</h4>
                         <span className="text-[9px] text-slate-500">مُعرّف: {account.id.substring(0, 8)}...</span>
                       </div>
-                      <div className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-semibold text-indigo-400">
-                        Atlas
+                      <div className="flex items-center gap-1.5">
+                        {!isEditing && (
+                          <button
+                            onClick={() => startEditAccount(account)}
+                            className="px-2.5 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>تعديل</span>
+                          </button>
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-semibold text-indigo-400">
+                          Atlas
+                        </span>
                       </div>
                     </div>
 
                     {/* Stats Layout */}
-                    <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
-                        <span className="block text-[9px] text-slate-500 font-semibold mb-1 flex items-center justify-center gap-1">
+                        <span className="block text-[9px] text-slate-500 font-semibold mb-1.5 flex items-center justify-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                           المقبولة
                         </span>
@@ -328,7 +570,7 @@ export default function WorkerDashboardPage() {
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
-                        <span className="block text-[9px] text-slate-500 font-semibold mb-1 flex items-center justify-center gap-1">
+                        <span className="block text-[9px] text-slate-500 font-semibold mb-1.5 flex items-center justify-center gap-1">
                           <XCircle className="w-3 h-3 text-rose-400" />
                           المرفوضة
                         </span>
@@ -346,7 +588,7 @@ export default function WorkerDashboardPage() {
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
-                        <span className="block text-[9px] text-slate-500 font-semibold mb-1 flex items-center justify-center gap-1">
+                        <span className="block text-[9px] text-slate-500 font-semibold mb-1.5 flex items-center justify-center gap-1">
                           <Clock className="w-3 h-3 text-amber-400" />
                           المراجعة
                         </span>
@@ -364,28 +606,36 @@ export default function WorkerDashboardPage() {
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
-                        <span className="block text-[9px] text-slate-500 font-semibold mb-1">الإجمالي</span>
+                        <span className="block text-[9px] text-slate-500 font-semibold mb-1.5">الإجمالي</span>
                         <span className="text-sm font-bold text-slate-200">{totalHours} hr</span>
                       </div>
                     </div>
 
+                    {/* Amount Paid Section */}
+                    <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-3 mb-4 flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-semibold flex items-center gap-1">
+                        <Coins className="w-3.5 h-3.5 text-amber-500" />
+                        المبلغ المدفوع من الحساب:
+                      </span>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          step="any"
+                          value={editAmountPaid}
+                          onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
+                          className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
+                        />
+                      ) : (
+                        <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
+                      )}
+                    </div>
+
                     {/* Wallet Address section */}
                     <div className="mt-auto border-t border-slate-800/80 pt-4 space-y-2">
-                      <div className="flex justify-between items-center text-[10px] text-slate-400">
-                        <span className="font-semibold flex items-center gap-1">
-                          <Wallet className="w-3 h-3 text-indigo-400" />
-                          عنوان محفظة المستحقات
-                        </span>
-                        {!isEditing && (
-                          <button
-                            onClick={() => startEditWallet(account)}
-                            className="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-0.5"
-                          >
-                            <Edit2 className="w-2.5 h-2.5" />
-                            تعديل
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                        <Wallet className="w-3 h-3 text-indigo-400" />
+                        عنوان محفظة الدفع الخاصة بك
+                      </span>
 
                       {isEditing ? (
                         <div className="flex gap-2 mt-1">
@@ -394,11 +644,11 @@ export default function WorkerDashboardPage() {
                             value={editWalletValue}
                             onChange={(e) => setEditWalletValue(e.target.value)}
                             disabled={isUpdating}
-                            placeholder="أدخل عنوان USDT أو المحفظة"
+                            placeholder="أدخل عنوان USDT"
                             className="flex-1 text-xs bg-slate-950 border border-slate-800 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-1.5 text-slate-200 outline-none transition-all placeholder:text-slate-700"
                           />
                           <button
-                            onClick={() => saveWalletAddress(account.id)}
+                            onClick={() => saveAccountDetails(account.id)}
                             disabled={isUpdating}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg p-2 transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0"
                             title="حفظ"
@@ -453,9 +703,10 @@ export default function WorkerDashboardPage() {
                     <tr className="bg-slate-950/80 border-b border-slate-900 text-slate-400 font-semibold">
                       <th className="px-5 py-3.5">تاريخ التصفير</th>
                       <th className="px-5 py-3.5">حساب العمل</th>
-                      <th className="px-5 py-3.5 text-center">المقبولة المستلمة</th>
+                      <th className="px-5 py-3.5 text-center">المقبولة</th>
                       <th className="px-5 py-3.5 text-center">المرفوضة</th>
                       <th className="px-5 py-3.5 text-center">تحت المراجعة</th>
+                      <th className="px-5 py-3.5 text-center">المبلغ المستلم</th>
                       <th className="px-5 py-3.5">المحفظة المستلمة</th>
                     </tr>
                   </thead>
@@ -475,7 +726,7 @@ export default function WorkerDashboardPage() {
                           })}
                         </td>
                         <td className="px-5 py-3.5 font-bold text-white">
-                          {getAccountName(payout.account_id)}
+                          {accounts.find(a => a.id === payout.account_id)?.account_name || 'حساب عمل'}
                         </td>
                         <td className="px-5 py-3.5 text-center text-emerald-400 font-bold">
                           {payout.accepted_hours} hr
@@ -486,7 +737,10 @@ export default function WorkerDashboardPage() {
                         <td className="px-5 py-3.5 text-center text-amber-500">
                           {payout.in_review_hours} hr
                         </td>
-                        <td className="px-5 py-3.5 font-mono text-[10px] break-all max-w-[200px] text-slate-400">
+                        <td className="px-5 py-3.5 text-center text-amber-400 font-bold">
+                          {payout.amount_paid || 0} USDT
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-[10px] break-all max-w-[150px] text-slate-400">
                           {payout.wallet_address || '—'}
                         </td>
                       </tr>

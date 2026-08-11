@@ -24,6 +24,7 @@ interface Account {
   rejected_hours: number;
   in_review_hours: number;
   wallet_address: string;
+  amount_paid: number;
   created_at: string;
 }
 
@@ -35,6 +36,7 @@ interface Payout {
   rejected_hours: number;
   in_review_hours: number;
   wallet_address: string;
+  amount_paid: number;
   created_at: string;
 }
 
@@ -72,7 +74,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     accepted_hours: 0,
     rejected_hours: 0,
     in_review_hours: 0,
-    wallet_address: ''
+    wallet_address: '',
+    amount_paid: 0
   });
 
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
@@ -81,7 +84,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     accepted_hours: 0,
     rejected_hours: 0,
     in_review_hours: 0,
-    wallet_address: ''
+    wallet_address: '',
+    amount_paid: 0
   });
 
   const isDark = theme === 'dark';
@@ -313,7 +317,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           accepted_hours: Number(newAccountForm.accepted_hours),
           rejected_hours: Number(newAccountForm.rejected_hours),
           in_review_hours: Number(newAccountForm.in_review_hours),
-          wallet_address: newAccountForm.wallet_address.trim()
+          wallet_address: newAccountForm.wallet_address.trim(),
+          amount_paid: Number(newAccountForm.amount_paid) || 0.0
         }]);
 
       if (error) throw error;
@@ -325,7 +330,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
         accepted_hours: 0,
         rejected_hours: 0,
         in_review_hours: 0,
-        wallet_address: ''
+        wallet_address: '',
+        amount_paid: 0
       });
       fetchWorkerDetails(selectedWorkerId);
     } catch (err) {
@@ -344,7 +350,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       accepted_hours: account.accepted_hours,
       rejected_hours: account.rejected_hours,
       in_review_hours: account.in_review_hours,
-      wallet_address: account.wallet_address || ''
+      wallet_address: account.wallet_address || '',
+      amount_paid: account.amount_paid || 0
     });
   };
 
@@ -360,6 +367,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           rejected_hours: Number(editAccountForm.rejected_hours),
           in_review_hours: Number(editAccountForm.in_review_hours),
           wallet_address: editAccountForm.wallet_address.trim(),
+          amount_paid: Number(editAccountForm.amount_paid) || 0.0,
           updated_at: new Date().toISOString()
         })
         .eq('id', accountId);
@@ -406,8 +414,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   // Reset & Payout Account
   const handleResetPayout = async (account: Account) => {
     const confirmMsg = lang === 'ar'
-      ? `هل أنت متأكد من تصفير ساعات الحساب "${account.account_name}"؟ سيتم تسجيل ${account.accepted_hours} ساعة مقبولة كدفعة جديدة.`
-      : `Are you sure you want to reset hours for "${account.account_name}"? This will log ${account.accepted_hours} accepted hours as a new payout.`;
+      ? `هل أنت متأكد من تصفير ساعات ومبالغ الحساب "${account.account_name}"؟ سيتم ترحيل الدفعات السابقة للأرشيف.`
+      : `Are you sure you want to reset hours and amounts for "${account.account_name}"? Previous payouts will be logged in history.`;
     if (!window.confirm(confirmMsg)) return;
 
     setActionLoading(true);
@@ -421,7 +429,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           accepted_hours: account.accepted_hours,
           rejected_hours: account.rejected_hours,
           in_review_hours: account.in_review_hours,
-          wallet_address: account.wallet_address || ''
+          wallet_address: account.wallet_address || '',
+          amount_paid: account.amount_paid || 0.0
         }]);
 
       if (payoutErr) throw payoutErr;
@@ -433,6 +442,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           accepted_hours: 0.0,
           rejected_hours: 0.0,
           in_review_hours: 0.0,
+          amount_paid: 0.0,
           updated_at: new Date().toISOString()
         })
         .eq('id', account.id);
@@ -787,6 +797,19 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                       </div>
 
                       <div>
+                        <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'المبلغ المدفوع من الحساب (USDT)' : 'Amount Paid from Account (USDT)'}</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={newAccountForm.amount_paid}
+                          onChange={(e) => setNewAccountForm(prev => ({ ...prev, amount_paid: parseFloat(e.target.value) || 0 }))}
+                          className={`w-full px-4 py-2.5 rounded-xl border outline-none ${
+                            isDark ? 'bg-white/5 border-white/10 focus:border-blue-500' : 'bg-gray-50 border-gray-205 focus:border-blue-500'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
                         <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'عنوان المحفظة' : 'Wallet Address'}</label>
                         <input
                           type="text"
@@ -979,6 +1002,24 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             </div>
                           </div>
 
+                          {/* Amount Paid section */}
+                          <div className="border-t border-white/5 pt-3 mb-2 flex justify-between items-center text-xs font-semibold">
+                            <span className="text-gray-500">{lang === 'ar' ? 'المبلغ المدفوع من الحساب:' : 'Amount Paid from Account:'}</span>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                step="any"
+                                value={editAccountForm.amount_paid}
+                                onChange={(e) => setEditAccountForm(p => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))}
+                                className={`text-center rounded border outline-none w-28 py-1 text-xs ${
+                                  isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                                }`}
+                              />
+                            ) : (
+                              <span className="font-bold text-amber-500 text-sm">{account.amount_paid || 0} USDT</span>
+                            )}
+                          </div>
+
                           {/* Wallet address section */}
                           <div className="border-t border-white/5 pt-3 space-y-1.5">
                             <span className="block text-[10px] text-gray-500 font-semibold">{lang === 'ar' ? 'عنوان محفظة الدفع' : 'USDT Payout Wallet'}</span>
@@ -1031,6 +1072,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المقبولة' : 'Accepted'}</th>
                             <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المرفوضة' : 'Rejected'}</th>
                             <th className="px-5 py-3 text-center">{lang === 'ar' ? 'تحت المراجعة' : 'In Review'}</th>
+                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المبلغ المستلم' : 'Amount Received'}</th>
                             <th className="px-5 py-3">{lang === 'ar' ? 'المحفظة المستلمة' : 'Received Wallet'}</th>
                           </tr>
                         </thead>
@@ -1052,6 +1094,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                               <td className="px-5 py-3 text-center font-bold text-emerald-400">{payout.accepted_hours} hr</td>
                               <td className="px-5 py-3 text-center font-semibold text-rose-400">{payout.rejected_hours} hr</td>
                               <td className="px-5 py-3 text-center text-amber-500">{payout.in_review_hours} hr</td>
+                              <td className="px-5 py-3 text-center font-bold text-amber-400">{payout.amount_paid || 0} USDT</td>
                               <td className="px-5 py-3 font-mono text-[10px] text-gray-500 max-w-[150px] truncate" title={payout.wallet_address}>
                                 {payout.wallet_address || '—'}
                               </td>
