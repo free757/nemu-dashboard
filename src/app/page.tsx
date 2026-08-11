@@ -7,6 +7,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import AtlasAdminPanel from './components/AtlasAdminPanel';
 import { sanitizeTranscript } from '@/lib/speechManager';
 import { RealtimePipeline } from '@/lib/realtimePipeline';
 import { resetThrottler, throttleAIRequest, startNewSession, getCurrentSessionId } from '@/lib/pipelineDebounce';
@@ -2624,6 +2625,13 @@ export default function Dashboard() {
                       <Layers className="w-5 h-5 flex-shrink-0" />
                       {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{t.misc}</motion.span>}
                     </button>
+                    <button 
+                      onClick={() => { setActiveTab('atlas'); setIsMobileMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'atlas' ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20' : theme === 'dark' ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'} ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                      <Coins className="w-5 h-5 flex-shrink-0" />
+                      {!isSidebarCollapsed && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium whitespace-nowrap">{lang === 'ar' ? 'حسابات أطلس' : 'Atlas Accounts'}</motion.span>}
+                    </button>
                   </>
                 )}
               </nav>
@@ -2664,10 +2672,10 @@ export default function Dashboard() {
         <header className={`sticky top-0 z-30 px-4 md:px-8 py-3 md:py-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 ${theme === 'dark' ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#f8f9fa] border-gray-200'}`}>
           <div>
             <h1 className="text-xl md:text-2xl font-bold mb-0.5">
-              {activeTab === 'users' ? t.title : activeTab === 'accounts' ? (lang === 'ar' ? 'الحسابات والمحفظة المالية' : 'Financial Accounts & Wallet') : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
+              {activeTab === 'users' ? t.title : activeTab === 'accounts' ? (lang === 'ar' ? 'الحسابات والمحفظة المالية' : 'Financial Accounts & Wallet') : activeTab === 'atlas' ? (lang === 'ar' ? 'إدارة حسابات وأرباح أطلس' : 'Atlas Accounts & Payouts') : activeTab === 'config' ? t.configTitle : activeTab === 'notifications' ? t.notificationsTitle : activeTab === 'misc' ? t.miscTitle : t.toolsTitle}
             </h1>
             <p className="text-gray-500 text-xs md:text-sm hidden sm:block">
-              {activeTab === 'users' ? t.subtitle : activeTab === 'accounts' ? (lang === 'ar' ? 'تتبع رواتب الموظفين، ساعات العمل، المصروفات، وأرباح الشركاء.' : 'Track employee salaries, hours, expenses, and partner profits.') : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
+              {activeTab === 'users' ? t.subtitle : activeTab === 'accounts' ? (lang === 'ar' ? 'تتبع رواتب الموظفين، ساعات العمل، المصروفات، وأرباح الشركاء.' : 'Track employee salaries, hours, expenses, and partner profits.') : activeTab === 'atlas' ? (lang === 'ar' ? 'إدارة حسابات أطلس للموظفين وتصفير الساعات ودفع المستحقات.' : 'Manage Atlas employee accounts, reset hours, and log payments.') : activeTab === 'config' ? t.subtitle : activeTab === 'notifications' ? t.notificationsSubtitle : activeTab === 'misc' ? t.miscSubtitle : t.toolsSubtitle}
             </p>
           </div>
           
@@ -2752,7 +2760,7 @@ export default function Dashboard() {
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
-                {activeTab !== 'accounts' && (
+                {activeTab !== 'accounts' && activeTab !== 'atlas' && (
                   <button 
                     onClick={activeTab === 'notifications' ? () => setIsNotificationModalOpen(true) : activeTab === 'misc' ? () => { setEditingMisc(null); setMiscFormData({ title: '', content: '', display_order: 0 }); setIsMiscModalOpen(true); } : handleOpenAdd}
                     className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-blue-600 rounded-xl hover:bg-blue-500 transition-all font-bold text-white shadow-lg shadow-blue-600/20 text-xs md:text-sm shrink-0"
@@ -3393,6 +3401,8 @@ export default function Dashboard() {
           </div>
         ) : activeTab === 'accounts' ? (
           renderAccountsTab()
+        ) : activeTab === 'atlas' ? (
+          <AtlasAdminPanel lang={lang} theme={theme} />
         ) : activeTab === 'config' ? (
           <div>
             {remoteConfigs.length === 0 ? (
