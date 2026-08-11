@@ -45,6 +45,11 @@ export default function WorkerDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editWalletValue, setEditWalletValue] = useState('');
+  const [editHours, setEditHours] = useState({
+    accepted: 0,
+    rejected: 0,
+    in_review: 0
+  });
   const [updatingWalletId, setUpdatingWalletId] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -110,6 +115,11 @@ export default function WorkerDashboardPage() {
   const startEditWallet = (account: Account) => {
     setEditingAccountId(account.id);
     setEditWalletValue(account.wallet_address || '');
+    setEditHours({
+      accepted: account.accepted_hours,
+      rejected: account.rejected_hours,
+      in_review: account.in_review_hours
+    });
   };
 
   const saveWalletAddress = async (accountId: string) => {
@@ -120,6 +130,9 @@ export default function WorkerDashboardPage() {
         .from('atlas_accounts')
         .update({ 
           wallet_address: editWalletValue,
+          accepted_hours: Number(editHours.accepted),
+          rejected_hours: Number(editHours.rejected),
+          in_review_hours: Number(editHours.in_review),
           updated_at: new Date().toISOString()
         })
         .eq('id', accountId);
@@ -128,13 +141,19 @@ export default function WorkerDashboardPage() {
 
       // Update state
       setAccounts(prev => prev.map(acc => 
-        acc.id === accountId ? { ...acc, wallet_address: editWalletValue } : acc
+        acc.id === accountId ? { 
+          ...acc, 
+          wallet_address: editWalletValue,
+          accepted_hours: Number(editHours.accepted),
+          rejected_hours: Number(editHours.rejected),
+          in_review_hours: Number(editHours.in_review)
+        } : acc
       ));
       setEditingAccountId(null);
-      showFeedback('success', 'تم تحديث عنوان المحفظة بنجاح.');
+      showFeedback('success', 'تم تحديث الساعات والمحفظة بنجاح.');
     } catch (err) {
       console.error(err);
-      showFeedback('error', 'فشل في حفظ المحفظة. حاول مجدداً.');
+      showFeedback('error', 'فشل في حفظ البيانات. حاول مجدداً.');
     } finally {
       setUpdatingWalletId(null);
     }
@@ -295,7 +314,17 @@ export default function WorkerDashboardPage() {
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                           المقبولة
                         </span>
-                        <span className="text-sm font-bold text-emerald-400">{account.accepted_hours} hr</span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="any"
+                            value={editHours.accepted}
+                            onChange={(e) => setEditHours(prev => ({ ...prev, accepted: parseFloat(e.target.value) || 0 }))}
+                            className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-emerald-400">{account.accepted_hours} hr</span>
+                        )}
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
@@ -303,7 +332,17 @@ export default function WorkerDashboardPage() {
                           <XCircle className="w-3 h-3 text-rose-400" />
                           المرفوضة
                         </span>
-                        <span className="text-sm font-bold text-rose-400">{account.rejected_hours} hr</span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="any"
+                            value={editHours.rejected}
+                            onChange={(e) => setEditHours(prev => ({ ...prev, rejected: parseFloat(e.target.value) || 0 }))}
+                            className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-rose-400">{account.rejected_hours} hr</span>
+                        )}
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
@@ -311,7 +350,17 @@ export default function WorkerDashboardPage() {
                           <Clock className="w-3 h-3 text-amber-400" />
                           المراجعة
                         </span>
-                        <span className="text-sm font-bold text-amber-400">{account.in_review_hours} hr</span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="any"
+                            value={editHours.in_review}
+                            onChange={(e) => setEditHours(prev => ({ ...prev, in_review: parseFloat(e.target.value) || 0 }))}
+                            className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-amber-400">{account.in_review_hours} hr</span>
+                        )}
                       </div>
 
                       <div className="bg-slate-950/60 border border-slate-900/60 rounded-xl p-2.5 text-center">
