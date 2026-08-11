@@ -6,7 +6,7 @@ import {
   Users, Wallet, Clock, CheckCircle2, XCircle, 
   Plus, Edit2, Trash2, Check, X, RefreshCw, 
   AlertCircle, History, ArrowRightLeft, UserPlus,
-  Ban, ShieldCheck 
+  Ban, ShieldCheck, LayoutGrid, List 
 } from 'lucide-react';
 
 interface Worker {
@@ -53,6 +53,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   // Modals / Form States
   const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
@@ -848,16 +849,208 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
               {/* Accounts Cards List */}
               <div className="space-y-4">
-                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-blue-500" />
-                  {lang === 'ar' ? 'حسابات العمل وساعات العمل الحالية' : 'Current Work Accounts & Hours'}
-                </h4>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-blue-500" />
+                    {lang === 'ar' ? 'حسابات العمل وساعات العمل الحالية' : 'Current Work Accounts & Hours'}
+                  </h4>
+                  
+                  {accounts.length > 0 && (
+                    <div className="flex items-center bg-slate-900 border border-slate-800/80 rounded-lg p-0.5 shrink-0">
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-1.5 rounded transition-all ${
+                          viewMode === 'list' 
+                            ? 'bg-blue-600 text-white shadow-md' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                        title={lang === 'ar' ? 'عرض خطي / جدولي' : 'List View'}
+                      >
+                        <List className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-1.5 rounded transition-all ${
+                          viewMode === 'grid' 
+                            ? 'bg-blue-600 text-white shadow-md' 
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                        title={lang === 'ar' ? 'عرض شبكي / بطاقات' : 'Grid View'}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {accounts.length === 0 ? (
                   <div className={`p-12 text-center rounded-[2rem] border italic text-xs ${
                     isDark ? 'bg-[#111] border-white/5 text-gray-500' : 'bg-white border-gray-200 text-gray-400'
                   }`}>
                     {lang === 'ar' ? 'لا توجد أي حسابات مربوطة بهذا الموظف حالياً.' : 'No accounts linked to this employee yet.'}
+                  </div>
+                ) : viewMode === 'list' ? (
+                  <div className={`border rounded-[2rem] overflow-hidden ${isDark ? 'bg-[#111]/45 border-white/5' : 'bg-white border-gray-205 shadow-sm'}`}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-xs">
+                        <thead>
+                          <tr className={`border-b ${isDark ? 'bg-black/50 border-white/5 text-gray-400' : 'bg-gray-50 border-gray-150 text-gray-500'} font-bold`}>
+                            <th className="px-5 py-3.5">{lang === 'ar' ? 'حساب العمل' : 'Account Name'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'المقبولة' : 'Accepted'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'المرفوضة' : 'Rejected'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'المراجعة' : 'Review'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'المبلغ المدفوع' : 'Amount Paid'}</th>
+                            <th className="px-5 py-3.5">{lang === 'ar' ? 'المحفظة' : 'Wallet'}</th>
+                            <th className="px-5 py-3.5 text-center">{lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {accounts.map((account) => {
+                            const total = Number(
+                              (account.accepted_hours + account.rejected_hours + account.in_review_hours).toFixed(2)
+                            );
+                            const isEditing = editingAccountId === account.id;
+
+                            return (
+                              <tr key={account.id} className={`${isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}>
+                                <td className="px-5 py-3.5 font-bold text-white whitespace-nowrap">
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editAccountForm.account_name}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, account_name: e.target.value }))}
+                                      className={`text-xs font-bold px-2 py-0.5 rounded border outline-none max-w-[120px] ${
+                                        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-905'
+                                      }`}
+                                    />
+                                  ) : (
+                                    account.account_name
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 text-center">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editAccountForm.accepted_hours}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, accepted_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="text-emerald-400 font-bold">{account.accepted_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 text-center">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editAccountForm.rejected_hours}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, rejected_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="text-rose-400 font-bold">{account.rejected_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 text-center">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editAccountForm.in_review_hours}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, in_review_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="text-amber-400 font-bold">{account.in_review_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 text-center text-gray-300 font-bold">
+                                  {total} hr
+                                </td>
+                                <td className="px-5 py-3.5 text-center font-bold text-amber-500">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editAccountForm.amount_paid}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))}
+                                      className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span>{account.amount_paid || 0} USDT</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 font-mono text-[11px] text-gray-300">
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editAccountForm.wallet_address}
+                                      onChange={(e) => setEditAccountForm(p => ({ ...p, wallet_address: e.target.value }))}
+                                      className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[11px] outline-none text-white"
+                                    />
+                                  ) : (
+                                    account.wallet_address || <span className="text-gray-600 italic">{lang === 'ar' ? 'لا يوجد' : 'None'}</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5">
+                                  <div className="flex justify-center items-center gap-1.5">
+                                    {isEditing ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleSaveEdit(account.id)}
+                                          disabled={actionLoading}
+                                          className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded transition-all"
+                                          title="حفظ"
+                                        >
+                                          <Check className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingAccountId(null)}
+                                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-all"
+                                          title="إلغاء"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => handleResetPayout(account)}
+                                          disabled={actionLoading}
+                                          className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 text-[10px] font-bold rounded transition-all flex items-center gap-1"
+                                          title={lang === 'ar' ? 'تصفير وتسجيل الدفع' : 'Reset & Log Payout'}
+                                        >
+                                          <ArrowRightLeft className="w-2.5 h-2.5" />
+                                          <span>{lang === 'ar' ? 'تصفير' : 'Reset'}</span>
+                                        </button>
+                                        <button
+                                          onClick={() => startEditing(account)}
+                                          className="p-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/20 rounded transition-all"
+                                          title="تعديل"
+                                        >
+                                          <Edit2 className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteAccount(account.id, account.account_name)}
+                                          disabled={actionLoading}
+                                          className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded transition-all"
+                                          title="حذف الحساب"
+                                        >
+                                          <Trash2 className="w-2.5 h-2.5" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
