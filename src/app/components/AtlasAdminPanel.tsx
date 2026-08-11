@@ -5,18 +5,20 @@ import { supabase } from '@/lib/supabase';
 import { 
   Users, Wallet, Clock, CheckCircle2, XCircle, 
   Plus, Edit2, Trash2, Check, X, RefreshCw, 
-  AlertCircle, History, ArrowRightLeft, DollarSign 
+  AlertCircle, History, ArrowRightLeft, UserPlus,
+  Ban, ShieldCheck 
 } from 'lucide-react';
 
 interface Worker {
   id: string;
   username: string;
   pin: string;
+  is_blocked: boolean;
 }
 
 interface Account {
   id: string;
-  user_id: string;
+  worker_id: string;
   account_name: string;
   accepted_hours: number;
   rejected_hours: number;
@@ -28,7 +30,7 @@ interface Account {
 interface Payout {
   id: string;
   account_id: string;
-  user_id: string;
+  worker_id: string;
   accepted_hours: number;
   rejected_hours: number;
   in_review_hours: number;
@@ -51,6 +53,12 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Modals / Form States
+  const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
+  const [newWorkerForm, setNewWorkerForm] = useState({
+    username: '',
+    pin: ''
+  });
+
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [newAccountForm, setNewAccountForm] = useState({
     account_name: '',
@@ -76,20 +84,24 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     setTimeout(() => setFeedback(null), 4000);
   };
 
-  // Fetch all workers (users who are not managers)
-  const fetchWorkers = useCallback(async () => {
+  // Fetch all workers from atlas_workers
+  const fetchWorkers = useCallback(async (selectFirst = false) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('app_users')
-        .select('id, username, pin')
-        .eq('is_manager', false)
+        .from('atlas_workers')
+        .select('id, username, pin, is_blocked')
         .order('username', { ascending: true });
 
       if (error) throw error;
       setWorkers(data || []);
-      if (data && data.length > 0 && !selectedWorkerId) {
+      
+      if (selectFirst && data && data.length > 0) {
         setSelectedWorkerId(data[0].id);
+      } else if (data && data.length > 0 && !selectedWorkerId) {
+        setSelectedWorkerId(data[0].id);
+      } else if (!data || data.length === 0) {
+        setSelectedWorkerId(null);
       }
     } catch (err) {
       console.error(err);
@@ -106,7 +118,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       const { data: accountsData, error: accountsErr } = await supabase
         .from('atlas_accounts')
         .select('*')
-        .eq('user_id', workerId)
+        .eq('worker_id', workerId)
         .order('created_at', { ascending: true });
 
       if (accountsErr) throw accountsErr;
@@ -116,7 +128,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       const { data: payoutsData, error: payoutsErr } = await supabase
         .from('atlas_payouts')
         .select('*')
-        .eq('user_id', workerId)
+        .eq('worker_id', workerId)
         .order('created_at', { ascending: false });
 
       if (payoutsErr) throw payoutsErr;
@@ -134,8 +146,105 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   useEffect(() => {
     if (selectedWorkerId) {
       fetchWorkerDetails(selectedWorkerId);
+    } else {
+      setAccounts([]);
+      setPayouts([]);
     }
   }, [selectedWorkerId, fetchWorkerDetails]);
+
+  // Handle Add Worker
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWorkerForm.username.trim() || !newWorkerForm.pin.trim()) return;
+    setActionLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('atlas_workers')
+        .insert([{
+          username: newWorkerForm.username.trim(),
+          pin: newWorkerForm.pin.trim(),
+          is_blocked: false
+        }])
+        .select();
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error(lang === 'ar' ? 'هذا الرمز (PIN) مستخدم بالفعل لموظف آخر' : 'This PIN is already used by another employee');
+        }
+        throw error;
+      }
+
+      showFeedback('success', lang === 'ar' ? 'تمت إضافة الموظف بنجاح' : 'Worker added successfully');
+      setIsAddWorkerOpen(false);
+      setNewWorkerForm({ username: '', pin: '' });
+      
+      const newWorker = data?.[0];
+      await fetchWorkers();
+      if (newWorker) {
+        setSelectedWorkerId(newWorker.id);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showFeedback('error', err.message || (lang === 'ar' ? 'حدث خطأ أثناء إضافة الموظف' : 'Error adding worker'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Toggle Block Worker
+  const handleToggleBlockWorker = async (worker: Worker) => {
+    const confirmMsg = lang === 'ar'
+      ? `هل أنت متأكد من ${worker.is_blocked ? 'تفعيل' : 'تعطيل'} حساب الموظف "${worker.username}"؟`
+      : `Are you sure you want to ${worker.is_blocked ? 'activate' : 'block'} worker "${worker.username}"?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('atlas_workers')
+        .update({ is_blocked: !worker.is_blocked, updated_at: new Date().toISOString() })
+        .eq('id', worker.id);
+
+      if (error) throw error;
+
+      showFeedback('success', lang === 'ar' ? 'تم تحديث حالة الموظف بنجاح' : 'Worker status updated successfully');
+      setWorkers(prev => prev.map(w => w.id === worker.id ? { ...w, is_blocked: !w.is_blocked } : w));
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', lang === 'ar' ? 'فشل تحديث حالة الموظف' : 'Failed to update worker status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Delete Worker
+  const handleDeleteWorker = async (worker: Worker) => {
+    const confirmMsg = lang === 'ar'
+      ? `تحذير: سيؤدي حذف الموظف "${worker.username}" إلى حذف جميع حساباته وسجل دفعاته نهائياً. هل أنت متأكد؟`
+      : `Warning: Deleting worker "${worker.username}" will permanently delete all their accounts and payouts. Continue?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('atlas_workers')
+        .delete()
+        .eq('id', worker.id);
+
+      if (error) throw error;
+
+      showFeedback('success', lang === 'ar' ? 'تم حذف الموظف بنجاح' : 'Worker deleted successfully');
+      
+      const isCurrentSelected = selectedWorkerId === worker.id;
+      await fetchWorkers(isCurrentSelected);
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', lang === 'ar' ? 'فشل حذف الموظف' : 'Failed to delete worker');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Handle Add Account
   const handleAddAccount = async (e: React.FormEvent) => {
@@ -144,17 +253,16 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     setActionLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('atlas_accounts')
         .insert([{
-          user_id: selectedWorkerId,
+          worker_id: selectedWorkerId,
           account_name: newAccountForm.account_name.trim(),
           accepted_hours: Number(newAccountForm.accepted_hours),
           rejected_hours: Number(newAccountForm.rejected_hours),
           in_review_hours: Number(newAccountForm.in_review_hours),
           wallet_address: newAccountForm.wallet_address.trim()
-        }])
-        .select();
+        }]);
 
       if (error) throw error;
 
@@ -176,7 +284,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     }
   };
 
-  // Start Editing
+  // Start Editing Account
   const startEditing = (account: Account) => {
     setEditingAccountId(account.id);
     setEditAccountForm({
@@ -188,7 +296,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     });
   };
 
-  // Save Edit
+  // Save Edit Account
   const handleSaveEdit = async (accountId: string) => {
     setActionLoading(true);
     try {
@@ -252,12 +360,12 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
     setActionLoading(true);
     try {
-      // 1. Create a snapshot in atlas_payouts
+      // 1. Create a snapshot in atlas_payouts using worker_id
       const { error: payoutErr } = await supabase
         .from('atlas_payouts')
         .insert([{
           account_id: account.id,
-          user_id: account.user_id,
+          worker_id: account.worker_id,
           accepted_hours: account.accepted_hours,
           rejected_hours: account.rejected_hours,
           in_review_hours: account.in_review_hours,
@@ -316,37 +424,136 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* WORKERS LIST PANEL */}
-        <div className={`p-5 rounded-3xl border ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-500" />
-            {lang === 'ar' ? 'الموظفون' : 'Employees'}
-          </h3>
+        <div className={`p-5 rounded-3xl border flex flex-col justify-between ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-blue-500" />
+              {lang === 'ar' ? 'الموظفون' : 'Employees'}
+            </h3>
+            <button
+              onClick={() => setIsAddWorkerOpen(true)}
+              className="p-1.5 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/20 text-blue-500 rounded-lg transition-all"
+              title={lang === 'ar' ? 'إضافة موظف جديد' : 'Add New Worker'}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
+          {/* Add Worker Dialog overlay */}
+          {isAddWorkerOpen && (
+            <div className="bg-black/60 backdrop-blur-sm fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className={`w-full max-w-sm p-6 rounded-3xl border shadow-2xl ${
+                isDark ? 'bg-[#0f0f0f] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-bold">
+                    {lang === 'ar' ? 'إضافة موظف جديد' : 'Add New Employee'}
+                  </h4>
+                  <button onClick={() => setIsAddWorkerOpen(false)} className="text-gray-500 hover:text-gray-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <form onSubmit={handleAddWorker} className="space-y-4 text-xs font-medium">
+                  <div>
+                    <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'اسم الموظف' : 'Employee Name'}</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Yasmin"
+                      value={newWorkerForm.username}
+                      onChange={(e) => setNewWorkerForm(p => ({ ...p, username: e.target.value }))}
+                      className={`w-full px-3 py-2 rounded-xl border outline-none ${
+                        isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'الرمز التعريفي (4 أرقام)' : 'PIN Code (4 Digits)'}</label>
+                    <input
+                      type="text"
+                      required
+                      pattern="\d{4}"
+                      maxLength={4}
+                      placeholder="e.g. 1234"
+                      value={newWorkerForm.pin}
+                      onChange={(e) => setNewWorkerForm(p => ({ ...p, pin: e.target.value }))}
+                      className={`w-full px-3 py-2 rounded-xl border outline-none font-mono text-center tracking-widest ${
+                        isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddWorkerOpen(false)}
+                      className={`px-3 py-1.5 rounded-lg ${
+                        isDark ? 'bg-white/5 text-gray-400' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={actionLoading}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-1.5"
+                    >
+                      {actionLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
+                      <span>{lang === 'ar' ? 'حفظ' : 'Save'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Workers List */}
           <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
             {workers.length === 0 ? (
-              <p className="text-xs text-gray-500 italic p-2">{lang === 'ar' ? 'لا يوجد موظفون مضافون' : 'No employees found'}</p>
+              <p className="text-xs text-gray-500 italic p-2 text-center">{lang === 'ar' ? 'لا يوجد موظفون مضافون' : 'No employees found'}</p>
             ) : (
               workers.map((worker) => (
-                <button
+                <div
                   key={worker.id}
-                  onClick={() => setSelectedWorkerId(worker.id)}
-                  className={`w-full text-right flex items-center justify-between p-3 rounded-2xl text-xs transition-all font-semibold ${
+                  className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition-all text-xs ${
                     selectedWorkerId === worker.id
-                      ? 'bg-blue-600/10 border border-blue-500/20 text-blue-500'
+                      ? 'bg-blue-600/10 border-blue-500/20 text-blue-500'
                       : isDark 
-                        ? 'hover:bg-white/5 border border-transparent text-gray-400 hover:text-white' 
-                        : 'hover:bg-gray-150 border border-transparent text-gray-600 hover:text-gray-900'
+                        ? 'bg-white/0 border-transparent text-gray-400 hover:text-white' 
+                        : 'bg-gray-50/0 border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  <span className="truncate">{worker.username}</span>
-                  <span className={`font-mono px-2 py-0.5 rounded text-[10px] ${
-                    selectedWorkerId === worker.id 
-                      ? 'bg-blue-600/20 text-blue-500' 
-                      : isDark ? 'bg-white/5 text-gray-600' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {worker.pin}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => setSelectedWorkerId(worker.id)}
+                    className="flex-1 text-right truncate font-semibold mr-1.5"
+                  >
+                    <div className="truncate flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${worker.is_blocked ? 'bg-red-500' : 'bg-green-500'}`} />
+                      <span className={worker.is_blocked ? 'line-through opacity-50' : ''}>{worker.username}</span>
+                    </div>
+                    <span className="block text-[9px] text-gray-500 font-mono mt-0.5">PIN: {worker.pin}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleToggleBlockWorker(worker)}
+                      className={`p-1 rounded transition-colors ${
+                        worker.is_blocked 
+                          ? 'text-green-500 hover:bg-green-500/10' 
+                          : 'text-amber-500 hover:bg-amber-500/10'
+                      }`}
+                      title={worker.is_blocked ? (lang === 'ar' ? 'تفعيل' : 'Unblock') : (lang === 'ar' ? 'تعطيل' : 'Block')}
+                    >
+                      {worker.is_blocked ? <ShieldCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteWorker(worker)}
+                      className="p-1 text-rose-500 hover:bg-rose-500/10 rounded transition-colors"
+                      title={lang === 'ar' ? 'حذف الموظف' : 'Delete Employee'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               ))
             )}
           </div>
@@ -461,7 +668,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                           value={newAccountForm.wallet_address}
                           onChange={(e) => setNewAccountForm(prev => ({ ...prev, wallet_address: e.target.value }))}
                           className={`w-full px-4 py-2.5 rounded-xl border outline-none ${
-                            isDark ? 'bg-white/5 border-white/10 focus:border-blue-500' : 'bg-gray-50 border-gray-200 focus:border-blue-500'
+                            isDark ? 'bg-white/5 border-white/10 focus:border-blue-500' : 'bg-gray-50 border-gray-205 focus:border-blue-500'
                           }`}
                         />
                       </div>

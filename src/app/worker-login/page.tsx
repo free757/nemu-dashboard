@@ -43,10 +43,10 @@ export default function WorkerLoginPage() {
     setErrorMsg('');
 
     try {
-      // Query app_users for the user matching this PIN
+      // Query atlas_workers for the worker matching this PIN
       const { data, error } = await supabase
-        .from('app_users')
-        .select('id, username, pin, is_manager, is_team_manager')
+        .from('atlas_workers')
+        .select('id, username, pin, is_blocked')
         .eq('pin', enteredPin)
         .single();
 
@@ -60,13 +60,20 @@ export default function WorkerLoginPage() {
           setIsError(false);
           setErrorMsg('');
         }, 800);
+      } else if (data.is_blocked) {
+        shakeKey.current += 1;
+        setIsError(true);
+        setErrorMsg('هذا الحساب معطل من قبل الإدارة.');
+        setTimeout(() => {
+          setPin('');
+          setIsError(false);
+          setErrorMsg('');
+        }, 1200);
       } else {
         // Success — store worker session and redirect
         sessionStorage.setItem('worker_auth', JSON.stringify({ 
           id: data.id, 
-          username: data.username,
-          is_manager: data.is_manager || false,
-          is_team_manager: data.is_team_manager || false
+          username: data.username
         }));
         router.push('/worker-dashboard');
       }

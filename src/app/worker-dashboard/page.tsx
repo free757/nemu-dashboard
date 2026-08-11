@@ -34,8 +34,6 @@ interface Payout {
 interface WorkerSession {
   id: string;
   username: string;
-  is_manager: boolean;
-  is_team_manager: boolean;
 }
 
 export default function WorkerDashboardPage() {
@@ -61,14 +59,14 @@ export default function WorkerDashboardPage() {
     setWorker(session);
   }, [router]);
 
-  // Load accounts and payout records
+  // Load accounts and payout records using worker_id
   const loadData = useCallback(async (workerId: string) => {
     try {
       // Query accounts
       const { data: accountsData, error: accountsErr } = await supabase
         .from('atlas_accounts')
         .select('*')
-        .eq('user_id', workerId)
+        .eq('worker_id', workerId)
         .order('created_at', { ascending: true });
 
       if (accountsErr) throw accountsErr;
@@ -78,7 +76,7 @@ export default function WorkerDashboardPage() {
       const { data: payoutsData, error: payoutsErr } = await supabase
         .from('atlas_payouts')
         .select('*')
-        .eq('user_id', workerId)
+        .eq('worker_id', workerId)
         .order('created_at', { ascending: false });
 
       if (payoutsErr) throw payoutsErr;
