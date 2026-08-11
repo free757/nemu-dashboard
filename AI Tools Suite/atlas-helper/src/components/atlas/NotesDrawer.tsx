@@ -247,9 +247,13 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({ isOpen, onClose }) => 
 
                       return (
                         <div className="space-y-1">
-                          <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans">
+                          <div 
+                            className={`text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans scrollbar-thin ${
+                              isExpanded ? "max-h-48 overflow-y-auto pr-1.5 scrollbar-thumb-slate-850 scrollbar-track-transparent" : ""
+                            }`}
+                          >
                             {displayedContent}
-                          </p>
+                          </div>
                           {isLong && (
                             <button
                               onClick={() => setExpandedNotes(prev => ({ ...prev, [note.id]: !prev[note.id] }))}
