@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../../../src/lib/supabase";
-import { Button } from "../ui/Button";
 import {
+
   Notebook,
   X,
   Plus,
@@ -179,16 +179,18 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({ isOpen, onClose }) => 
               />
             </div>
 
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              size="sm"
-              className="w-full bg-brand-600 hover:bg-brand-500"
-              isLoading={isSaving}
-              icon={<Save className="w-3.5 h-3.5" />}
+              disabled={isSaving}
+              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20"
             >
-              حفظ الملاحظة للجميع
-            </Button>
+              {isSaving ? (
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              <span>حفظ الملاحظة للجميع</span>
+            </button>
           </form>
 
           {/* Notes List */}
