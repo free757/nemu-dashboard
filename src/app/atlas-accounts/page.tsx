@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lock, Sparkles, AlertCircle, ArrowLeft, User, Wallet, 
   Clock, LogOut, CheckCircle2, XCircle, Calendar, 
-  History, RefreshCw, Edit2, Check, X, Coins, LayoutGrid, List 
+  History, RefreshCw, Edit2, Check, X, Coins, LayoutGrid, List,
+  ArrowRightLeft
 } from 'lucide-react';
 
 const PIN_LENGTH = 4;
@@ -243,6 +244,51 @@ export default function AtlasAccountsUnifiedPage() {
     } catch (err) {
       console.error(err);
       showFeedback('error', 'فشل في حفظ البيانات. حاول مجدداً.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleResetPayout = async (account: Account) => {
+    const confirmMsg = 'هل أنت متأكد من تصفير ساعات ومبالغ هذا الحساب؟ سيتم ترحيل هذه البيانات لسجل الدفعات التاريخي ويبدأ الحساب من الصفر.';
+    if (!window.confirm(confirmMsg)) return;
+
+    setUpdatingId(account.id);
+    try {
+      // 1. Create snapshot in atlas_payouts using worker's id
+      const { error: payoutErr } = await supabase
+        .from('atlas_payouts')
+        .insert([{
+          account_id: account.id,
+          worker_id: worker!.id,
+          accepted_hours: account.accepted_hours,
+          rejected_hours: account.rejected_hours,
+          in_review_hours: account.in_review_hours,
+          wallet_address: account.wallet_address || '',
+          amount_paid: account.amount_paid || 0.0
+        }]);
+
+      if (payoutErr) throw payoutErr;
+
+      // 2. Reset values in atlas_accounts
+      const { error: resetErr } = await supabase
+        .from('atlas_accounts')
+        .update({
+          accepted_hours: 0.0,
+          rejected_hours: 0.0,
+          in_review_hours: 0.0,
+          amount_paid: 0.0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', account.id);
+
+      if (resetErr) throw resetErr;
+
+      showFeedback('success', 'تم تصفير الحساب بنجاح وترحيل الدفعة إلى السجل.');
+      await loadDashboardData(worker!.id);
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', 'فشل تصفير الحساب. حاول مجدداً.');
     } finally {
       setUpdatingId(null);
     }
@@ -667,13 +713,23 @@ export default function AtlasAccountsUnifiedPage() {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() => startEditAccount(account)}
-                                className="px-2.5 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded transition-colors flex items-center gap-1 mx-auto"
-                              >
-                                <Edit2 className="w-2.5 h-2.5" />
-                                <span>تعديل</span>
-                              </button>
+                              <div className="flex justify-center gap-1.5">
+                                <button
+                                  onClick={() => handleResetPayout(account)}
+                                  className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 text-[10px] font-bold rounded transition-colors flex items-center gap-1"
+                                  title="تصفير الحساب وترحيل الدفعة"
+                                >
+                                  <ArrowRightLeft className="w-2.5 h-2.5" />
+                                  <span>تصفير</span>
+                                </button>
+                                <button
+                                  onClick={() => startEditAccount(account)}
+                                  className="px-2.5 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded transition-colors flex items-center gap-1"
+                                >
+                                  <Edit2 className="w-2.5 h-2.5" />
+                                  <span>تعديل</span>
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -706,13 +762,23 @@ export default function AtlasAccountsUnifiedPage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         {!isEditing && (
-                          <button
-                            onClick={() => startEditAccount(account)}
-                            className="px-2.5 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>تعديل</span>
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleResetPayout(account)}
+                              className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                              title="تصفير الحساب وترحيل الدفعة"
+                            >
+                              <ArrowRightLeft className="w-3 h-3" />
+                              <span>تصفير</span>
+                            </button>
+                            <button
+                              onClick={() => startEditAccount(account)}
+                              className="px-2.5 py-1 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>تعديل</span>
+                            </button>
+                          </>
                         )}
                         <span className="px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-semibold text-indigo-400">
                           Atlas
