@@ -59,6 +59,13 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     pin: ''
   });
 
+  const [isEditWorkerOpen, setIsEditWorkerOpen] = useState(false);
+  const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [editWorkerForm, setEditWorkerForm] = useState({
+    username: '',
+    pin: ''
+  });
+
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [newAccountForm, setNewAccountForm] = useState({
     account_name: '',
@@ -187,6 +194,51 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     } catch (err: any) {
       console.error(err);
       showFeedback('error', err.message || (lang === 'ar' ? 'حدث خطأ أثناء إضافة الموظف' : 'Error adding worker'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Start Editing Worker
+  const startEditingWorker = (worker: Worker) => {
+    setEditingWorker(worker);
+    setEditWorkerForm({
+      username: worker.username,
+      pin: worker.pin
+    });
+    setIsEditWorkerOpen(true);
+  };
+
+  // Handle Edit Worker
+  const handleEditWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWorker || !editWorkerForm.username.trim() || !editWorkerForm.pin.trim()) return;
+    setActionLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('atlas_workers')
+        .update({
+          username: editWorkerForm.username.trim(),
+          pin: editWorkerForm.pin.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingWorker.id);
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error(lang === 'ar' ? 'هذا الرمز (PIN) مستخدم بالفعل لموظف آخر' : 'This PIN is already used by another employee');
+        }
+        throw error;
+      }
+
+      showFeedback('success', lang === 'ar' ? 'تم تحديث بيانات الموظف بنجاح' : 'Worker updated successfully');
+      setIsEditWorkerOpen(false);
+      setEditingWorker(null);
+      await fetchWorkers();
+    } catch (err: any) {
+      console.error(err);
+      showFeedback('error', err.message || (lang === 'ar' ? 'حدث خطأ أثناء تعديل بيانات الموظف' : 'Error updating worker'));
     } finally {
       setActionLoading(false);
     }
@@ -506,6 +558,73 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
             </div>
           )}
 
+          {/* Edit Worker Dialog overlay */}
+          {isEditWorkerOpen && editingWorker && (
+            <div className="bg-black/60 backdrop-blur-sm fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className={`w-full max-w-sm p-6 rounded-3xl border shadow-2xl ${
+                isDark ? 'bg-[#0f0f0f] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-sm font-bold">
+                    {lang === 'ar' ? 'تعديل بيانات الموظف' : 'Edit Employee Details'}
+                  </h4>
+                  <button onClick={() => { setIsEditWorkerOpen(false); setEditingWorker(null); }} className="text-gray-500 hover:text-gray-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <form onSubmit={handleEditWorker} className="space-y-4 text-xs font-medium">
+                  <div>
+                    <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'اسم الموظف' : 'Employee Name'}</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Yasmin"
+                      value={editWorkerForm.username}
+                      onChange={(e) => setEditWorkerForm(p => ({ ...p, username: e.target.value }))}
+                      className={`w-full px-3 py-2 rounded-xl border outline-none ${
+                        isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-gray-400">{lang === 'ar' ? 'الرمز التعريفي (4 أرقام)' : 'PIN Code (4 Digits)'}</label>
+                    <input
+                      type="text"
+                      required
+                      pattern="\d{4}"
+                      maxLength={4}
+                      placeholder="e.g. 1234"
+                      value={editWorkerForm.pin}
+                      onChange={(e) => setEditWorkerForm(p => ({ ...p, pin: e.target.value }))}
+                      className={`w-full px-3 py-2 rounded-xl border outline-none font-mono text-center tracking-widest ${
+                        isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setIsEditWorkerOpen(false); setEditingWorker(null); }}
+                      className={`px-3 py-1.5 rounded-lg ${
+                        isDark ? 'bg-white/5 text-gray-400' : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={actionLoading}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-1.5"
+                    >
+                      {actionLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
+                      <span>{lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Workers List */}
           <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
             {workers.length === 0 ? (
@@ -534,6 +653,13 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                   </button>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => startEditingWorker(worker)}
+                      className="p-1 text-blue-500 hover:bg-blue-500/10 rounded transition-colors"
+                      title={lang === 'ar' ? 'تعديل بيانات الموظف' : 'Edit Employee'}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => handleToggleBlockWorker(worker)}
                       className={`p-1 rounded transition-colors ${
