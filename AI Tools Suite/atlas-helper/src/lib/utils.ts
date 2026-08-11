@@ -32,53 +32,113 @@ export function parseBulkSegmentsText(bulkText: string): SegmentItem[] {
   const lines = bulkText.split("\n").map((line) => line.trim()).filter(Boolean);
   const segments: SegmentItem[] = [];
 
-  let pendingTime: { startTime: string; endTime: string } | null = null;
+  const isTimestamp = (str: string) => /^\d{1,2}:\d{2}(?:\.\d{1,3})?$/.test(str);
+  
+  const isMetadata = (str: string) => {
+    return (
+      /^\(\d+(\.\d+)?s\)$/.test(str) ||
+      /^\d+w$/.test(str) ||
+      /^[⚠⚠️]\s*\d+%?$/.test(str) ||
+      /^\d+%$/.test(str) ||
+      str === "→" || str === "->" || str === "–" || str === "—"
+    );
+  };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Filter out common Atlas web page UI noise lines
-    if (
-      /^(AI|Play segment \d+|Segment \d+|Step \d+|Label rubric|Correct the AI labels|Practice assessment|Assessment|PROGRESS|How it works|Learn to label|How to label|The exact format|Start paid work|Payments processed|Scene:.*|Try another clip|Submit practice clip|Exit|•)$/i.test(
-        line
-      )
-    ) {
-      continue;
-    }
-
+  // 1. Check if we have single-line range format somewhere first
+  let hasSingleLineTimeRange = false;
+  for (const line of lines) {
     const timeMatch = parseTimeRange(line);
-
     if (timeMatch) {
-      // Check if the same line also contains the label text after removing timestamps
       const lineWithoutTimes = line
         .replace(/\d{1,2}:\d{2}(?:\.\d{1,3})?/g, "")
         .replace(/[\s–—\-~→>]+/g, " ")
         .trim();
-
       if (lineWithoutTimes.length > 2) {
-        // Timestamps and label are on the SAME line
+        hasSingleLineTimeRange = true;
+        break;
+      }
+    }
+  }
+
+  if (hasSingleLineTimeRange) {
+    let pendingTime: { startTime: string; endTime: string } | null = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^(AI|Play segment \d+|Segment \d+|Step \d+|Label rubric|Correct the AI labels|Practice assessment|Assessment|PROGRESS|How it works|Learn to label|How to label|The exact format|Start paid work|Payments processed|Scene:.*|Try another clip|Submit practice clip|Exit|•)$/i.test(line)) {
+        continue;
+      }
+      const timeMatch = parseTimeRange(line);
+      if (timeMatch) {
+        const lineWithoutTimes = line
+          .replace(/\d{1,2}:\d{2}(?:\.\d{1,3})?/g, "")
+          .replace(/[\s–—\-~→>]+/g, " ")
+          .trim();
+        if (lineWithoutTimes.length > 2) {
+          segments.push({
+            id: `seg-${Date.now()}-${segments.length + 1}`,
+            startTime: timeMatch.startTime,
+            endTime: timeMatch.endTime,
+            currentLabel: lineWithoutTimes,
+            status: "idle",
+          });
+          pendingTime = null;
+        } else {
+          pendingTime = timeMatch;
+        }
+      } else if (pendingTime) {
         segments.push({
           id: `seg-${Date.now()}-${segments.length + 1}`,
-          startTime: timeMatch.startTime,
-          endTime: timeMatch.endTime,
-          currentLabel: lineWithoutTimes,
+          startTime: pendingTime.startTime,
+          endTime: pendingTime.endTime,
+          currentLabel: line,
           status: "idle",
         });
         pendingTime = null;
-      } else {
-        // Timestamps are on their own line; label is expected on the next non-noise line
-        pendingTime = timeMatch;
       }
-    } else if (pendingTime) {
-      // Current line is the label for the pending timestamp
-      segments.push({
-        id: `seg-${Date.now()}-${segments.length + 1}`,
-        startTime: pendingTime.startTime,
-        endTime: pendingTime.endTime,
-        currentLabel: line,
-        status: "idle",
-      });
-      pendingTime = null;
+    }
+    return segments;
+  }
+
+  // 2. Parse multi-line copy-paste format from the paid work page
+  for (let i = 0; i < lines.length; i++) {
+    const currentLine = lines[i];
+    if (isTimestamp(currentLine)) {
+      let nextTimeIndex = -1;
+      if (i + 1 < lines.length && isTimestamp(lines[i + 1])) {
+        nextTimeIndex = i + 1;
+      } else if (i + 2 < lines.length && (lines[i + 1] === "→" || lines[i + 1] === "->") && isTimestamp(lines[i + 2])) {
+        nextTimeIndex = i + 2;
+      }
+
+      if (nextTimeIndex !== -1) {
+        const startTime = currentLine;
+        const endTime = lines[nextTimeIndex];
+        let labelLine = "";
+        let scanIdx = nextTimeIndex + 1;
+
+        while (scanIdx < lines.length) {
+          const checkLine = lines[scanIdx];
+          if (isTimestamp(checkLine) || /^\d+$/.test(checkLine)) {
+            break;
+          }
+          if (!isMetadata(checkLine) && checkLine.length > 1) {
+            labelLine = checkLine;
+            break;
+          }
+          scanIdx++;
+        }
+
+        if (labelLine) {
+          segments.push({
+            id: `seg-${Date.now()}-${segments.length + 1}`,
+            startTime,
+            endTime,
+            currentLabel: labelLine,
+            status: "idle",
+          });
+        }
+        i = nextTimeIndex;
+      }
     }
   }
 
