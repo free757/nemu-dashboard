@@ -37,6 +37,7 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedReport, setCopiedReport] = useState<boolean>(false);
   const [arabicMap, setArabicMap] = useState<Record<string, boolean>>({});
+  const [loadingSegmentId, setLoadingSegmentId] = useState<string | null>(null);
 
 
   const handleBulkTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -136,6 +137,64 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
       setError(err.message || "An unexpected error occurred during AI label correction.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCorrectSingleSegment = async (id: string) => {
+    if (!fileUri) {
+      setError("⚠️ Please load a Cloudflare R2 video URL first in Step 1.");
+      return;
+    }
+
+    const targetSeg = segments.find((s) => s.id === id);
+    if (!targetSeg) return;
+
+    setLoadingSegmentId(id);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/correct-label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileUri,
+          segments: [
+            {
+              id: targetSeg.id,
+              startTime: targetSeg.startTime,
+              endTime: targetSeg.endTime,
+              currentLabel: targetSeg.currentLabel,
+            },
+          ],
+          customPrompt: showSettings ? customPrompt : undefined,
+        }),
+      });
+
+      const result: ApiResponse<CorrectLabelsResponse> = await response.json();
+
+      if (!response.ok || !result.success || !result.data || result.data.segments.length === 0) {
+        throw new Error(result.error || "Failed to correct this segment.");
+      }
+
+      const res = result.data.segments[0];
+      setSegments((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                correctedLabel: res.correctedLabel,
+                visualEvidence: res.visualEvidence,
+                analysisMode: res.analysisMode || "visual",
+                usedModel: res.usedModel,
+                status: "success",
+              }
+            : s
+        )
+      );
+    } catch (err: any) {
+      setError(err.message || "Failed to correct this segment.");
+    } finally {
+      setLoadingSegmentId(null);
     }
   };
 
@@ -364,20 +423,33 @@ export const BatchLabelForm: React.FC<BatchLabelFormProps> = ({ fileUri, isLoade
                                 value={seg.correctedLabel}
                                 className="w-full px-3 py-1.5 bg-emerald-950/30 border border-emerald-800/50 rounded-md text-xs text-emerald-300 font-mono font-semibold focus:outline-none"
                               />
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleCopy(seg.id, seg.correctedLabel!)}
-                                icon={
-                                  copiedId === seg.id ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                  ) : (
-                                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                                  )
-                                }
-                              >
-                                {copiedId === seg.id ? "Copied" : "Copy"}
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleCopy(seg.id, seg.correctedLabel!)}
+                                  icon={
+                                    copiedId === seg.id ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                    )
+                                  }
+                                >
+                                  {copiedId === seg.id ? "Copied" : "Copy"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCorrectSingleSegment(seg.id)}
+                                  isLoading={loadingSegmentId === seg.id}
+                                  disabled={isLoading}
+                                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                                  title="إعادة تصحيح هذا المقطع فقط بالذكاء الاصطناعي"
+                                >
+                                  {loadingSegmentId === seg.id ? "Correcting..." : "Re-AI"}
+                                </Button>
+                              </div>
                             </div>
                             {isArabic && seg.correctedLabel && (
                               <p className="mt-1 text-xs text-emerald-300/90 font-sans dir-rtl bg-emerald-950/40 p-1.5 rounded border border-emerald-500/30">
