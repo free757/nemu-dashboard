@@ -86,6 +86,22 @@ export default function AtlasAccountsUnifiedPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  // Hourly Rate Configuration (USDT/hour)
+  const [hourlyRate, setHourlyRate] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('atlas_hourly_rate');
+      return saved ? parseFloat(saved) : 20;
+    }
+    return 20;
+  });
+
+  const updateHourlyRate = (rate: number) => {
+    setHourlyRate(rate);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('atlas_hourly_rate', rate.toString());
+    }
+  };
+
   // 1. Clock Setup (Login View)
   useEffect(() => {
     const tick = () => {
@@ -520,6 +536,13 @@ export default function AtlasAccountsUnifiedPage() {
     );
   }
 
+  // Compute Combined Stats
+  const totalAccepted = accounts.reduce((sum, acc) => sum + acc.accepted_hours, 0);
+  const totalInReview = accounts.reduce((sum, acc) => sum + acc.in_review_hours, 0);
+  const totalPaid = accounts.reduce((sum, acc) => sum + (acc.amount_paid || 0), 0);
+  const totalExpectedEarnings = Number((totalAccepted * hourlyRate).toFixed(2));
+  const totalOutstanding = Number((totalExpectedEarnings - totalPaid).toFixed(2));
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col relative overflow-x-hidden selection:bg-indigo-500/30">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.06)_0,transparent_50%)] pointer-events-none" />
@@ -591,22 +614,83 @@ export default function AtlasAccountsUnifiedPage() {
               <User className="w-5 h-5 text-indigo-400" />
               ملخص حساب الموظف
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 font-sans">
               تابع ساعات عملك المسجلة، وأدخل المبالغ المستلمة من المنصة، والمحفظة الخاصة بك.
             </p>
           </div>
-          <div className="flex items-center gap-4 text-xs bg-slate-950/60 border border-slate-900 rounded-xl px-4 py-3">
-            <div className="text-right">
-              <span className="block text-[10px] text-slate-500 font-semibold">إجمالي الحسابات المفعلة</span>
-              <span className="text-lg font-bold text-white">{accounts.length}</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-950/60 border border-slate-900 rounded-xl px-4 py-3 w-full md:w-auto justify-between md:justify-end">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-400 font-semibold">سعر الساعة المقبولة:</span>
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded px-2 py-0.5">
+                <input
+                  type="number"
+                  step="any"
+                  value={hourlyRate}
+                  onChange={(e) => updateHourlyRate(parseFloat(e.target.value) || 0)}
+                  className="w-12 bg-transparent text-center font-bold text-indigo-400 outline-none"
+                />
+                <span className="text-[9px] text-slate-500 font-semibold">USDT/hr</span>
+              </div>
             </div>
-            <div className="w-px h-8 bg-slate-800" />
+            <div className="w-px h-8 bg-slate-800 hidden sm:block" />
+            <div className="text-right">
+              <span className="block text-[10px] text-slate-500 font-semibold">الحسابات المفعلة</span>
+              <span className="text-sm font-bold text-white">{accounts.length}</span>
+            </div>
+            <div className="w-px h-8 bg-slate-800 hidden sm:block" />
             <div className="text-right">
               <span className="block text-[10px] text-slate-500 font-semibold">حالة الحساب</span>
               <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-900 px-2 py-0.5 rounded-full">نشط</span>
             </div>
           </div>
         </div>
+
+        {/* Financial Summary Stats Cards Grid */}
+        {accounts.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-500 font-semibold">المقبولة (الكل)</span>
+                <span className="text-base font-bold text-emerald-400">{totalAccepted} hr</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 flex-shrink-0">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-500 font-semibold">المبالغ المستلمة</span>
+                <span className="text-base font-bold text-amber-400">{totalPaid} USDT</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                <Coins className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-500 font-semibold">الأرباح المستحقة</span>
+                <span className="text-base font-bold text-indigo-400">{totalExpectedEarnings} USDT</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex items-center gap-3.5 shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-450 flex-shrink-0">
+                <ArrowRightLeft className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-500 font-semibold">المستحقات المتبقية</span>
+                <span className={`text-base font-bold ${totalOutstanding > 0 ? 'text-emerald-450' : 'text-slate-500'}`}>
+                  {totalOutstanding} USDT
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* SECTION: ACCOUNTS GRID */}
         <section className="space-y-4">
@@ -671,7 +755,9 @@ export default function AtlasAccountsUnifiedPage() {
                       <th className="px-5 py-3.5 text-center">المرفوضة</th>
                       <th className="px-5 py-3.5 text-center">المراجعة</th>
                       <th className="px-5 py-3.5 text-center">الإجمالي</th>
-                      <th className="px-5 py-3.5 text-center">المبلغ المسحوب</th>
+                      <th className="px-5 py-3.5 text-center text-indigo-400">المستحقة</th>
+                      <th className="px-5 py-3.5 text-center text-amber-400">المستلمة</th>
+                      <th className="px-5 py-3.5 text-center text-emerald-450">المتبقية</th>
                       <th className="px-5 py-3.5">المحفظة</th>
                       <th className="px-5 py-3.5 text-center">إجراءات</th>
                     </tr>
@@ -734,7 +820,10 @@ export default function AtlasAccountsUnifiedPage() {
                           <td className="px-5 py-3.5 text-center text-slate-300 font-bold">
                             {totalHours} hr
                           </td>
-                          <td className="px-5 py-3.5 text-center font-bold text-amber-500">
+                          <td className="px-5 py-3.5 text-center text-indigo-400 font-bold whitespace-nowrap">
+                            {(account.accepted_hours * hourlyRate).toFixed(2)} USDT
+                          </td>
+                          <td className="px-5 py-3.5 text-center font-bold text-amber-500 whitespace-nowrap">
                             {isEditing ? (
                               <input
                                 type="number"
@@ -746,6 +835,9 @@ export default function AtlasAccountsUnifiedPage() {
                             ) : (
                               <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
                             )}
+                          </td>
+                          <td className={`px-5 py-3.5 text-center font-bold whitespace-nowrap ${((account.accepted_hours * hourlyRate) - (account.amount_paid || 0)) > 0 ? 'text-emerald-450 font-extrabold' : 'text-slate-500'}`}>
+                            {((account.accepted_hours * hourlyRate) - (account.amount_paid || 0)).toFixed(2)} USDT
                           </td>
                           <td className="px-5 py-3.5 font-mono text-[11px] text-slate-350">
                             {isEditing ? (
@@ -920,23 +1012,47 @@ export default function AtlasAccountsUnifiedPage() {
                       </div>
                     </div>
 
-                    {/* Amount Paid Section */}
-                    <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-3 mb-4 flex justify-between items-center text-xs">
-                      <span className="text-slate-400 font-semibold flex items-center gap-1">
-                        <Coins className="w-3.5 h-3.5 text-amber-500" />
-                        المبلغ المدفوع من الحساب:
-                      </span>
-                      {isEditing ? (
-                        <input
-                          type="number"
-                          step="any"
-                          value={editAmountPaid}
-                          onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
-                          className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
-                        />
-                      ) : (
-                        <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
-                      )}
+                    {/* Expected Earnings & Payout Breakdown Section */}
+                    <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-3.5 mb-4 space-y-2 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-semibold flex items-center gap-1">
+                          <Coins className="w-3.5 h-3.5 text-indigo-400" />
+                          الأرباح المستحقة:
+                        </span>
+                        <span className="font-bold text-indigo-400 text-sm">
+                          {(account.accepted_hours * hourlyRate).toFixed(2)} USDT
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-semibold flex items-center gap-1">
+                          <Coins className="w-3.5 h-3.5 text-amber-500" />
+                          المبالغ المستلمة:
+                        </span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="any"
+                            value={editAmountPaid}
+                            onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
+                            className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
+                          />
+                        ) : (
+                          <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
+                        )}
+                      </div>
+
+                      <div className="h-px bg-slate-900 my-1" />
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-semibold flex items-center gap-1">
+                          <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-450" />
+                          المستحقات المتبقية:
+                        </span>
+                        <span className={`font-bold text-sm ${((account.accepted_hours * hourlyRate) - (account.amount_paid || 0)) > 0 ? 'text-emerald-450 font-extrabold' : 'text-slate-500'}`}>
+                          {((account.accepted_hours * hourlyRate) - (account.amount_paid || 0)).toFixed(2)} USDT
+                        </span>
+                      </div>
                     </div>
 
                     {/* Wallet Address section */}
