@@ -303,8 +303,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           in_review_hours: Number(editPayoutForm.in_review_hours),
           amount_paid: Number(editPayoutForm.amount_paid),
           wallet_address: editPayoutForm.wallet_address.trim(),
-          created_at: chosenDate,
-          updated_at: new Date().toISOString()
+          created_at: chosenDate
         })
         .eq('id', payoutId);
 
