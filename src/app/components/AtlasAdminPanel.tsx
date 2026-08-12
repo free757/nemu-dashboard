@@ -544,6 +544,11 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                         isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
                       }`}
                     />
+                    {workers.some(w => w.pin === newWorkerForm.pin.trim() && newWorkerForm.pin.trim() !== '') && (
+                      <p className="text-red-500 text-[10px] mt-1">
+                        {lang === 'ar' ? '⚠️ هذا الرمز التعريفي مستخدم بالفعل لموظف آخر.' : '⚠️ This PIN is already taken.'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
@@ -557,8 +562,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     </button>
                     <button
                       type="submit"
-                      disabled={actionLoading}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-1.5"
+                      disabled={actionLoading || workers.some(w => w.pin === newWorkerForm.pin.trim() && newWorkerForm.pin.trim() !== '')}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-lg font-bold flex items-center gap-1.5"
                     >
                       {actionLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
                       <span>{lang === 'ar' ? 'حفظ' : 'Save'}</span>
@@ -611,6 +616,11 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                         isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-205'
                       }`}
                     />
+                    {workers.some(w => w.id !== editingWorker.id && w.pin === editWorkerForm.pin.trim() && editWorkerForm.pin.trim() !== '') && (
+                      <p className="text-red-500 text-[10px] mt-1">
+                        {lang === 'ar' ? '⚠️ هذا الرمز التعريفي مستخدم بالفعل لموظف آخر.' : '⚠️ This PIN is already taken.'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
                     <button
@@ -624,8 +634,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     </button>
                     <button
                       type="submit"
-                      disabled={actionLoading}
-                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-1.5"
+                      disabled={actionLoading || workers.some(w => w.id !== editingWorker.id && w.pin === editWorkerForm.pin.trim() && editWorkerForm.pin.trim() !== '')}
+                      className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-lg font-bold flex items-center gap-1.5"
                     >
                       {actionLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
                       <span>{lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}</span>
