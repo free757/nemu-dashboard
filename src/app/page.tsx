@@ -87,16 +87,21 @@ export default function Dashboard() {
 
   // ── Auth Guard ────────────────────────────────────────────────────────────
   useEffect(() => {
-    const auth = sessionStorage.getItem('dashboard_auth');
-    if (!auth) {
-      router.replace('/login');
-    } else {
-      const parsed = JSON.parse(auth);
-      setCurrentUser(parsed);
-      setIsAuthChecked(true);
-      if (parsed?.is_team_manager) {
-        setActiveTab('users');
+    try {
+      const auth = sessionStorage.getItem('dashboard_auth');
+      if (!auth) {
+        router.replace('/login');
+      } else {
+        const parsed = JSON.parse(auth);
+        setCurrentUser(parsed);
+        setIsAuthChecked(true);
+        if (parsed?.is_team_manager) {
+          setActiveTab('users');
+        }
       }
+    } catch (e) {
+      console.warn('sessionStorage read error in main view', e);
+      router.replace('/login');
     }
   }, [router]);
 
@@ -510,8 +515,13 @@ export default function Dashboard() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const auth = sessionStorage.getItem('dashboard_auth');
-    const authUser = auth ? JSON.parse(auth) : null;
+    let authUser = null;
+    try {
+      const auth = sessionStorage.getItem('dashboard_auth');
+      authUser = auth ? JSON.parse(auth) : null;
+    } catch (e) {
+      console.warn('sessionStorage fetchUsers error', e);
+    }
 
     let query = supabase.from('app_users').select('*');
     if (authUser?.is_team_manager) {
@@ -1509,8 +1519,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('dashboard_auth');
-    const authUser = auth ? JSON.parse(auth) : null;
+    let authUser = null;
+    try {
+      const auth = sessionStorage.getItem('dashboard_auth');
+      authUser = auth ? JSON.parse(auth) : null;
+    } catch (e) {
+      console.warn('sessionStorage mount data fetch error', e);
+    }
     const isTeamManager = authUser?.is_team_manager || false;
 
     fetchUsers();
@@ -2653,7 +2668,11 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={() => {
-                    sessionStorage.removeItem('dashboard_auth');
+                    try {
+                      sessionStorage.removeItem('dashboard_auth');
+                    } catch (e) {
+                      console.warn('sessionStorage logout error', e);
+                    }
                     router.replace('/login');
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}

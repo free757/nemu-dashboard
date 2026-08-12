@@ -100,10 +100,15 @@ export default function AtlasAccountsUnifiedPage() {
 
   // 2. Authentication Check
   useEffect(() => {
-    const authData = sessionStorage.getItem('worker_auth');
-    if (authData) {
-      setWorker(JSON.parse(authData) as WorkerSession);
-    } else {
+    try {
+      const authData = sessionStorage.getItem('worker_auth');
+      if (authData) {
+        setWorker(JSON.parse(authData) as WorkerSession);
+      } else {
+        setWorker(null);
+      }
+    } catch (e) {
+      console.warn('sessionStorage is disabled or unavailable', e);
       setWorker(null);
     }
     setAuthChecking(false);
@@ -148,7 +153,11 @@ export default function AtlasAccountsUnifiedPage() {
         }, 1200);
       } else {
         const session = { id: data.id, username: data.username };
-        sessionStorage.setItem('worker_auth', JSON.stringify(session));
+        try {
+          sessionStorage.setItem('worker_auth', JSON.stringify(session));
+        } catch (e) {
+          console.warn('sessionStorage is disabled or full', e);
+        }
         setWorker(session);
         setPin('');
       }
@@ -344,7 +353,11 @@ export default function AtlasAccountsUnifiedPage() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('worker_auth');
+    try {
+      sessionStorage.removeItem('worker_auth');
+    } catch (e) {
+      console.warn('sessionStorage delete error', e);
+    }
     setWorker(null);
   };
 
