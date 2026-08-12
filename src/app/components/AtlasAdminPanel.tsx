@@ -63,7 +63,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     rejected_hours: 0,
     in_review_hours: 0,
     amount_paid: 0,
-    wallet_address: ''
+    wallet_address: '',
+    created_at: ''
   });
 
   // Modals / Form States
@@ -292,6 +293,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const handleSavePayoutEdit = async (payoutId: string) => {
     setActionLoading(true);
     try {
+      const chosenDate = new Date(editPayoutForm.created_at).toISOString();
+
       const { error } = await supabase
         .from('atlas_payouts')
         .update({
@@ -300,6 +303,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           in_review_hours: Number(editPayoutForm.in_review_hours),
           amount_paid: Number(editPayoutForm.amount_paid),
           wallet_address: editPayoutForm.wallet_address.trim(),
+          created_at: chosenDate,
           updated_at: new Date().toISOString()
         })
         .eq('id', payoutId);
@@ -320,6 +324,12 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     }
   };
 
+  const toLocalISOString = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
   const startEditingPayout = (payout: Payout) => {
     setEditingPayoutId(payout.id);
     setEditPayoutForm({
@@ -327,7 +337,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       rejected_hours: payout.rejected_hours,
       in_review_hours: payout.in_review_hours,
       amount_paid: payout.amount_paid || 0,
-      wallet_address: payout.wallet_address || ''
+      wallet_address: payout.wallet_address || '',
+      created_at: toLocalISOString(payout.created_at)
     });
   };
 
@@ -1426,13 +1437,24 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             return (
                               <tr key={payout.id} className={`${isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}>
                                 <td className="px-5 py-3 whitespace-nowrap">
-                                  {new Date(payout.created_at).toLocaleDateString('ar-EG', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="datetime-local"
+                                      value={editPayoutForm.created_at}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, created_at: e.target.value }))}
+                                      className={`text-xs px-2 py-0.5 rounded border outline-none font-bold ${
+                                        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-905'
+                                      }`}
+                                    />
+                                  ) : (
+                                    new Date(payout.created_at).toLocaleDateString('ar-EG', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                  )}
                                 </td>
                                 <td className="px-5 py-3 font-bold text-white">
                                   {accounts.find(a => a.id === payout.account_id)?.account_name || 'Account'}
