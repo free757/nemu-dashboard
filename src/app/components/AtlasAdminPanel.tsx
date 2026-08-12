@@ -1687,25 +1687,6 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             );
                           })}
                         </tbody>
-                        <tfoot>
-                          <tr className={`border-t ${isDark ? 'bg-black/50 border-white/5 text-white' : 'bg-gray-50 border-gray-150 text-gray-800'} font-bold`}>
-                            <td className="px-5 py-3">{lang === 'ar' ? 'الإجمالي الكلي' : 'Total'}</td>
-                            <td className="px-5 py-3"></td>
-                            <td className="px-5 py-3 text-center text-emerald-400">
-                              {payouts.reduce((sum, p) => sum + Number(p.accepted_hours || 0), 0).toFixed(1)} hr
-                            </td>
-                            <td className="px-5 py-3 text-center text-rose-400">
-                              {payouts.reduce((sum, p) => sum + Number(p.rejected_hours || 0), 0).toFixed(1)} hr
-                            </td>
-                            <td className="px-5 py-3 text-center text-amber-500">
-                              {payouts.reduce((sum, p) => sum + Number(p.in_review_hours || 0), 0).toFixed(1)} hr
-                            </td>
-                            <td className="px-5 py-3 text-center text-amber-400 font-bold">
-                              {payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0).toFixed(2)} USDT
-                            </td>
-                            <td className="px-5 py-3" colSpan={2}></td>
-                          </tr>
-                        </tfoot>
                       </table>
                     </div>
                   </div>
