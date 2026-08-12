@@ -55,6 +55,16 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
+  // Historical Payout Edit States
+  const [editingPayoutId, setEditingPayoutId] = useState<string | null>(null);
+  const [editPayoutForm, setEditPayoutForm] = useState({
+    accepted_hours: 0,
+    rejected_hours: 0,
+    in_review_hours: 0,
+    amount_paid: 0,
+    wallet_address: ''
+  });
+
   // Modals / Form States
   const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
   const [newWorkerForm, setNewWorkerForm] = useState({
@@ -247,6 +257,77 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // Payout logs management
+  const handleDeletePayout = async (payoutId: string) => {
+    const confirmMsg = lang === 'ar' 
+      ? 'هل أنت متأكد من حذف هذا السجل التاريخي بشكل نهائي؟ لا يمكن التراجع عن هذا الإجراء.' 
+      : 'Are you sure you want to delete this historical log permanently? This action cannot be undone.';
+    if (!window.confirm(confirmMsg)) return;
+
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('atlas_payouts')
+        .delete()
+        .eq('id', payoutId);
+
+      if (error) throw error;
+
+      showFeedback('success', lang === 'ar' ? 'تم حذف السجل التاريخي بنجاح' : 'Historical log deleted successfully');
+      
+      if (selectedWorkerId) {
+        fetchWorkerDetails(selectedWorkerId);
+      }
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', lang === 'ar' ? 'فشل حذف السجل. حاول مجدداً.' : 'Failed to delete historical log.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSavePayoutEdit = async (payoutId: string) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('atlas_payouts')
+        .update({
+          accepted_hours: Number(editPayoutForm.accepted_hours),
+          rejected_hours: Number(editPayoutForm.rejected_hours),
+          in_review_hours: Number(editPayoutForm.in_review_hours),
+          amount_paid: Number(editPayoutForm.amount_paid),
+          wallet_address: editPayoutForm.wallet_address.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', payoutId);
+
+      if (error) throw error;
+
+      showFeedback('success', lang === 'ar' ? 'تم تعديل السجل التاريخي بنجاح' : 'Historical log updated successfully');
+      setEditingPayoutId(null);
+      
+      if (selectedWorkerId) {
+        fetchWorkerDetails(selectedWorkerId);
+      }
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', lang === 'ar' ? 'فشل حفظ التعديلات. حاول مجدداً.' : 'Failed to update historical log.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const startEditingPayout = (payout: Payout) => {
+    setEditingPayoutId(payout.id);
+    setEditPayoutForm({
+      accepted_hours: payout.accepted_hours,
+      rejected_hours: payout.rejected_hours,
+      in_review_hours: payout.in_review_hours,
+      amount_paid: payout.amount_paid || 0,
+      wallet_address: payout.wallet_address || ''
+    });
   };
 
   // Toggle Block Worker
@@ -1277,32 +1358,135 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             <th className="px-5 py-3 text-center">{lang === 'ar' ? 'تحت المراجعة' : 'In Review'}</th>
                             <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المبلغ المستلم' : 'Amount Received'}</th>
                             <th className="px-5 py-3">{lang === 'ar' ? 'المحفظة المستلمة' : 'Received Wallet'}</th>
+                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {payouts.map((payout) => (
-                            <tr key={payout.id} className={`${isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}>
-                              <td className="px-5 py-3 whitespace-nowrap">
-                                {new Date(payout.created_at).toLocaleDateString('ar-EG', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </td>
-                              <td className="px-5 py-3 font-bold text-white">
-                                {accounts.find(a => a.id === payout.account_id)?.account_name || 'Account'}
-                              </td>
-                              <td className="px-5 py-3 text-center font-bold text-emerald-400">{payout.accepted_hours} hr</td>
-                              <td className="px-5 py-3 text-center font-semibold text-rose-400">{payout.rejected_hours} hr</td>
-                              <td className="px-5 py-3 text-center text-amber-500">{payout.in_review_hours} hr</td>
-                              <td className="px-5 py-3 text-center font-bold text-amber-400">{payout.amount_paid || 0} USDT</td>
-                              <td className="px-5 py-3 font-mono text-[10px] text-gray-500 max-w-[150px] truncate" title={payout.wallet_address}>
-                                {payout.wallet_address || '—'}
-                              </td>
-                            </tr>
-                          ))}
+                          {payouts.map((payout) => {
+                            const isEditingPayout = editingPayoutId === payout.id;
+
+                            return (
+                              <tr key={payout.id} className={`${isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}>
+                                <td className="px-5 py-3 whitespace-nowrap">
+                                  {new Date(payout.created_at).toLocaleDateString('ar-EG', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </td>
+                                <td className="px-5 py-3 font-bold text-white">
+                                  {accounts.find(a => a.id === payout.account_id)?.account_name || 'Account'}
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editPayoutForm.accepted_hours}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, accepted_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="font-bold text-emerald-400">{payout.accepted_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editPayoutForm.rejected_hours}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, rejected_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="font-semibold text-rose-400">{payout.rejected_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editPayoutForm.in_review_hours}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, in_review_hours: parseFloat(e.target.value) || 0 }))}
+                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="text-amber-500">{payout.in_review_hours} hr</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={editPayoutForm.amount_paid}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))}
+                                      className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
+                                    />
+                                  ) : (
+                                    <span className="font-bold text-amber-400">{payout.amount_paid || 0} USDT</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 font-mono text-[10px] text-gray-300">
+                                  {isEditingPayout ? (
+                                    <input
+                                      type="text"
+                                      value={editPayoutForm.wallet_address}
+                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, wallet_address: e.target.value }))}
+                                      className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white"
+                                    />
+                                  ) : (
+                                    payout.wallet_address || '—'
+                                  )}
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex justify-center items-center gap-1.5">
+                                    {isEditingPayout ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleSavePayoutEdit(payout.id)}
+                                          disabled={actionLoading}
+                                          className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded transition-all"
+                                          title="حفظ"
+                                        >
+                                          <Check className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingPayoutId(null)}
+                                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-all"
+                                          title="إلغاء"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => startEditingPayout(payout)}
+                                          className="p-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/20 rounded transition-all"
+                                          title="تعديل"
+                                        >
+                                          <Edit2 className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeletePayout(payout.id)}
+                                          disabled={actionLoading}
+                                          className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded transition-all"
+                                          title="حذف السجل نهائياً"
+                                        >
+                                          <Trash2 className="w-2.5 h-2.5" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
