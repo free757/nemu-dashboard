@@ -596,10 +596,10 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       </AnimatePresence>
 
       {/* Main Grid: Left side Workers, Right side Accounts and Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
         
         {/* WORKERS LIST PANEL */}
-        <div className={`p-5 rounded-3xl border flex flex-col justify-between ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-4 h-4 text-blue-500" />
@@ -766,7 +766,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
               workers.map((worker, index) => (
                 <div
                   key={worker.id}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition-all text-xs ${
+                  className={`w-full flex items-center justify-between p-2 rounded-xl border transition-all text-xs ${
                     selectedWorkerId === worker.id
                       ? 'bg-blue-600/10 border-blue-500/20 text-blue-500'
                       : isDark 
@@ -882,7 +882,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
         </div>
 
         {/* WORKER ACCOUNTS & DETAILS PANEL */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           
           {selectedWorkerId ? (
             <>
