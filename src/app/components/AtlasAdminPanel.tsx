@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Wallet, Clock, CheckCircle2, XCircle, 
   Plus, Edit2, Trash2, Check, X, RefreshCw, 
@@ -563,17 +564,36 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Feedback Banner */}
-      {feedback && (
-        <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center gap-2 max-w-xl mx-auto shadow-md ${
-          feedback.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-        }`}>
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{feedback.text}</span>
-        </div>
-      )}
+      {/* Feedback / Floating Toast Message */}
+      <AnimatePresence>
+        {feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl backdrop-blur-md max-w-sm ${
+              feedback.type === 'success'
+                ? 'bg-emerald-950/80 border-emerald-500/30 text-emerald-300 shadow-emerald-950/20'
+                : 'bg-rose-950/80 border-rose-500/30 text-rose-350 shadow-rose-950/20'
+            }`}
+          >
+            <div className={`p-1.5 rounded-lg ${
+              feedback.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-450'
+            }`}>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            </div>
+            <div className="flex-1 text-xs font-semibold pr-2 text-right dir-rtl">
+              {feedback.text}
+            </div>
+            <button 
+              onClick={() => setFeedback(null)}
+              className="text-slate-400 hover:text-white p-1 transition-colors rounded-md hover:bg-white/5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Grid: Left side Workers, Right side Accounts and Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
