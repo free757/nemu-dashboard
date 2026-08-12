@@ -8,7 +8,7 @@ import {
   Lock, Sparkles, AlertCircle, ArrowLeft, User, Wallet, 
   Clock, LogOut, CheckCircle2, XCircle, Calendar, 
   History, RefreshCw, Edit2, Check, X, Coins, LayoutGrid, List,
-  ArrowRightLeft
+  ArrowRightLeft, Plus
 } from 'lucide-react';
 
 const PIN_LENGTH = 4;
@@ -62,6 +62,17 @@ export default function AtlasAccountsUnifiedPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  
+  // Add Account States
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
+  const [newAccountForm, setNewAccountForm] = useState({
+    account_name: '',
+    wallet_address: '',
+    accepted_hours: 0,
+    rejected_hours: 0,
+    in_review_hours: 0,
+    amount_paid: 0
+  });
   
   // Edit Account Form States
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
@@ -244,6 +255,44 @@ export default function AtlasAccountsUnifiedPage() {
     } catch (err) {
       console.error(err);
       showFeedback('error', 'فشل في حفظ البيانات. حاول مجدداً.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!worker || !newAccountForm.account_name.trim()) return;
+    setUpdatingId('add-account');
+    try {
+      const { error } = await supabase
+        .from('atlas_accounts')
+        .insert([{
+          worker_id: worker.id,
+          account_name: newAccountForm.account_name.trim(),
+          accepted_hours: Number(newAccountForm.accepted_hours),
+          rejected_hours: Number(newAccountForm.rejected_hours),
+          in_review_hours: Number(newAccountForm.in_review_hours),
+          wallet_address: newAccountForm.wallet_address.trim(),
+          amount_paid: Number(newAccountForm.amount_paid)
+        }]);
+
+      if (error) throw error;
+
+      showFeedback('success', 'تمت إضافة الحساب بنجاح.');
+      setIsAddAccountOpen(false);
+      setNewAccountForm({
+        account_name: '',
+        wallet_address: '',
+        accepted_hours: 0,
+        rejected_hours: 0,
+        in_review_hours: 0,
+        amount_paid: 0
+      });
+      await loadDashboardData(worker.id);
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', 'فشل في إضافة الحساب. حاول مجدداً.');
     } finally {
       setUpdatingId(null);
     }
@@ -548,38 +597,48 @@ export default function AtlasAccountsUnifiedPage() {
 
         {/* SECTION: ACCOUNTS GRID */}
         <section className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
               <Wallet className="w-4 h-4 text-indigo-400" />
               حسابات العمل الحالية (Accounts)
             </h3>
             
-            {accounts.length > 0 && (
-              <div className="flex items-center bg-slate-900 border border-slate-800/80 rounded-lg p-0.5 shrink-0">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded transition-all ${
-                    viewMode === 'list' 
-                      ? 'bg-indigo-600 text-white shadow-md' 
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="عرض خطي / جدولي"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded transition-all ${
-                    viewMode === 'grid' 
-                      ? 'bg-indigo-600 text-white shadow-md' 
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="عرض شبكي / بطاقات"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <button
+                onClick={() => setIsAddAccountOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/20"
+              >
+                <Plus className="w-3.5 h-3.5 animate-pulse" />
+                <span>ربط حساب جديد</span>
+              </button>
+
+              {accounts.length > 0 && (
+                <div className="flex items-center bg-slate-900 border border-slate-800/80 rounded-lg p-0.5 shrink-0">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded transition-all ${
+                      viewMode === 'list' 
+                        ? 'bg-indigo-600 text-white shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="عرض خطي / جدولي"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded transition-all ${
+                      viewMode === 'grid' 
+                        ? 'bg-indigo-600 text-white shadow-md' 
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="عرض شبكي / بطاقات"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {accounts.length === 0 ? (
@@ -990,6 +1049,110 @@ export default function AtlasAccountsUnifiedPage() {
         </section>
 
       </main>
+
+      {/* Add Account Modal overlay */}
+      {isAddAccountOpen && (
+        <div className="bg-black/70 backdrop-blur-sm fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 text-slate-100 p-6 rounded-2xl shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-indigo-400" />
+                ربط حساب عمل جديد
+              </h4>
+              <button onClick={() => setIsAddAccountOpen(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAccount} className="space-y-4 text-xs font-medium">
+              <div>
+                <label className="block mb-1.5 text-slate-400">اسم الحساب</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: حساب Outlier A"
+                  value={newAccountForm.account_name}
+                  onChange={(e) => setNewAccountForm(p => ({ ...p, account_name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-indigo-500/80"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block mb-1.5 text-slate-400">ساعات مقبولة</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newAccountForm.accepted_hours}
+                    onChange={(e) => setNewAccountForm(p => ({ ...p, accepted_hours: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1.5 text-slate-400">مرفوضة</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newAccountForm.rejected_hours}
+                    onChange={(e) => setNewAccountForm(p => ({ ...p, rejected_hours: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none text-center"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1.5 text-slate-400">مراجعة</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={newAccountForm.in_review_hours}
+                    onChange={(e) => setNewAccountForm(p => ({ ...p, in_review_hours: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none text-center"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1.5 text-slate-400">المبلغ المدفوع من الحساب (USDT)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={newAccountForm.amount_paid}
+                  onChange={(e) => setNewAccountForm(p => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1.5 text-slate-400">عنوان المحفظة الخاص بالحساب</label>
+                <input
+                  type="text"
+                  placeholder="أدخل عنوان USDT"
+                  value={newAccountForm.wallet_address}
+                  onChange={(e) => setNewAccountForm(p => ({ ...p, wallet_address: e.target.value }))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddAccountOpen(false)}
+                  className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-slate-350 rounded-lg"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingId === 'add-account'}
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold flex items-center gap-1.5"
+                >
+                  {updatingId === 'add-account' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                  <span>حفظ الحساب</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-900/60 bg-slate-950 py-6 text-center text-[10px] text-slate-500 flex flex-col items-center justify-center gap-1.5">
