@@ -763,7 +763,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
             {workers.length === 0 ? (
               <p className="text-xs text-gray-500 italic p-2 text-center">{lang === 'ar' ? 'لا يوجد موظفون مضافون' : 'No employees found'}</p>
             ) : (
-              workers.map((worker) => (
+              workers.map((worker, index) => (
                 <div
                   key={worker.id}
                   className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition-all text-xs ${
@@ -785,7 +785,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     <span className="block text-[9px] text-gray-500 font-mono mt-0.5">PIN: {worker.pin}</span>
                   </button>
 
-                  <div className="relative shrink-0">
+                  {/* Elevate z-index of active wrapper container to render on top of other sibling items */}
+                  <div className={`relative shrink-0 ${activeDropdownWorkerId === worker.id ? 'z-30' : 'z-10'}`}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -810,7 +811,12 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             setActiveDropdownWorkerId(null);
                           }}
                         />
-                        <div className={`absolute right-0 mt-1 w-36 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                        {/* Smart position: open upwards if near the bottom of list to prevent overflow-y-auto clipping */}
+                        <div className={`absolute right-0 w-36 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                          index >= workers.length - 2 && workers.length > 2
+                            ? 'bottom-full mb-1' 
+                            : 'top-full mt-1'
+                        } ${
                           isDark ? 'bg-[#0f0f0f] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-800'
                         }`}>
                           <button
