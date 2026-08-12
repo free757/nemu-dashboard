@@ -22,6 +22,7 @@ interface AccountsSummaryProps {
   totalPaid: number;
   totalExpectedEarnings: number;
   totalOutstanding: number;
+  grandTotalReceived?: number;
 }
 
 export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
@@ -32,6 +33,7 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
   totalPaid,
   totalExpectedEarnings,
   totalOutstanding,
+  grandTotalReceived,
 }) => {
   return (
     <div className="space-y-6">
@@ -92,6 +94,9 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
             <div>
               <span className="block text-[10px] text-slate-500 font-semibold">المبالغ المستلمة</span>
               <span className="text-base font-bold text-amber-400">{totalPaid} USDT</span>
+              {grandTotalReceived !== undefined && (
+                <span className="block text-[8px] text-slate-500 mt-0.5">الكل: {grandTotalReceived.toFixed(2)} USDT</span>
+              )}
             </div>
           </div>
 

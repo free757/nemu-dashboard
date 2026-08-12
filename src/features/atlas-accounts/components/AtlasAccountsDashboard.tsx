@@ -562,6 +562,7 @@ export default function AtlasAccountsDashboard() {
           totalPaid={totalPaid}
           totalExpectedEarnings={totalExpectedEarnings}
           totalOutstanding={totalOutstanding}
+          grandTotalReceived={totalPaid + payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)}
         />
 
         {/* 2. Active accounts listing section */}
@@ -632,6 +633,7 @@ export default function AtlasAccountsDashboard() {
               onCancel={() => setEditingAccountId(null)}
               onReset={handleResetPayout}
               onStartEdit={startEditAccount}
+              payouts={payouts}
             />
           ) : (
             <AccountCard
@@ -649,6 +651,7 @@ export default function AtlasAccountsDashboard() {
               onCancel={() => setEditingAccountId(null)}
               onReset={handleResetPayout}
               onStartEdit={startEditAccount}
+              payouts={payouts}
             />
           )}
         </section>

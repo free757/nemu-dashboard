@@ -950,6 +950,27 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                       ? 'إدارة حسابات هذا الموظف، تعديل الساعات، وتصفير الأرصدة المستحقة.' 
                       : 'Manage accounts, edit active hours, and log payout resets for this employee.'}
                   </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                      isDark ? 'bg-white/5 border-white/5 text-gray-300' : 'bg-gray-50 border-gray-150 text-gray-700'
+                    }`}>
+                      {lang === 'ar' ? 'ساعات مقبولة: ' : 'Accepted Hours: '}
+                      <span className="text-emerald-400 font-mono">
+                        {accounts.reduce((sum, acc) => sum + Number(acc.accepted_hours || 0), 0).toFixed(1)}h
+                      </span>
+                    </div>
+                    <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                      isDark ? 'bg-amber-500/5 border-amber-500/10 text-amber-300' : 'bg-amber-50/50 border-amber-200 text-amber-700'
+                    }`}>
+                      {lang === 'ar' ? 'المستلم الكلي: ' : 'Grand Total Payouts: '}
+                      <span className="text-amber-400 font-mono">
+                        {(
+                          accounts.reduce((sum, acc) => sum + Number(acc.amount_paid || 0), 0) +
+                          payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                        ).toFixed(2)} USDT
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 
                 <button
@@ -1216,7 +1237,16 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                                       className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-0.5 text-xs outline-none"
                                     />
                                   ) : (
-                                    <span>{account.amount_paid || 0} USDT</span>
+                                    <div className="flex flex-col items-center">
+                                      <span>{account.amount_paid || 0} USDT</span>
+                                      <span className="text-[9px] text-gray-500 font-normal mt-0.5 leading-none">
+                                        {lang === 'ar' ? 'الكل: ' : 'Total: '}
+                                        {(
+                                          (account.amount_paid || 0) + 
+                                          payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                                        ).toFixed(2)} USDT
+                                      </span>
+                                    </div>
                                   )}
                                 </td>
                                 <td className="px-5 py-3.5 font-mono text-[11px] text-gray-300">
@@ -1444,9 +1474,18 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                                   isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                                 }`}
                               />
-                            ) : (
-                              <span className="font-bold text-amber-500 text-sm">{account.amount_paid || 0} USDT</span>
-                            )}
+                             ) : (
+                               <div className="text-left">
+                                 <span className="font-bold text-amber-500 text-sm block">{account.amount_paid || 0} USDT</span>
+                                 <span className="text-[9px] text-gray-500 font-semibold block mt-0.5">
+                                   {lang === 'ar' ? 'إجمالي المستلم: ' : 'Total: '}
+                                   {(
+                                     (account.amount_paid || 0) + 
+                                     payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                                   ).toFixed(2)} USDT
+                                 </span>
+                               </div>
+                             )}
                           </div>
 
                           {/* Wallet address section */}
@@ -1644,6 +1683,25 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             );
                           })}
                         </tbody>
+                        <tfoot>
+                          <tr className={`border-t ${isDark ? 'bg-black/50 border-white/5 text-white' : 'bg-gray-50 border-gray-150 text-gray-800'} font-bold`}>
+                            <td className="px-5 py-3">{lang === 'ar' ? 'الإجمالي الكلي' : 'Total'}</td>
+                            <td className="px-5 py-3"></td>
+                            <td className="px-5 py-3 text-center text-emerald-400">
+                              {payouts.reduce((sum, p) => sum + Number(p.accepted_hours || 0), 0).toFixed(1)} hr
+                            </td>
+                            <td className="px-5 py-3 text-center text-rose-400">
+                              {payouts.reduce((sum, p) => sum + Number(p.rejected_hours || 0), 0).toFixed(1)} hr
+                            </td>
+                            <td className="px-5 py-3 text-center text-amber-500">
+                              {payouts.reduce((sum, p) => sum + Number(p.in_review_hours || 0), 0).toFixed(1)} hr
+                            </td>
+                            <td className="px-5 py-3 text-center text-amber-400 font-bold">
+                              {payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0).toFixed(2)} USDT
+                            </td>
+                            <td className="px-5 py-3" colSpan={2}></td>
+                          </tr>
+                        </tfoot>
                       </table>
                     </div>
                   </div>

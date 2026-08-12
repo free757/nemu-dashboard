@@ -31,6 +31,7 @@ interface AccountsListProps {
   onCancel: () => void;
   onReset: (acc: Account) => void;
   onStartEdit: (acc: Account) => void;
+  payouts?: any[];
 }
 
 export const AccountsList: React.FC<AccountsListProps> = ({
@@ -48,6 +49,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
   onCancel,
   onReset,
   onStartEdit,
+  payouts,
 }) => {
   return (
     <div className="bg-slate-900/30 border border-slate-900/80 rounded-2xl overflow-hidden shadow-xl">
@@ -159,7 +161,12 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-1 text-xs outline-none focus:border-indigo-500"
                       />
                     ) : (
-                      <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
+                      <div className="flex flex-col items-center">
+                        <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
+                        <span className="text-[8.5px] text-slate-500 font-normal mt-0.5 leading-none">
+                          الكل: {((account.amount_paid || 0) + (payouts?.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) || 0)).toFixed(2)} USDT
+                        </span>
+                      </div>
                     )}
                   </td>
                   <td

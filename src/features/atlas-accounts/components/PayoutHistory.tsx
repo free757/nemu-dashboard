@@ -75,6 +75,18 @@ export const PayoutHistory: React.FC<PayoutHistoryProps> = ({ payouts, accounts 
               );
             })}
           </tbody>
+          {payouts.length > 0 && (
+            <tfoot>
+              <tr className="bg-slate-950 border-t border-slate-800 text-white font-bold text-[11px] leading-relaxed">
+                <td className="px-5 py-3">الإجمالي الكلي (Total)</td>
+                <td className="px-5 py-3"></td>
+                <td className="px-5 py-3 text-center text-emerald-400">
+                  +{payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0).toFixed(2)} USDT
+                </td>
+                <td className="px-5 py-3" colSpan={3}></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
