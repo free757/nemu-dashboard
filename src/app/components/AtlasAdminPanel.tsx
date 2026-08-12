@@ -810,7 +810,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                             setActiveDropdownWorkerId(null);
                           }}
                         />
-                        <div className={`absolute left-0 mt-1 w-32 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                        <div className={`absolute right-0 mt-1 w-36 rounded-xl border shadow-xl z-20 overflow-hidden ${
                           isDark ? 'bg-[#0f0f0f] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-800'
                         }`}>
                           <button
