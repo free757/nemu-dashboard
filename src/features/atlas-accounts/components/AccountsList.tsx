@@ -163,9 +163,11 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                     ) : (
                       <div className="flex flex-col items-center">
                         <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
-                        <span className="text-[8.5px] text-slate-500 font-normal mt-0.5 leading-none">
-                          الكل: {((account.amount_paid || 0) + (payouts?.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) || 0)).toFixed(2)} USDT
-                        </span>
+                        {payouts && payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) > 0 && (
+                          <span className="text-[8.5px] text-slate-500 font-normal mt-0.5 leading-none">
+                            الكل: {((account.amount_paid || 0) + payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)).toFixed(2)} USDT
+                          </span>
+                        )}
                       </div>
                     )}
                   </td>

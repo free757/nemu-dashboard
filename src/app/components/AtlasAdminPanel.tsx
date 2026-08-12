@@ -1239,13 +1239,15 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                                   ) : (
                                     <div className="flex flex-col items-center">
                                       <span>{account.amount_paid || 0} USDT</span>
-                                      <span className="text-[9px] text-gray-500 font-normal mt-0.5 leading-none">
-                                        {lang === 'ar' ? 'الكل: ' : 'Total: '}
-                                        {(
-                                          (account.amount_paid || 0) + 
-                                          payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
-                                        ).toFixed(2)} USDT
-                                      </span>
+                                      {payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) > 0 && (
+                                        <span className="text-[9px] text-gray-500 font-normal mt-0.5 leading-none">
+                                          {lang === 'ar' ? 'الكل: ' : 'Total: '}
+                                          {(
+                                            (account.amount_paid || 0) + 
+                                            payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                                          ).toFixed(2)} USDT
+                                        </span>
+                                      )}
                                     </div>
                                   )}
                                 </td>
@@ -1477,13 +1479,15 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                              ) : (
                                <div className="text-left">
                                  <span className="font-bold text-amber-500 text-sm block">{account.amount_paid || 0} USDT</span>
-                                 <span className="text-[9px] text-gray-500 font-semibold block mt-0.5">
-                                   {lang === 'ar' ? 'إجمالي المستلم: ' : 'Total: '}
-                                   {(
-                                     (account.amount_paid || 0) + 
-                                     payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
-                                   ).toFixed(2)} USDT
-                                 </span>
+                                 {payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) > 0 && (
+                                   <span className="text-[9px] text-gray-500 font-semibold block mt-0.5">
+                                     {lang === 'ar' ? 'إجمالي المستلم: ' : 'Total: '}
+                                     {(
+                                       (account.amount_paid || 0) + 
+                                       payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                                     ).toFixed(2)} USDT
+                                   </span>
+                                 )}
                                </div>
                              )}
                           </div>

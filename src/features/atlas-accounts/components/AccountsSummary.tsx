@@ -94,7 +94,7 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
             <div>
               <span className="block text-[10px] text-slate-500 font-semibold">المبالغ المستلمة</span>
               <span className="text-base font-bold text-amber-400">{totalPaid} USDT</span>
-              {grandTotalReceived !== undefined && (
+              {grandTotalReceived !== undefined && grandTotalReceived > totalPaid && (
                 <span className="block text-[8px] text-slate-500 mt-0.5">الكل: {grandTotalReceived.toFixed(2)} USDT</span>
               )}
             </div>
