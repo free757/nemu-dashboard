@@ -15,6 +15,13 @@ interface Worker {
   username: string;
   pin: string;
   is_blocked: boolean;
+  atlas_accounts?: Array<{
+    id: string;
+    accepted_hours: number;
+    rejected_hours: number;
+    in_review_hours: number;
+    amount_paid: number;
+  }>;
 }
 
 interface Account {
@@ -109,17 +116,29 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     setTimeout(() => setFeedback(null), 4000);
   };
 
-  // Fetch all workers from atlas_workers
-  const fetchWorkers = useCallback(async (selectFirst = false) => {
-    setLoading(true);
+  // Fetch all workers from atlas_workers (with accounts to compute stats)
+  const fetchWorkers = useCallback(async (selectFirst = false, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('atlas_workers')
-        .select('id, username, pin, is_blocked')
+        .select(`
+          id, 
+          username, 
+          pin, 
+          is_blocked,
+          atlas_accounts(
+            id,
+            accepted_hours,
+            rejected_hours,
+            in_review_hours,
+            amount_paid
+          )
+        `)
         .order('username', { ascending: true });
 
       if (error) throw error;
-      setWorkers(data || []);
+      setWorkers(data as any || []);
       
       if (selectFirst && data && data.length > 0) {
         setSelectedWorkerId(data[0].id);
@@ -132,7 +151,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'فشل تحميل قائمة الموظفين' : 'Failed to load workers list');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [lang, selectedWorkerId]);
 
@@ -282,6 +301,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       
       if (selectedWorkerId) {
         fetchWorkerDetails(selectedWorkerId);
+        fetchWorkers(false, true);
       }
     } catch (err) {
       console.error(err);
@@ -315,6 +335,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       
       if (selectedWorkerId) {
         fetchWorkerDetails(selectedWorkerId);
+        fetchWorkers(false, true);
       }
     } catch (err) {
       console.error(err);
@@ -428,6 +449,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
         amount_paid: 0
       });
       fetchWorkerDetails(selectedWorkerId);
+      fetchWorkers(false, true);
     } catch (err) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'حدث خطأ أثناء إضافة الحساب' : 'Error adding account');
@@ -470,7 +492,10 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
       showFeedback('success', lang === 'ar' ? 'تم تحديث الحساب بنجاح' : 'Account updated successfully');
       setEditingAccountId(null);
-      if (selectedWorkerId) fetchWorkerDetails(selectedWorkerId);
+      if (selectedWorkerId) {
+        fetchWorkerDetails(selectedWorkerId);
+        fetchWorkers(false, true);
+      }
     } catch (err) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'فشل حفظ تعديلات الحساب' : 'Failed to update account');
@@ -496,7 +521,10 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       if (error) throw error;
 
       showFeedback('success', lang === 'ar' ? 'تم حذف الحساب بنجاح' : 'Account deleted successfully');
-      if (selectedWorkerId) fetchWorkerDetails(selectedWorkerId);
+      if (selectedWorkerId) {
+        fetchWorkerDetails(selectedWorkerId);
+        fetchWorkers(false, true);
+      }
     } catch (err) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'فشل في حذف الحساب' : 'Failed to delete account');
@@ -544,7 +572,10 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
       if (resetErr) throw resetErr;
 
       showFeedback('success', lang === 'ar' ? 'تم تصفير الحساب بنجاح وتسجيل الدفعة' : 'Account reset successfully and payout logged');
-      if (selectedWorkerId) fetchWorkerDetails(selectedWorkerId);
+      if (selectedWorkerId) {
+        fetchWorkerDetails(selectedWorkerId);
+        fetchWorkers(false, true);
+      }
     } catch (err) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'فشل تصفير الحساب' : 'Failed to reset account');
@@ -782,7 +813,27 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                       <span className={`w-1.5 h-1.5 rounded-full ${worker.is_blocked ? 'bg-red-500' : 'bg-green-500'}`} />
                       <span className={worker.is_blocked ? 'line-through opacity-50' : ''}>{worker.username}</span>
                     </div>
-                    <span className="block text-[9px] text-gray-500 font-mono mt-0.5">PIN: {worker.pin}</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[8.5px] text-gray-500 mt-0.5 font-sans leading-none">
+                      <span className="font-mono">PIN: {worker.pin}</span>
+                      <span>•</span>
+                      <span>
+                        {lang === 'ar' 
+                          ? `${worker.atlas_accounts?.length || 0} ${
+                              (worker.atlas_accounts?.length || 0) === 1 ? 'حساب' : (worker.atlas_accounts?.length || 0) === 2 ? 'حسابين' : 'حسابات'
+                            }` 
+                          : `${worker.atlas_accounts?.length || 0} ${
+                              (worker.atlas_accounts?.length || 0) === 1 ? 'acc' : 'accs'
+                            }`}
+                      </span>
+                      {(worker.atlas_accounts?.length || 0) > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-gray-400 font-medium">
+                            {worker.atlas_accounts?.reduce((sum, acc) => sum + Number(acc.accepted_hours || 0), 0)}h
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </button>
 
                   {/* Elevate z-index of active wrapper container to render on top of other sibling items */}
