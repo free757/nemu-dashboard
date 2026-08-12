@@ -1,5 +1,5 @@
-import HomePage from "../../../AI Tools Suite/atlas-helper/src/app/page";
+import AtlasHelperDashboard from "@/features/atlas-helper/components/AtlasHelperDashboard";
 
 export default function AtlasHelperPage() {
-  return <HomePage />;
+  return <AtlasHelperDashboard />;
 }
