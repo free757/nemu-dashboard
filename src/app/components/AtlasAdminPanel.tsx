@@ -6,7 +6,7 @@ import {
   Users, Wallet, Clock, CheckCircle2, XCircle, 
   Plus, Edit2, Trash2, Check, X, RefreshCw, 
   AlertCircle, History, ArrowRightLeft, UserPlus,
-  Ban, ShieldCheck, LayoutGrid, List 
+  Ban, ShieldCheck, LayoutGrid, List, MoreVertical
 } from 'lucide-react';
 
 interface Worker {
@@ -54,6 +54,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [activeDropdownWorkerId, setActiveDropdownWorkerId] = useState<string | null>(null);
 
   // Historical Payout Edit States
   const [editingPayoutId, setEditingPayoutId] = useState<string | null>(null);
@@ -754,32 +755,89 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     <span className="block text-[9px] text-gray-500 font-mono mt-0.5">PIN: {worker.pin}</span>
                   </button>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="relative shrink-0">
                     <button
-                      onClick={() => startEditingWorker(worker)}
-                      className="p-1 text-blue-500 hover:bg-blue-500/10 rounded transition-colors"
-                      title={lang === 'ar' ? 'تعديل بيانات الموظف' : 'Edit Employee'}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleToggleBlockWorker(worker)}
-                      className={`p-1 rounded transition-colors ${
-                        worker.is_blocked 
-                          ? 'text-green-500 hover:bg-green-500/10' 
-                          : 'text-amber-500 hover:bg-amber-500/10'
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdownWorkerId(activeDropdownWorkerId === worker.id ? null : worker.id);
+                      }}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        selectedWorkerId === worker.id
+                          ? 'text-blue-500 hover:bg-blue-500/10'
+                          : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                       }`}
-                      title={worker.is_blocked ? (lang === 'ar' ? 'تفعيل' : 'Unblock') : (lang === 'ar' ? 'تعطيل' : 'Block')}
+                      title={lang === 'ar' ? 'خيارات الموظف' : 'Employee Options'}
                     >
-                      {worker.is_blocked ? <ShieldCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                      <MoreVertical className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDeleteWorker(worker)}
-                      className="p-1 text-rose-500 hover:bg-rose-500/10 rounded transition-colors"
-                      title={lang === 'ar' ? 'حذف الموظف' : 'Delete Employee'}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+
+                    {activeDropdownWorkerId === worker.id && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownWorkerId(null);
+                          }}
+                        />
+                        <div className={`absolute left-0 mt-1 w-32 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                          isDark ? 'bg-[#0f0f0f] border-white/10 text-white' : 'bg-white border-gray-200 text-gray-800'
+                        }`}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownWorkerId(null);
+                              startEditingWorker(worker);
+                            }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] text-right font-bold transition-colors ${
+                              isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            <Edit2 className="w-3 h-3 text-blue-500" />
+                            <span>{lang === 'ar' ? 'تعديل البيانات' : 'Edit Details'}</span>
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownWorkerId(null);
+                              handleToggleBlockWorker(worker);
+                            }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] text-right font-bold transition-colors border-t border-b ${
+                              isDark 
+                                ? 'hover:bg-white/5 text-gray-300 border-white/5' 
+                                : 'hover:bg-gray-50 text-gray-700 border-gray-100'
+                            }`}
+                          >
+                            {worker.is_blocked ? (
+                              <>
+                                <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+                                <span>{lang === 'ar' ? 'تفعيل الحساب' : 'Unblock Account'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="w-3.5 h-3.5 text-amber-500" />
+                                <span>{lang === 'ar' ? 'تعطيل الحساب' : 'Block Account'}</span>
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownWorkerId(null);
+                              handleDeleteWorker(worker);
+                            }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-[10px] text-right font-bold text-rose-500 transition-colors ${
+                              isDark ? 'hover:bg-white/5' : 'hover:bg-rose-50'
+                            }`}
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-500" />
+                            <span>{lang === 'ar' ? 'حذف الموظف' : 'Delete Worker'}</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ))
