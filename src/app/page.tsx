@@ -7,7 +7,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import AtlasAdminPanel from './components/AtlasAdminPanel';
+import AtlasAdminPanel from '@/features/atlas-accounts/components/AtlasAdminPanel';
 import { sanitizeTranscript } from '@/lib/speechManager';
 import { RealtimePipeline } from '@/lib/realtimePipeline';
 import { resetThrottler, throttleAIRequest, startNewSession, getCurrentSessionId } from '@/lib/pipelineDebounce';
