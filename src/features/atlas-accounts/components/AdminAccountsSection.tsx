@@ -34,7 +34,6 @@ interface AdminAccountsSectionProps {
   isDark: boolean;
   accounts: Account[];
   payouts: Payout[];
-  hourlyRate: number;
   actionLoading: boolean;
   onUpdateAccount: (accountId: string, fields: any) => Promise<void>;
   onDeleteAccount: (accountId: string) => Promise<void>;
@@ -46,7 +45,6 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
   isDark,
   accounts,
   payouts,
-  hourlyRate,
   actionLoading,
   onUpdateAccount,
   onDeleteAccount,
@@ -371,11 +369,9 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
               (account.accepted_hours + account.rejected_hours + account.in_review_hours).toFixed(2)
             );
             const isEditing = editingAccountId === account.id;
-            const expectedEarnings = account.accepted_hours * hourlyRate;
             const resetsSum = payouts
               .filter((p) => p.account_id === account.id)
               .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
-            const remainingBalance = expectedEarnings + (account.amount_paid || 0) + resetsSum;
 
             return (
               <div
@@ -535,14 +531,6 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                   </div>
 
                   <div className="bg-slate-950/40 border border-white/5 rounded-2xl p-3.5 mb-4 space-y-2 text-xs">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span className="text-gray-400 flex items-center gap-1">
-                        <Coins className="w-3.5 h-3.5 text-indigo-400" />
-                        {lang === "ar" ? "أرباح الساعات الحالية:" : "Active Hours Value:"}
-                      </span>
-                      <span className="font-bold text-indigo-400">{expectedEarnings.toFixed(2)} USDT</span>
-                    </div>
-
                     <div className="flex justify-between items-center font-semibold">
                       <span className="text-gray-400 flex items-center gap-1">
                         <Coins className="w-3.5 h-3.5 text-amber-500" />

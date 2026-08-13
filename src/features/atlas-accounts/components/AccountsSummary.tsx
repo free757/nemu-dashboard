@@ -16,8 +16,6 @@ interface Account {
 
 interface AccountsSummaryProps {
   accounts: Account[];
-  hourlyRate: number;
-  updateHourlyRate: (rate: number) => void;
   totalAccepted: number;
   totalPaid: number;
   totalExpectedEarnings: number;
@@ -26,8 +24,6 @@ interface AccountsSummaryProps {
 
 export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
   accounts,
-  hourlyRate,
-  updateHourlyRate,
   totalAccepted,
   totalPaid,
   totalExpectedEarnings,
@@ -46,20 +42,6 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-xs bg-slate-950/60 border border-slate-900 rounded-xl px-4 py-3 w-full md:w-auto justify-between md:justify-end">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-405 font-semibold">سعر الساعة المقبولة:</span>
-            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded px-2 py-0.5">
-              <input
-                type="number"
-                step="any"
-                value={hourlyRate}
-                onChange={(e) => updateHourlyRate(parseFloat(e.target.value) || 0)}
-                className="w-12 bg-transparent text-center font-bold text-indigo-400 outline-none"
-              />
-              <span className="text-[9px] text-slate-500 font-semibold">USDT/hr</span>
-            </div>
-          </div>
-          <div className="w-px h-8 bg-slate-800 hidden sm:block" />
           <div className="text-right">
             <span className="block text-[10px] text-slate-500 font-semibold">الحسابات المفعلة</span>
             <span className="text-sm font-bold text-white">{accounts.length}</span>

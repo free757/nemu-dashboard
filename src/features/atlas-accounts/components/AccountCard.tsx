@@ -28,7 +28,6 @@ interface Account {
 
 interface AccountCardProps {
   accounts: Account[];
-  hourlyRate: number;
   editingAccountId: string | null;
   updatingId: string | null;
   editHours: { accepted: number; rejected: number; in_review: number };
@@ -48,7 +47,6 @@ interface AccountCardProps {
 
 export const AccountCard: React.FC<AccountCardProps> = ({
   accounts,
-  hourlyRate,
   editingAccountId,
   updatingId,
   editHours,
@@ -75,8 +73,11 @@ export const AccountCard: React.FC<AccountCardProps> = ({
         );
         const isEditing = editingAccountId === account.id;
         const isUpdating = updatingId === account.id;
-        const expectedEarnings = account.accepted_hours * hourlyRate;
-        const remainingBalance = expectedEarnings - (account.amount_paid || 0);
+        const resetsSum = payouts
+          ? payouts
+              .filter((p) => p.account_id === account.id)
+              .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+          : 0;
 
         return (
           <motion.div
@@ -188,18 +189,8 @@ export const AccountCard: React.FC<AccountCardProps> = ({
             <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-3.5 mb-4 space-y-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 font-semibold flex items-center gap-1">
-                  <Coins className="w-3.5 h-3.5 text-indigo-400" />
-                  الأرباح المستحقة:
-                </span>
-                <span className="font-bold text-indigo-400 text-sm">
-                  {expectedEarnings.toFixed(2)} USDT
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-semibold flex items-center gap-1">
                   <Coins className="w-3.5 h-3.5 text-amber-500" />
-                  المبالغ المستلمة:
+                  المستلم المباشر من الحساب:
                 </span>
                 {isEditing ? (
                   <input
@@ -210,30 +201,31 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
                   />
                 ) : (
-                  <div className="flex flex-col items-end">
-                    <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
-                    {payouts && payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) > 0 && (
-                      <span className="text-[8.5px] text-slate-500 font-semibold mt-0.5 leading-none">
-                        الكل: {((account.amount_paid || 0) + payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)).toFixed(2)} USDT
-                      </span>
-                    )}
-                  </div>
+                  <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
                 )}
               </div>
+
+              {resetsSum > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-semibold flex items-center gap-1">
+                    <Coins className="w-3.5 h-3.5 text-indigo-400" />
+                    دفعات تصفير سابقة:
+                  </span>
+                  <span className="font-bold text-indigo-400 text-sm">
+                    {resetsSum.toFixed(2)} USDT
+                  </span>
+                </div>
+              )}
 
               <div className="h-px bg-slate-900 my-1" />
 
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 font-semibold flex items-center gap-1">
                   <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-450" />
-                  المستحقات المتبقية:
+                  إجمالي المستلم الكلي:
                 </span>
-                <span
-                  className={`font-bold text-sm ${
-                    remainingBalance > 0 ? "text-emerald-450 font-extrabold" : "text-slate-500"
-                  }`}
-                >
-                  {remainingBalance.toFixed(2)} USDT
+                <span className="font-bold text-emerald-400 text-sm">
+                  {((account.amount_paid || 0) + resetsSum).toFixed(2)} USDT
                 </span>
               </div>
             </div>

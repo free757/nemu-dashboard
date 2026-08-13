@@ -58,7 +58,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
-  const [hourlyRate, setHourlyRate] = useState<number>(20);
+
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -329,7 +329,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
     setActionLoading(true);
     try {
-      const totalAmount = account.accepted_hours * hourlyRate;
+      const totalAmount = 0;
 
       // 1. Log payout archive reset
       const { error: resetErr } = await supabase.from("atlas_payouts").insert([
@@ -497,7 +497,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
             (() => {
               const totalAccepted = accounts.reduce((sum, acc) => sum + Number(acc.accepted_hours || 0), 0);
               const totalEarned =
-                totalAccepted * hourlyRate +
+                accounts.reduce((sum, acc) => sum + Number(acc.amount_paid || 0), 0) +
                 payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
               const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
               const remainingBalance = totalEarned - totalPaid;
@@ -567,18 +567,6 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                           {lang === "ar" ? "المتبقي للموظف: " : "Owed: "}
                           <span className="font-mono">{remainingBalance.toFixed(2)} USDT</span>
                         </div>
-
-                        <div className="flex items-center gap-1.5 text-[9px] bg-slate-900 border border-slate-800 rounded px-2 py-0.5 ml-2 font-bold text-gray-400">
-                          <span>{lang === "ar" ? "سعر الساعة:" : "Rate:"}</span>
-                          <input
-                            type="number"
-                            step="any"
-                            value={hourlyRate}
-                            onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
-                            className="w-8 bg-transparent text-center font-bold text-indigo-400 outline-none"
-                          />
-                          <span>USDT</span>
-                        </div>
                       </div>
                     </div>
 
@@ -629,7 +617,6 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     isDark={isDark}
                     accounts={accounts}
                     payouts={payouts}
-                    hourlyRate={hourlyRate}
                     actionLoading={actionLoading}
                     onUpdateAccount={handleUpdateAccount}
                     onDeleteAccount={handleDeleteAccount}

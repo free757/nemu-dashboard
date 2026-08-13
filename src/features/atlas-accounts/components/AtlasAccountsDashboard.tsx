@@ -98,21 +98,7 @@ export default function AtlasAccountsDashboard() {
     text: string;
   } | null>(null);
 
-  // Hourly Rate Configuration (USDT/hour)
-  const [hourlyRate, setHourlyRate] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("atlas_hourly_rate");
-      return saved ? parseFloat(saved) : 20;
-    }
-    return 20;
-  });
 
-  const updateHourlyRate = (rate: number) => {
-    setHourlyRate(rate);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("atlas_hourly_rate", rate.toString());
-    }
-  };
 
   // 1. Clock Setup (Login View)
   useEffect(() => {
@@ -491,7 +477,7 @@ export default function AtlasAccountsDashboard() {
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const totalExpectedEarnings = Number(
     (
-      (totalAccepted * hourlyRate) + 
+      accounts.reduce((sum, acc) => sum + Number(acc.amount_paid || 0), 0) +
       payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
     ).toFixed(2)
   );
@@ -577,8 +563,6 @@ export default function AtlasAccountsDashboard() {
         {/* 1. Accounts Summary panel */}
         <AccountsSummary
           accounts={accounts}
-          hourlyRate={hourlyRate}
-          updateHourlyRate={updateHourlyRate}
           totalAccepted={totalAccepted}
           totalPaid={totalPaid}
           totalExpectedEarnings={totalExpectedEarnings}
@@ -640,7 +624,6 @@ export default function AtlasAccountsDashboard() {
           ) : viewMode === "list" ? (
             <AccountsList
               accounts={accounts}
-              hourlyRate={hourlyRate}
               editingAccountId={editingAccountId}
               updatingId={updatingId}
               editHours={editHours}
@@ -658,7 +641,6 @@ export default function AtlasAccountsDashboard() {
           ) : (
             <AccountCard
               accounts={accounts}
-              hourlyRate={hourlyRate}
               editingAccountId={editingAccountId}
               updatingId={updatingId}
               editHours={editHours}

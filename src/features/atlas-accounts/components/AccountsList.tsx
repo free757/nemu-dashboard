@@ -16,7 +16,6 @@ interface Account {
 
 interface AccountsListProps {
   accounts: Account[];
-  hourlyRate: number;
   editingAccountId: string | null;
   updatingId: string | null;
   editHours: { accepted: number; rejected: number; in_review: number };
@@ -36,7 +35,6 @@ interface AccountsListProps {
 
 export const AccountsList: React.FC<AccountsListProps> = ({
   accounts,
-  hourlyRate,
   editingAccountId,
   updatingId,
   editHours,
@@ -61,10 +59,9 @@ export const AccountsList: React.FC<AccountsListProps> = ({
               <th className="px-5 py-3.5 text-center">المقبولة</th>
               <th className="px-5 py-3.5 text-center">المرفوضة</th>
               <th className="px-5 py-3.5 text-center">المراجعة</th>
-              <th className="px-5 py-3.5 text-center">الإجمالي</th>
-              <th className="px-5 py-3.5 text-center text-indigo-400">المستحقة</th>
-              <th className="px-5 py-3.5 text-center text-amber-400">المستلمة</th>
-              <th className="px-5 py-3.5 text-center text-emerald-450">المتبقية</th>
+               <th className="px-5 py-3.5 text-center">الإجمالي</th>
+              <th className="px-5 py-3.5 text-center text-amber-400">المستلم المباشر</th>
+              <th className="px-5 py-3.5 text-center text-emerald-450">إجمالي المستلم</th>
               <th className="px-5 py-3.5">المحفظة</th>
               <th className="px-5 py-3.5 text-center">إجراءات</th>
             </tr>
@@ -80,8 +77,11 @@ export const AccountsList: React.FC<AccountsListProps> = ({
               );
               const isEditing = editingAccountId === account.id;
               const isUpdating = updatingId === account.id;
-              const expectedEarnings = account.accepted_hours * hourlyRate;
-              const remainingBalance = expectedEarnings - (account.amount_paid || 0);
+              const resetsSum = payouts
+                ? payouts
+                    .filter((p) => p.account_id === account.id)
+                    .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+                : 0;
 
               return (
                 <tr
@@ -148,9 +148,6 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                   <td className="px-5 py-3.5 text-center text-slate-300 font-bold">
                     {totalHours} hr
                   </td>
-                  <td className="px-5 py-3.5 text-center text-indigo-400 font-bold whitespace-nowrap">
-                    {expectedEarnings.toFixed(2)} USDT
-                  </td>
                   <td className="px-5 py-3.5 text-center font-bold text-amber-500 whitespace-nowrap">
                     {isEditing ? (
                       <input
@@ -161,22 +158,11 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-1 text-xs outline-none focus:border-indigo-500"
                       />
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
-                        {payouts && payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0) > 0 && (
-                          <span className="text-[8.5px] text-slate-500 font-normal mt-0.5 leading-none">
-                            الكل: {((account.amount_paid || 0) + payouts.filter(p => p.account_id === account.id).reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)).toFixed(2)} USDT
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
                     )}
                   </td>
-                  <td
-                    className={`px-5 py-3.5 text-center font-bold whitespace-nowrap ${
-                      remainingBalance > 0 ? "text-emerald-450 font-extrabold" : "text-slate-500"
-                    }`}
-                  >
-                    {remainingBalance.toFixed(2)} USDT
+                  <td className="px-5 py-3.5 text-center font-bold text-emerald-450 whitespace-nowrap">
+                    {((account.amount_paid || 0) + resetsSum).toFixed(2)} USDT
                   </td>
                   <td className="px-5 py-3.5 font-mono text-[11px] text-slate-350">
                     {isEditing ? (
