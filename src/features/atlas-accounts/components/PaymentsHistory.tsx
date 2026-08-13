@@ -9,6 +9,8 @@ interface Payment {
   wallet_address?: string;
   notes?: string;
   created_at: string;
+  exchange_rate?: number;
+  amount_egp?: number;
 }
 
 interface PaymentsHistoryProps {
@@ -47,7 +49,14 @@ export const PaymentsHistory: React.FC<PaymentsHistoryProps> = ({ payments }) =>
                     })}
                   </td>
                   <td className="px-5 py-3.5 text-center font-bold text-amber-400 whitespace-nowrap">
-                    {payment.amount} USDT
+                    <div className="flex flex-col items-center">
+                      <span>{payment.amount} USDT</span>
+                      {payment.amount_egp && payment.exchange_rate && (
+                        <span className="text-[9px] text-slate-500 font-semibold mt-0.5 leading-none">
+                          {payment.amount_egp} EGP (@{payment.exchange_rate})
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-5 py-3.5 text-center font-bold text-slate-200">
                     {payment.payout_method === "USDT" 

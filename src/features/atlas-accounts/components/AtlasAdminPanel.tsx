@@ -370,7 +370,14 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   };
 
   // Payment Settlements Mutators
-  const handleAddPayment = async (amount: number, method: string, wallet: string, notes: string) => {
+  const handleAddPayment = async (
+    amount: number,
+    method: string,
+    wallet: string,
+    notes: string,
+    exchangeRate?: number,
+    amountEgp?: number
+  ) => {
     if (!selectedWorkerId) return;
     setActionLoading(true);
     try {
@@ -381,6 +388,8 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
           payout_method: method,
           wallet_address: wallet.trim() || null,
           notes: notes.trim() || null,
+          exchange_rate: exchangeRate || null,
+          amount_egp: amountEgp || null,
         },
       ]);
 

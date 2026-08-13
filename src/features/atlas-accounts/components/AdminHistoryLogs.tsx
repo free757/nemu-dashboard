@@ -34,6 +34,8 @@ interface Payment {
   wallet_address?: string;
   notes?: string;
   created_at: string;
+  exchange_rate?: number;
+  amount_egp?: number;
 }
 
 interface AdminHistoryLogsProps {
@@ -87,6 +89,8 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
     wallet_address: "",
     notes: "",
     created_at: "",
+    exchange_rate: 0,
+    amount_egp: 0,
   });
 
   // Reset Actions
@@ -167,6 +171,8 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
       wallet_address: payment.wallet_address || "",
       notes: payment.notes || "",
       created_at: payment.created_at,
+      exchange_rate: payment.exchange_rate || 0,
+      amount_egp: payment.amount_egp || 0,
     });
   };
 
@@ -179,6 +185,8 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
         wallet_address: editPaymentForm.wallet_address.trim() || null,
         notes: editPaymentForm.notes.trim() || null,
         created_at: editPaymentForm.created_at,
+        exchange_rate: editPaymentForm.exchange_rate ? Number(editPaymentForm.exchange_rate) : null,
+        amount_egp: editPaymentForm.amount_egp ? Number(editPaymentForm.amount_egp) : null,
       });
 
       showFeedback(
@@ -583,20 +591,66 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                         </td>
                         <td className="px-5 py-3 text-center font-bold text-amber-400">
                           {isEditingPayment ? (
-                            <input
-                              type="number"
-                              step="any"
-                              value={editPaymentForm.amount}
-                              onChange={(e) =>
-                                setEditPaymentForm((p) => ({
-                                  ...p,
-                                  amount: parseFloat(e.target.value) || 0,
-                                }))
-                              }
-                              className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-0.5 text-xs outline-none"
-                            />
+                            <div className="flex flex-col gap-1 items-center">
+                              <input
+                                type="number"
+                                step="any"
+                                placeholder="USDT"
+                                value={editPaymentForm.amount || ""}
+                                onChange={(e) => {
+                                  const usd = parseFloat(e.target.value) || 0;
+                                  setEditPaymentForm((p) => ({
+                                    ...p,
+                                    amount: usd,
+                                    amount_egp: p.exchange_rate ? Number((usd * p.exchange_rate).toFixed(2)) : 0,
+                                  }));
+                                }}
+                                className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-0.5 text-xs outline-none"
+                              />
+                              <div className="flex gap-1 items-center">
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="Rate"
+                                  value={editPaymentForm.exchange_rate || ""}
+                                  onChange={(e) => {
+                                    const rate = parseFloat(e.target.value) || 0;
+                                    setEditPaymentForm((p) => ({
+                                      ...p,
+                                      exchange_rate: rate,
+                                      amount_egp: Number((p.amount * rate).toFixed(2)),
+                                    }));
+                                  }}
+                                  className="w-12 text-center bg-slate-900 border border-slate-800 rounded text-[9px] text-gray-400 py-0.5 outline-none font-sans"
+                                  title="Exchange Rate"
+                                />
+                                <input
+                                  type="number"
+                                  step="any"
+                                  placeholder="EGP"
+                                  value={editPaymentForm.amount_egp || ""}
+                                  onChange={(e) => {
+                                    const egp = parseFloat(e.target.value) || 0;
+                                    setEditPaymentForm((p) => ({
+                                      ...p,
+                                      amount_egp: egp,
+                                      amount: p.exchange_rate ? Number((egp / p.exchange_rate).toFixed(2)) : 0,
+                                    }));
+                                  }}
+                                  className="w-16 text-center bg-slate-900 border border-slate-800 rounded text-[9px] text-emerald-450 py-0.5 outline-none font-sans"
+                                  title="EGP Amount"
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            `${payment.amount} USDT`
+                            <div className="flex flex-col items-center">
+                              <span>{payment.amount} USDT</span>
+                              {payment.amount_egp && payment.exchange_rate && (
+                                <span className="text-[9px] text-gray-500 font-semibold mt-0.5 leading-none font-sans">
+                                  {payment.amount_egp} EGP (@{payment.exchange_rate})
+                                </span>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="px-5 py-3 font-mono text-[10px] text-gray-300">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, Calculator } from "lucide-react";
 
 interface AdminAddPaymentModalProps {
   isOpen: boolean;
@@ -10,7 +10,14 @@ interface AdminAddPaymentModalProps {
   isDark: boolean;
   defaultWalletAddress: string;
   actionLoading: boolean;
-  onSubmit: (amount: number, method: string, wallet: string, notes: string) => Promise<void>;
+  onSubmit: (
+    amount: number,
+    method: string,
+    wallet: string,
+    notes: string,
+    exchangeRate?: number,
+    amountEgp?: number
+  ) => Promise<void>;
 }
 
 export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
@@ -27,21 +34,71 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
+  // EGP Conversion states
+  const [enableEgp, setEnableEgp] = useState<boolean>(false);
+  const [exchangeRate, setExchangeRate] = useState<number>(50);
+  const [amountEgp, setAmountEgp] = useState<number>(0);
+
   useEffect(() => {
     if (isOpen) {
       setAmount(0);
       setPayoutMethod("USDT");
       setWalletAddress(defaultWalletAddress);
       setNotes("");
+      setEnableEgp(false);
+      setExchangeRate(50);
+      setAmountEgp(0);
     }
   }, [isOpen, defaultWalletAddress]);
 
   if (!isOpen) return null;
 
+  const handleUsdChange = (usdVal: number) => {
+    setAmount(usdVal);
+    if (enableEgp && exchangeRate > 0) {
+      setAmountEgp(Number((usdVal * exchangeRate).toFixed(2)));
+    }
+  };
+
+  const handleEgpChange = (egpVal: number) => {
+    setAmountEgp(egpVal);
+    if (enableEgp && exchangeRate > 0) {
+      setAmount(Number((egpVal / exchangeRate).toFixed(2)));
+    }
+  };
+
+  const handleRateChange = (rateVal: number) => {
+    setExchangeRate(rateVal);
+    if (enableEgp && rateVal > 0) {
+      setAmountEgp(Number((amount * rateVal).toFixed(2)));
+    }
+  };
+
+  const handleToggleEgp = (checked: boolean) => {
+    setEnableEgp(checked);
+    if (checked) {
+      // Auto fill EGP based on current USD amount
+      setAmountEgp(Number((amount * exchangeRate).toFixed(2)));
+      // If payment method is USDT, switch to Cash because EGP is cash/transfer
+      if (payoutMethod === "USDT") {
+        setPayoutMethod("Cash");
+      }
+    } else {
+      setAmountEgp(0);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (amount <= 0) return;
-    await onSubmit(amount, payoutMethod, walletAddress, notes);
+    await onSubmit(
+      amount,
+      payoutMethod,
+      walletAddress,
+      notes,
+      enableEgp ? exchangeRate : undefined,
+      enableEgp ? amountEgp : undefined
+    );
   };
 
   return (
@@ -61,9 +118,68 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium">
+          {/* EGP Conversion Toggle */}
+          <div
+            className={`p-3 rounded-2xl border flex items-center justify-between ${
+              isDark ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-150"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-emerald-400" />
+              <span className="font-bold">
+                {lang === "ar" ? "تسليم الدفعة بالجنيه المصري (EGP)" : "Pay in Egyptian Pounds (EGP)"}
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableEgp}
+                onChange={(e) => handleToggleEgp(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          {enableEgp && (
+            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl border border-dashed border-emerald-500/20 bg-emerald-500/5">
+              <div>
+                <label className="block mb-1.5 text-emerald-400 font-bold">
+                  {lang === "ar" ? "سعر صرف الدولار (EGP)" : "USD exchange rate"}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={exchangeRate || ""}
+                  onChange={(e) => handleRateChange(parseFloat(e.target.value) || 0)}
+                  className={`w-full px-3 py-2 rounded-xl border outline-none font-bold ${
+                    isDark ? "bg-[#0f0f0f] border-white/10 text-white" : "bg-white border-gray-200 text-gray-900"
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1.5 text-emerald-400 font-bold">
+                  {lang === "ar" ? "المبلغ بالجنيه (EGP)" : "Amount in EGP"}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={amountEgp || ""}
+                  onChange={(e) => handleEgpChange(parseFloat(e.target.value) || 0)}
+                  className={`w-full px-3 py-2 rounded-xl border outline-none font-bold ${
+                    isDark ? "bg-[#0f0f0f] border-white/10 text-white" : "bg-white border-gray-200 text-gray-900"
+                  }`}
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block mb-1.5 text-gray-400">
-              {lang === "ar" ? "المبلغ المستلم (USDT)" : "Amount (USDT)"}
+              {lang === "ar" ? "المبلغ بالدولار (USDT)" : "Amount (USDT)"}
             </label>
             <input
               type="number"
@@ -71,7 +187,7 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
               required
               value={amount || ""}
               placeholder="e.g. 150.00"
-              onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleUsdChange(parseFloat(e.target.value) || 0)}
               className={`w-full px-4 py-2.5 rounded-xl border outline-none ${
                 isDark
                   ? "bg-white/5 border-white/10 focus:border-blue-500"
