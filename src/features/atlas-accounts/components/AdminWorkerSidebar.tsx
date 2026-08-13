@@ -5,30 +5,16 @@ import {
   Users, UserPlus, X, RefreshCw, MoreVertical, Edit2, ShieldCheck, Ban, Trash2 
 } from "lucide-react";
 
-interface Account {
-  id: string;
-  accepted_hours: number;
-}
-
-interface Worker {
-  id: string;
-  username: string;
-  pin: string;
-  is_blocked: boolean;
-  created_at: string;
-  atlas_accounts?: Account[];
-}
-
 interface AdminWorkerSidebarProps {
   lang: "ar" | "en";
   isDark: boolean;
-  workers: Worker[];
+  workers: any[];
   selectedWorkerId: string | null;
   onSelectWorker: (workerId: string | null) => void;
   onAddWorker: (username: string, pin: string) => Promise<void>;
   onEditWorker: (workerId: string, username: string, pin: string) => Promise<void>;
-  onToggleBlockWorker: (worker: Worker) => Promise<void>;
-  onDeleteWorker: (worker: Worker) => Promise<void>;
+  onToggleBlockWorker: (worker: any) => Promise<void>;
+  onDeleteWorker: (worker: any) => Promise<void>;
 }
 
 export const AdminWorkerSidebar: React.FC<AdminWorkerSidebarProps> = ({
@@ -44,7 +30,7 @@ export const AdminWorkerSidebar: React.FC<AdminWorkerSidebarProps> = ({
 }) => {
   const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
   const [isEditWorkerOpen, setIsEditWorkerOpen] = useState(false);
-  const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [editingWorker, setEditingWorker] = useState<any | null>(null);
   const [activeDropdownWorkerId, setActiveDropdownWorkerId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -84,7 +70,7 @@ export const AdminWorkerSidebar: React.FC<AdminWorkerSidebarProps> = ({
     }
   };
 
-  const startEditingWorker = (worker: Worker) => {
+  const startEditingWorker = (worker: any) => {
     setEditingWorker(worker);
     setEditWorkerForm({ username: worker.username, pin: worker.pin });
     setIsEditWorkerOpen(true);
