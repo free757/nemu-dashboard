@@ -15,6 +15,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface Payout {
@@ -59,6 +60,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
     in_review_hours: 0,
     wallet_address: "",
     amount_paid: 0,
+    next_payment: 0,
   });
 
   const startEditing = (account: Account) => {
@@ -70,6 +72,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
       in_review_hours: account.in_review_hours,
       wallet_address: account.wallet_address || "",
       amount_paid: account.amount_paid || 0,
+      next_payment: account.next_payment || 0,
     });
   };
 
@@ -82,6 +85,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
         in_review_hours: Number(editAccountForm.in_review_hours),
         wallet_address: editAccountForm.wallet_address.trim(),
         amount_paid: Number(editAccountForm.amount_paid),
+        next_payment: Number(editAccountForm.next_payment),
       });
       setEditingAccountId(null);
     } catch (err) {
@@ -155,6 +159,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                   <th className="px-5 py-3.5 text-center">{lang === "ar" ? "المراجعة" : "Review"}</th>
                   <th className="px-5 py-3.5 text-center">{lang === "ar" ? "الإجمالي" : "Total"}</th>
                   <th className="px-5 py-3.5 text-center">{lang === "ar" ? "المبلغ المدفوع" : "Amount Paid"}</th>
+                  <th className="px-5 py-3.5 text-center text-indigo-400">{lang === "ar" ? "الدفعة القادمة" : "Next Payment"}</th>
                   <th className="px-5 py-3.5">{lang === "ar" ? "المحفظة" : "Wallet"}</th>
                   <th className="px-5 py-3.5 text-center">{lang === "ar" ? "إجراءات" : "Actions"}</th>
                 </tr>
@@ -279,6 +284,25 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                               </span>
                             )}
                           </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-indigo-400 font-bold whitespace-nowrap">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="any"
+                            value={editAccountForm.next_payment}
+                            onChange={(e) =>
+                              setEditAccountForm((p) => ({ ...p, next_payment: parseFloat(e.target.value) || 0 }))
+                            }
+                            className={`text-center rounded border outline-none w-20 py-0.5 text-xs ${
+                              isDark
+                                ? "bg-slate-900 border-slate-800 text-white"
+                                : "bg-gray-50 border-gray-200 text-gray-900"
+                            }`}
+                          />
+                        ) : (
+                          <span>{account.next_payment || 0} USDT</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5 font-mono text-[10px] text-gray-300">
@@ -553,6 +577,32 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       ) : (
                         <div className="text-left font-bold text-amber-500">
                           {account.amount_paid || 0} USDT
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Coins className="w-3.5 h-3.5 text-indigo-400" />
+                        {lang === "ar" ? "الدفعة القادمة:" : "Next Payment:"}
+                      </span>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          step="any"
+                          value={editAccountForm.next_payment}
+                          onChange={(e) =>
+                            setEditAccountForm((p) => ({ ...p, next_payment: parseFloat(e.target.value) || 0 }))
+                          }
+                          className={`text-center rounded border outline-none w-28 py-1 text-xs ${
+                            isDark
+                              ? "bg-slate-900 border-slate-800 text-white"
+                              : "bg-gray-50 border-gray-205 text-gray-905"
+                          }`}
+                        />
+                      ) : (
+                        <div className="text-left font-bold text-indigo-400">
+                          {account.next_payment || 0} USDT
                         </div>
                       )}
                     </div>

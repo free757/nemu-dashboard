@@ -12,6 +12,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface AccountsListProps {
@@ -24,6 +25,8 @@ interface AccountsListProps {
   >;
   editAmountPaid: number;
   setEditAmountPaid: (val: number) => void;
+  editNextPayment: number;
+  setEditNextPayment: (val: number) => void;
   editWalletValue: string;
   setEditWalletValue: (val: string) => void;
   onSave: (id: string) => void;
@@ -41,6 +44,8 @@ export const AccountsList: React.FC<AccountsListProps> = ({
   setEditHours,
   editAmountPaid,
   setEditAmountPaid,
+  editNextPayment,
+  setEditNextPayment,
   editWalletValue,
   setEditWalletValue,
   onSave,
@@ -60,7 +65,8 @@ export const AccountsList: React.FC<AccountsListProps> = ({
               <th className="px-5 py-3.5 text-center">المرفوضة</th>
               <th className="px-5 py-3.5 text-center">المراجعة</th>
                <th className="px-5 py-3.5 text-center">الإجمالي</th>
-              <th className="px-5 py-3.5 text-center text-amber-400">المستلم المباشر</th>
+               <th className="px-5 py-3.5 text-center text-amber-400">المستلم المباشر</th>
+              <th className="px-5 py-3.5 text-center text-indigo-400">الدفعة القادمة</th>
               <th className="px-5 py-3.5 text-center text-emerald-450">إجمالي المستلم</th>
               <th className="px-5 py-3.5">المحفظة</th>
               <th className="px-5 py-3.5 text-center">إجراءات</th>
@@ -159,6 +165,19 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                       />
                     ) : (
                       <span className="text-amber-400 font-bold">{account.amount_paid || 0} USDT</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5 text-center text-indigo-400 font-bold whitespace-nowrap">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editNextPayment}
+                        onChange={(e) => setEditNextPayment(parseFloat(e.target.value) || 0)}
+                        className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-indigo-400 py-1 text-xs outline-none focus:border-indigo-500"
+                      />
+                    ) : (
+                      <span>{account.next_payment || 0} USDT</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-center font-bold text-emerald-450 whitespace-nowrap">

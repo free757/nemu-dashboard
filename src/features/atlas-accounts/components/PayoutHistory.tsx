@@ -13,6 +13,7 @@ interface Payout {
 interface Account {
   id: string;
   account_name: string;
+  next_payment?: number;
 }
 
 interface PayoutHistoryProps {

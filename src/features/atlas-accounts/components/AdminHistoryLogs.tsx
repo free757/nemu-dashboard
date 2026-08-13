@@ -12,6 +12,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface Payout {

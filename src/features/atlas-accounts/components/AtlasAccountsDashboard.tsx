@@ -32,6 +32,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface Payout {
@@ -87,6 +88,7 @@ export default function AtlasAccountsDashboard() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editWalletValue, setEditWalletValue] = useState("");
   const [editAmountPaid, setEditAmountPaid] = useState<number>(0);
+  const [editNextPayment, setEditNextPayment] = useState<number>(0);
   const [editHours, setEditHours] = useState({
     accepted: 0,
     rejected: 0,
@@ -271,6 +273,7 @@ export default function AtlasAccountsDashboard() {
     setEditingAccountId(account.id);
     setEditWalletValue(account.wallet_address || "");
     setEditAmountPaid(account.amount_paid || 0);
+    setEditNextPayment(account.next_payment || 0);
     setEditHours({
       accepted: account.accepted_hours,
       rejected: account.rejected_hours,
@@ -290,6 +293,7 @@ export default function AtlasAccountsDashboard() {
           rejected_hours: Number(editHours.rejected),
           in_review_hours: Number(editHours.in_review),
           amount_paid: Number(editAmountPaid),
+          next_payment: Number(editNextPayment),
           updated_at: new Date().toISOString(),
         })
         .eq("id", accountId);
@@ -307,6 +311,7 @@ export default function AtlasAccountsDashboard() {
                 rejected_hours: Number(editHours.rejected),
                 in_review_hours: Number(editHours.in_review),
                 amount_paid: Number(editAmountPaid),
+                next_payment: Number(editNextPayment),
               }
             : acc
         )
@@ -630,6 +635,8 @@ export default function AtlasAccountsDashboard() {
               setEditHours={setEditHours}
               editAmountPaid={editAmountPaid}
               setEditAmountPaid={setEditAmountPaid}
+              editNextPayment={editNextPayment}
+              setEditNextPayment={setEditNextPayment}
               editWalletValue={editWalletValue}
               setEditWalletValue={setEditWalletValue}
               onSave={saveAccountDetails}
@@ -647,6 +654,8 @@ export default function AtlasAccountsDashboard() {
               setEditHours={setEditHours}
               editAmountPaid={editAmountPaid}
               setEditAmountPaid={setEditAmountPaid}
+              editNextPayment={editNextPayment}
+              setEditNextPayment={setEditNextPayment}
               editWalletValue={editWalletValue}
               setEditWalletValue={setEditWalletValue}
               onSave={saveAccountDetails}

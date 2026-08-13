@@ -24,6 +24,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface AccountCardProps {
@@ -36,6 +37,8 @@ interface AccountCardProps {
   >;
   editAmountPaid: number;
   setEditAmountPaid: (val: number) => void;
+  editNextPayment: number;
+  setEditNextPayment: (val: number) => void;
   editWalletValue: string;
   setEditWalletValue: (val: string) => void;
   onSave: (id: string) => void;
@@ -53,6 +56,8 @@ export const AccountCard: React.FC<AccountCardProps> = ({
   setEditHours,
   editAmountPaid,
   setEditAmountPaid,
+  editNextPayment,
+  setEditNextPayment,
   editWalletValue,
   setEditWalletValue,
   onSave,
@@ -202,6 +207,24 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                   />
                 ) : (
                   <span className="font-bold text-amber-400 text-sm">{account.amount_paid || 0} USDT</span>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-semibold flex items-center gap-1">
+                  <Coins className="w-3.5 h-3.5 text-indigo-400" />
+                  الدفعة القادمة:
+                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    value={editNextPayment}
+                    onChange={(e) => setEditNextPayment(parseFloat(e.target.value) || 0)}
+                    className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
+                  />
+                ) : (
+                  <span className="font-bold text-indigo-400 text-sm">{account.next_payment || 0} USDT</span>
                 )}
               </div>
 

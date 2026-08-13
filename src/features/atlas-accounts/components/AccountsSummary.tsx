@@ -12,6 +12,7 @@ interface Account {
   wallet_address: string;
   amount_paid: number;
   created_at: string;
+  next_payment?: number;
 }
 
 interface AccountsSummaryProps {
@@ -29,6 +30,8 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
   totalExpectedEarnings,
   totalOutstanding,
 }) => {
+  const totalNextPayment = accounts.reduce((sum, acc) => sum + Number(acc.next_payment || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Configuration & General Summary bar */}
@@ -45,6 +48,11 @@ export const AccountsSummary: React.FC<AccountsSummaryProps> = ({
           <div className="text-right">
             <span className="block text-[10px] text-slate-500 font-semibold">الحسابات المفعلة</span>
             <span className="text-sm font-bold text-white">{accounts.length}</span>
+          </div>
+          <div className="w-px h-8 bg-slate-800 hidden sm:block" />
+          <div className="text-right">
+            <span className="block text-[10px] text-indigo-400 font-bold">إجمالي الدفعة القادمة</span>
+            <span className="text-sm font-bold text-indigo-400">{totalNextPayment.toFixed(2)} USDT</span>
           </div>
           <div className="w-px h-8 bg-slate-800 hidden sm:block" />
           <div className="text-right">
