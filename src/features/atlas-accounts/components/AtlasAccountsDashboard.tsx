@@ -87,12 +87,12 @@ export default function AtlasAccountsDashboard() {
   // Edit Account Form States
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editWalletValue, setEditWalletValue] = useState("");
-  const [editAmountPaid, setEditAmountPaid] = useState<number>(0);
-  const [editNextPayment, setEditNextPayment] = useState<number>(0);
+  const [editAmountPaid, setEditAmountPaid] = useState<string>("0");
+  const [editNextPayment, setEditNextPayment] = useState<string>("0");
   const [editHours, setEditHours] = useState({
-    accepted: 0,
-    rejected: 0,
-    in_review: 0,
+    accepted: "0",
+    rejected: "0",
+    in_review: "0",
   });
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{
@@ -272,12 +272,12 @@ export default function AtlasAccountsDashboard() {
   const startEditAccount = (account: Account) => {
     setEditingAccountId(account.id);
     setEditWalletValue(account.wallet_address || "");
-    setEditAmountPaid(account.amount_paid || 0);
-    setEditNextPayment(account.next_payment || 0);
+    setEditAmountPaid(String(account.amount_paid || 0));
+    setEditNextPayment(String(account.next_payment || 0));
     setEditHours({
-      accepted: account.accepted_hours,
-      rejected: account.rejected_hours,
-      in_review: account.in_review_hours,
+      accepted: String(account.accepted_hours),
+      rejected: String(account.rejected_hours),
+      in_review: String(account.in_review_hours),
     });
   };
 
@@ -289,11 +289,11 @@ export default function AtlasAccountsDashboard() {
         .from("atlas_accounts")
         .update({
           wallet_address: editWalletValue.trim(),
-          accepted_hours: Number(editHours.accepted),
-          rejected_hours: Number(editHours.rejected),
-          in_review_hours: Number(editHours.in_review),
-          amount_paid: Number(editAmountPaid),
-          next_payment: Number(editNextPayment),
+          accepted_hours: parseFloat(editHours.accepted) || 0,
+          rejected_hours: parseFloat(editHours.rejected) || 0,
+          in_review_hours: parseFloat(editHours.in_review) || 0,
+          amount_paid: parseFloat(editAmountPaid) || 0,
+          next_payment: parseFloat(editNextPayment) || 0,
           updated_at: new Date().toISOString(),
         })
         .eq("id", accountId);
@@ -307,11 +307,11 @@ export default function AtlasAccountsDashboard() {
             ? {
                 ...acc,
                 wallet_address: editWalletValue.trim(),
-                accepted_hours: Number(editHours.accepted),
-                rejected_hours: Number(editHours.rejected),
-                in_review_hours: Number(editHours.in_review),
-                amount_paid: Number(editAmountPaid),
-                next_payment: Number(editNextPayment),
+                accepted_hours: parseFloat(editHours.accepted) || 0,
+                rejected_hours: parseFloat(editHours.rejected) || 0,
+                in_review_hours: parseFloat(editHours.in_review) || 0,
+                amount_paid: parseFloat(editAmountPaid) || 0,
+                next_payment: parseFloat(editNextPayment) || 0,
               }
             : acc
         )

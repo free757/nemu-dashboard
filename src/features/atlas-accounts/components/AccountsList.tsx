@@ -19,14 +19,14 @@ interface AccountsListProps {
   accounts: Account[];
   editingAccountId: string | null;
   updatingId: string | null;
-  editHours: { accepted: number; rejected: number; in_review: number };
+  editHours: { accepted: string; rejected: string; in_review: string };
   setEditHours: React.Dispatch<
-    React.SetStateAction<{ accepted: number; rejected: number; in_review: number }>
+    React.SetStateAction<{ accepted: string; rejected: string; in_review: string }>
   >;
-  editAmountPaid: number;
-  setEditAmountPaid: (val: number) => void;
-  editNextPayment: number;
-  setEditNextPayment: (val: number) => void;
+  editAmountPaid: string;
+  setEditAmountPaid: (val: string) => void;
+  editNextPayment: string;
+  setEditNextPayment: (val: string) => void;
   editWalletValue: string;
   setEditWalletValue: (val: string) => void;
   onSave: (id: string) => void;
@@ -107,7 +107,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         onChange={(e) =>
                           setEditHours((p) => ({
                             ...p,
-                            accepted: parseFloat(e.target.value) || 0,
+                            accepted: e.target.value,
                           }))
                         }
                         className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-1 text-xs outline-none focus:border-indigo-500"
@@ -126,7 +126,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         onChange={(e) =>
                           setEditHours((p) => ({
                             ...p,
-                            rejected: parseFloat(e.target.value) || 0,
+                            rejected: e.target.value,
                           }))
                         }
                         className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-1 text-xs outline-none focus:border-indigo-500"
@@ -145,7 +145,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         onChange={(e) =>
                           setEditHours((p) => ({
                             ...p,
-                            in_review: parseFloat(e.target.value) || 0,
+                            in_review: e.target.value,
                           }))
                         }
                         className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-1 text-xs outline-none focus:border-indigo-500"
@@ -164,7 +164,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         inputMode="decimal"
                         step="any"
                         value={editAmountPaid}
-                        onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => setEditAmountPaid(e.target.value)}
                         className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-1 text-xs outline-none focus:border-indigo-500"
                       />
                     ) : (
@@ -178,7 +178,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
                         inputMode="decimal"
                         step="any"
                         value={editNextPayment}
-                        onChange={(e) => setEditNextPayment(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => setEditNextPayment(e.target.value)}
                         className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-indigo-400 py-1 text-xs outline-none focus:border-indigo-500"
                       />
                     ) : (

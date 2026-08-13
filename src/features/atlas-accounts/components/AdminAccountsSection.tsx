@@ -55,24 +55,24 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editAccountForm, setEditAccountForm] = useState({
     account_name: "",
-    accepted_hours: 0,
-    rejected_hours: 0,
-    in_review_hours: 0,
+    accepted_hours: "",
+    rejected_hours: "",
+    in_review_hours: "",
     wallet_address: "",
-    amount_paid: 0,
-    next_payment: 0,
+    amount_paid: "",
+    next_payment: "",
   });
 
   const startEditing = (account: Account) => {
     setEditingAccountId(account.id);
     setEditAccountForm({
       account_name: account.account_name,
-      accepted_hours: account.accepted_hours,
-      rejected_hours: account.rejected_hours,
-      in_review_hours: account.in_review_hours,
+      accepted_hours: String(account.accepted_hours),
+      rejected_hours: String(account.rejected_hours),
+      in_review_hours: String(account.in_review_hours),
       wallet_address: account.wallet_address || "",
-      amount_paid: account.amount_paid || 0,
-      next_payment: account.next_payment || 0,
+      amount_paid: String(account.amount_paid || 0),
+      next_payment: String(account.next_payment || 0),
     });
   };
 
@@ -80,12 +80,12 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
     try {
       await onUpdateAccount(accountId, {
         account_name: editAccountForm.account_name.trim(),
-        accepted_hours: Number(editAccountForm.accepted_hours),
-        rejected_hours: Number(editAccountForm.rejected_hours),
-        in_review_hours: Number(editAccountForm.in_review_hours),
+        accepted_hours: parseFloat(editAccountForm.accepted_hours) || 0,
+        rejected_hours: parseFloat(editAccountForm.rejected_hours) || 0,
+        in_review_hours: parseFloat(editAccountForm.in_review_hours) || 0,
         wallet_address: editAccountForm.wallet_address.trim(),
-        amount_paid: Number(editAccountForm.amount_paid),
-        next_payment: Number(editAccountForm.next_payment),
+        amount_paid: parseFloat(editAccountForm.amount_paid) || 0,
+        next_payment: parseFloat(editAccountForm.next_payment) || 0,
       });
       setEditingAccountId(null);
     } catch (err) {
@@ -208,7 +208,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                             onChange={(e) =>
                               setEditAccountForm((p) => ({
                                 ...p,
-                                accepted_hours: parseFloat(e.target.value) || 0,
+                                accepted_hours: e.target.value,
                               }))
                             }
                             className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-0.5 text-xs outline-none"
@@ -227,7 +227,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                             onChange={(e) =>
                               setEditAccountForm((p) => ({
                                 ...p,
-                                rejected_hours: parseFloat(e.target.value) || 0,
+                                rejected_hours: e.target.value,
                               }))
                             }
                             className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-0.5 text-xs outline-none"
@@ -246,7 +246,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                             onChange={(e) =>
                               setEditAccountForm((p) => ({
                                 ...p,
-                                in_review_hours: parseFloat(e.target.value) || 0,
+                                in_review_hours: e.target.value,
                               }))
                             }
                             className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
@@ -266,7 +266,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                             step="any"
                             value={editAccountForm.amount_paid}
                             onChange={(e) =>
-                              setEditAccountForm((p) => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))
+                              setEditAccountForm((p) => ({ ...p, amount_paid: e.target.value }))
                             }
                             className={`text-center rounded border outline-none w-24 py-0.5 text-xs ${
                               isDark
@@ -298,7 +298,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                             step="any"
                             value={editAccountForm.next_payment}
                             onChange={(e) =>
-                              setEditAccountForm((p) => ({ ...p, next_payment: parseFloat(e.target.value) || 0 }))
+                              setEditAccountForm((p) => ({ ...p, next_payment: e.target.value }))
                             }
                             className={`text-center rounded border outline-none w-20 py-0.5 text-xs ${
                               isDark
@@ -498,7 +498,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                           onChange={(e) =>
                             setEditAccountForm((p) => ({
                               ...p,
-                              accepted_hours: parseFloat(e.target.value) || 0,
+                              accepted_hours: e.target.value,
                             }))
                           }
                           className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-0.5 text-xs outline-none"
@@ -521,7 +521,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                           onChange={(e) =>
                             setEditAccountForm((p) => ({
                               ...p,
-                              rejected_hours: parseFloat(e.target.value) || 0,
+                              rejected_hours: e.target.value,
                             }))
                           }
                           className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-0.5 text-xs outline-none"
@@ -544,7 +544,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                           onChange={(e) =>
                             setEditAccountForm((p) => ({
                               ...p,
-                              in_review_hours: parseFloat(e.target.value) || 0,
+                              in_review_hours: e.target.value,
                             }))
                           }
                           className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-0.5 text-xs outline-none"
@@ -575,7 +575,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                           step="any"
                           value={editAccountForm.amount_paid}
                           onChange={(e) =>
-                            setEditAccountForm((p) => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))
+                            setEditAccountForm((p) => ({ ...p, amount_paid: e.target.value }))
                           }
                           className={`text-center rounded border outline-none w-28 py-1 text-xs ${
                             isDark
@@ -602,7 +602,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                           step="any"
                           value={editAccountForm.next_payment}
                           onChange={(e) =>
-                            setEditAccountForm((p) => ({ ...p, next_payment: parseFloat(e.target.value) || 0 }))
+                            setEditAccountForm((p) => ({ ...p, next_payment: e.target.value }))
                           }
                           className={`text-center rounded border outline-none w-28 py-1 text-xs ${
                             isDark

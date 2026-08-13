@@ -31,14 +31,14 @@ interface AccountCardProps {
   accounts: Account[];
   editingAccountId: string | null;
   updatingId: string | null;
-  editHours: { accepted: number; rejected: number; in_review: number };
+  editHours: { accepted: string; rejected: string; in_review: string };
   setEditHours: React.Dispatch<
-    React.SetStateAction<{ accepted: number; rejected: number; in_review: number }>
+    React.SetStateAction<{ accepted: string; rejected: string; in_review: string }>
   >;
-  editAmountPaid: number;
-  setEditAmountPaid: (val: number) => void;
-  editNextPayment: number;
-  setEditNextPayment: (val: number) => void;
+  editAmountPaid: string;
+  setEditAmountPaid: (val: string) => void;
+  editNextPayment: string;
+  setEditNextPayment: (val: string) => void;
   editWalletValue: string;
   setEditWalletValue: (val: string) => void;
   onSave: (id: string) => void;
@@ -136,7 +136,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     step="any"
                     value={editHours.accepted}
                     onChange={(e) =>
-                      setEditHours((prev) => ({ ...prev, accepted: parseFloat(e.target.value) || 0 }))
+                      setEditHours((prev) => ({ ...prev, accepted: e.target.value }))
                     }
                     className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
                   />
@@ -157,7 +157,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     step="any"
                     value={editHours.rejected}
                     onChange={(e) =>
-                      setEditHours((prev) => ({ ...prev, rejected: parseFloat(e.target.value) || 0 }))
+                      setEditHours((prev) => ({ ...prev, rejected: e.target.value }))
                     }
                     className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
                   />
@@ -178,7 +178,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     step="any"
                     value={editHours.in_review}
                     onChange={(e) =>
-                      setEditHours((prev) => ({ ...prev, in_review: parseFloat(e.target.value) || 0 }))
+                      setEditHours((prev) => ({ ...prev, in_review: e.target.value }))
                     }
                     className="w-full text-center bg-slate-900 border border-slate-800 rounded font-bold text-white py-1 text-xs outline-none focus:border-indigo-500"
                   />
@@ -206,7 +206,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     inputMode="decimal"
                     step="any"
                     value={editAmountPaid}
-                    onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setEditAmountPaid(e.target.value)}
                     className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
                   />
                 ) : (
@@ -225,7 +225,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                     inputMode="decimal"
                     step="any"
                     value={editNextPayment}
-                    onChange={(e) => setEditNextPayment(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setEditNextPayment(e.target.value)}
                     className="w-24 text-center bg-slate-900 border border-slate-850 focus:border-indigo-500 rounded font-bold text-white py-1 text-xs outline-none"
                   />
                 ) : (
