@@ -132,6 +132,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 {isEditing ? (
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={editHours.accepted}
                     onChange={(e) =>
@@ -152,6 +153,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 {isEditing ? (
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={editHours.rejected}
                     onChange={(e) =>
@@ -172,6 +174,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 {isEditing ? (
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={editHours.in_review}
                     onChange={(e) =>
@@ -200,6 +203,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 {isEditing ? (
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={editAmountPaid}
                     onChange={(e) => setEditAmountPaid(parseFloat(e.target.value) || 0)}
@@ -218,6 +222,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 {isEditing ? (
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="any"
                     value={editNextPayment}
                     onChange={(e) => setEditNextPayment(parseFloat(e.target.value) || 0)}

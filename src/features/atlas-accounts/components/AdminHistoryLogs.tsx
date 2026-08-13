@@ -350,6 +350,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                           {isEditingPayout ? (
                             <input
                               type="number"
+                              inputMode="decimal"
                               step="any"
                               value={editPayoutForm.accepted_hours}
                               onChange={(e) =>
@@ -370,6 +371,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                           {isEditingPayout ? (
                             <input
                               type="number"
+                              inputMode="decimal"
                               step="any"
                               value={editPayoutForm.rejected_hours}
                               onChange={(e) =>
@@ -390,6 +392,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                           {isEditingPayout ? (
                             <input
                               type="number"
+                              inputMode="decimal"
                               step="any"
                               value={editPayoutForm.in_review_hours}
                               onChange={(e) =>
@@ -408,6 +411,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                           {isEditingPayout ? (
                             <input
                               type="number"
+                              inputMode="decimal"
                               step="any"
                               value={editPayoutForm.amount_paid}
                               onChange={(e) =>
@@ -595,6 +599,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                             <div className="flex flex-col gap-1 items-center">
                               <input
                                 type="number"
+                                inputMode="decimal"
                                 step="any"
                                 placeholder="USDT"
                                 value={editPaymentForm.amount || ""}
@@ -611,6 +616,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                               <div className="flex gap-1 items-center">
                                 <input
                                   type="number"
+                                  inputMode="decimal"
                                   step="any"
                                   placeholder="Rate"
                                   value={editPaymentForm.exchange_rate || ""}
@@ -627,6 +633,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                 />
                                 <input
                                   type="number"
+                                  inputMode="decimal"
                                   step="any"
                                   placeholder="EGP"
                                   value={editPaymentForm.amount_egp || ""}

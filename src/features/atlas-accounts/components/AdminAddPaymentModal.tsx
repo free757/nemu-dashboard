@@ -188,6 +188,7 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="any"
                   required
                   value={exchangeRate || ""}
@@ -204,6 +205,7 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="any"
                   required
                   value={amountEgp || ""}
@@ -222,6 +224,7 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
             </label>
             <input
               type="number"
+              inputMode="decimal"
               step="any"
               required
               value={amount || ""}

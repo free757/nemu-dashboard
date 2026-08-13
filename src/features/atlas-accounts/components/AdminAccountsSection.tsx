@@ -202,6 +202,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                         {isEditing ? (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="any"
                             value={editAccountForm.accepted_hours}
                             onChange={(e) =>
@@ -220,6 +221,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                         {isEditing ? (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="any"
                             value={editAccountForm.rejected_hours}
                             onChange={(e) =>
@@ -238,6 +240,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                         {isEditing ? (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="any"
                             value={editAccountForm.in_review_hours}
                             onChange={(e) =>
@@ -259,6 +262,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                         {isEditing ? (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="any"
                             value={editAccountForm.amount_paid}
                             onChange={(e) =>
@@ -290,6 +294,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                         {isEditing ? (
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="any"
                             value={editAccountForm.next_payment}
                             onChange={(e) =>
@@ -487,6 +492,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       {isEditing ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={editAccountForm.accepted_hours}
                           onChange={(e) =>
@@ -509,6 +515,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       {isEditing ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={editAccountForm.rejected_hours}
                           onChange={(e) =>
@@ -531,6 +538,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       {isEditing ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={editAccountForm.in_review_hours}
                           onChange={(e) =>
@@ -563,6 +571,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       {isEditing ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={editAccountForm.amount_paid}
                           onChange={(e) =>
@@ -589,6 +598,7 @@ export const AdminAccountsSection: React.FC<AdminAccountsSectionProps> = ({
                       {isEditing ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           step="any"
                           value={editAccountForm.next_payment}
                           onChange={(e) =>

@@ -90,6 +90,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
               <label className="block text-[10px] text-emerald-450 font-semibold">ساعات مقبولة</label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={newAccountForm.accepted_hours}
                 onChange={(e) =>
@@ -105,6 +106,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
               <label className="block text-[10px] text-rose-400 font-semibold">ساعات مرفوضة</label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={newAccountForm.rejected_hours}
                 onChange={(e) =>
@@ -120,6 +122,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
               <label className="block text-[10px] text-amber-500 font-semibold">ساعات مراجعة</label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={newAccountForm.in_review_hours}
                 onChange={(e) =>
@@ -137,6 +140,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
             <label className="block text-[10px] text-slate-400 font-semibold">المبالغ المستلمة للتسويات</label>
             <input
               type="number"
+              inputMode="decimal"
               step="any"
               value={newAccountForm.amount_paid}
               onChange={(e) =>

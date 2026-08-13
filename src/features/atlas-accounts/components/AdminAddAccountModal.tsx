@@ -115,6 +115,7 @@ export const AdminAddAccountModal: React.FC<AdminAddAccountModalProps> = ({
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={acceptedHours}
                 onChange={(e) => setAcceptedHours(parseFloat(e.target.value) || 0)}
@@ -131,6 +132,7 @@ export const AdminAddAccountModal: React.FC<AdminAddAccountModalProps> = ({
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={rejectedHours}
                 onChange={(e) => setRejectedHours(parseFloat(e.target.value) || 0)}
@@ -147,6 +149,7 @@ export const AdminAddAccountModal: React.FC<AdminAddAccountModalProps> = ({
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 step="any"
                 value={inReviewHours}
                 onChange={(e) => setInReviewHours(parseFloat(e.target.value) || 0)}
