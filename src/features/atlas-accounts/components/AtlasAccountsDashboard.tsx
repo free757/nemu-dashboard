@@ -21,6 +21,7 @@ import { AccountsList } from "./AccountsList";
 import { AccountCard } from "./AccountCard";
 import { AddAccountModal } from "./AddAccountModal";
 import { PayoutHistory } from "./PayoutHistory";
+import { PaymentsHistory } from "./PaymentsHistory";
 
 interface Account {
   id: string;
@@ -65,9 +66,11 @@ export default function AtlasAccountsDashboard() {
   // Dashboard Data States
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [activeHistoryTab, setActiveHistoryTab] = useState<"resets" | "payments">("resets");
 
   // Add Account States
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
@@ -242,6 +245,16 @@ export default function AtlasAccountsDashboard() {
         timestamp: p.created_at,
       }));
       setPayouts(formattedPayouts);
+
+      // Query actual payments ledger
+      const { data: paymentsData, error: paymentsErr } = await supabase
+        .from("atlas_payments")
+        .select("*")
+        .eq("worker_id", workerId)
+        .order("created_at", { ascending: false });
+
+      if (paymentsErr) throw paymentsErr;
+      setPayments(paymentsData || []);
     } catch (error) {
       console.error("Error loading worker data:", error);
       showFeedback("error", "حدث خطأ أثناء تحميل البيانات. يرجى التحديث.");
@@ -413,6 +426,9 @@ export default function AtlasAccountsDashboard() {
       console.warn("sessionStorage delete error", e);
     }
     setWorker(null);
+    setAccounts([]);
+    setPayouts([]);
+    setPayments([]);
   };
 
   const handleKeyPress = (digit: string) => {
@@ -472,8 +488,13 @@ export default function AtlasAccountsDashboard() {
 
   // Compute Combined Stats
   const totalAccepted = accounts.reduce((sum, acc) => sum + acc.accepted_hours, 0);
-  const totalPaid = accounts.reduce((sum, acc) => sum + (acc.amount_paid || 0), 0);
-  const totalExpectedEarnings = Number((totalAccepted * hourlyRate).toFixed(2));
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const totalExpectedEarnings = Number(
+    (
+      (totalAccepted * hourlyRate) + 
+      payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+    ).toFixed(2)
+  );
   const totalOutstanding = Number((totalExpectedEarnings - totalPaid).toFixed(2));
 
   return (
@@ -562,7 +583,6 @@ export default function AtlasAccountsDashboard() {
           totalPaid={totalPaid}
           totalExpectedEarnings={totalExpectedEarnings}
           totalOutstanding={totalOutstanding}
-          grandTotalReceived={totalPaid + payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)}
         />
 
         {/* 2. Active accounts listing section */}
@@ -656,17 +676,52 @@ export default function AtlasAccountsDashboard() {
           )}
         </section>
 
-        {/* 3. Payout History Snapshots */}
+        {/* 3. History Logs Section */}
         <section className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            📊 سجل التصفير والدفعات السابقة (Payout History)
-          </h3>
-          {payouts.length === 0 ? (
-            <div className="bg-slate-900/10 border border-slate-900/40 rounded-2xl p-8 text-center text-slate-600 text-xs font-sans">
-              لا توجد أي دفعات أو عمليات تصفير مسجلة لهذا الحساب بعد.
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-900 pb-3">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              📊 سجل المعاملات والأرشيف التراكمي
+            </h3>
+            <div className="flex bg-slate-900 border border-slate-800/80 rounded-xl p-0.5 self-start sm:self-auto text-xs">
+              <button
+                onClick={() => setActiveHistoryTab("resets")}
+                className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                  activeHistoryTab === "resets"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-slate-405 hover:text-white"
+                }`}
+              >
+                سجل تصفير ساعات العمل ({payouts.length})
+              </button>
+              <button
+                onClick={() => setActiveHistoryTab("payments")}
+                className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                  activeHistoryTab === "payments"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-slate-405 hover:text-white"
+                }`}
+              >
+                سجل الدفعات المستلمة ({payments.length})
+              </button>
             </div>
+          </div>
+
+          {activeHistoryTab === "resets" ? (
+            payouts.length === 0 ? (
+              <div className="bg-slate-900/10 border border-slate-900/40 rounded-2xl p-8 text-center text-slate-500 text-xs font-sans">
+                لا توجد أي عمليات تصفير ساعات مسجلة بعد.
+              </div>
+            ) : (
+              <PayoutHistory payouts={payouts} accounts={accounts} />
+            )
           ) : (
-            <PayoutHistory payouts={payouts} accounts={accounts} />
+            payments.length === 0 ? (
+              <div className="bg-slate-900/10 border border-slate-900/40 rounded-2xl p-8 text-center text-slate-500 text-xs font-sans">
+                لا توجد أي دفعات أو مبالغ مستلمة مسجلة بعد.
+              </div>
+            ) : (
+              <PaymentsHistory payments={payments} />
+            )
           )}
         </section>
       </main>

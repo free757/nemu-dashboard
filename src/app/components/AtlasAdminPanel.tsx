@@ -9,6 +9,7 @@ import {
   AlertCircle, History, ArrowRightLeft, UserPlus,
   Ban, ShieldCheck, LayoutGrid, List, MoreVertical
 } from 'lucide-react';
+import { AdminHistoryLogs } from '@/features/atlas-accounts/components/AdminHistoryLogs';
 
 interface Worker {
   id: string;
@@ -58,6 +59,15 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [hourlyRate, setHourlyRate] = useState<number>(20);
+  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [newPaymentForm, setNewPaymentForm] = useState({
+    amount: 0,
+    payout_method: 'USDT',
+    wallet_address: '',
+    notes: ''
+  });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -177,6 +187,16 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
 
       if (payoutsErr) throw payoutsErr;
       setPayouts(payoutsData || []);
+
+      // Fetch payments
+      const { data: paymentsData, error: paymentsErr } = await supabase
+        .from('atlas_payments')
+        .select('*')
+        .eq('worker_id', workerId)
+        .order('created_at', { ascending: false });
+
+      if (paymentsErr) throw paymentsErr;
+      setPayments(paymentsData || []);
     } catch (err) {
       console.error(err);
       showFeedback('error', lang === 'ar' ? 'فشل تحميل تفاصيل حسابات الموظف' : 'Failed to load worker details');
@@ -193,6 +213,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     } else {
       setAccounts([]);
       setPayouts([]);
+      setPayments([]);
     }
   }, [selectedWorkerId, fetchWorkerDetails]);
 
@@ -584,6 +605,43 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     }
   };
 
+  // Handle Add Payment
+  const handleAddPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWorkerId || newPaymentForm.amount <= 0) return;
+    setActionLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('atlas_payments')
+        .insert([{
+          worker_id: selectedWorkerId,
+          amount: Number(newPaymentForm.amount),
+          payout_method: newPaymentForm.payout_method,
+          wallet_address: newPaymentForm.wallet_address.trim() || null,
+          notes: newPaymentForm.notes.trim() || null
+        }]);
+
+      if (error) throw error;
+
+      showFeedback('success', lang === 'ar' ? 'تم تسجيل الدفعة بنجاح' : 'Payment registered successfully');
+      setIsAddPaymentOpen(false);
+      setNewPaymentForm({
+        amount: 0,
+        payout_method: 'USDT',
+        wallet_address: '',
+        notes: ''
+      });
+      fetchWorkerDetails(selectedWorkerId);
+      fetchWorkers(false, true);
+    } catch (err) {
+      console.error(err);
+      showFeedback('error', lang === 'ar' ? 'حدث خطأ أثناء تسجيل الدفعة' : 'Error registering payment');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-500">
@@ -936,51 +994,99 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
         <div className="lg:col-span-4 space-y-6">
           
           {selectedWorkerId ? (
-            <>
-              {/* Selected Worker Info Bar */}
-              <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
-                isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'
-              }`}>
-                <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    {workers.find(w => w.id === selectedWorkerId)?.username || ''}
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {lang === 'ar' 
-                      ? 'إدارة حسابات هذا الموظف، تعديل الساعات، وتصفير الأرصدة المستحقة.' 
-                      : 'Manage accounts, edit active hours, and log payout resets for this employee.'}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
-                      isDark ? 'bg-white/5 border-white/5 text-gray-300' : 'bg-gray-50 border-gray-150 text-gray-700'
-                    }`}>
-                      {lang === 'ar' ? 'ساعات مقبولة: ' : 'Accepted Hours: '}
-                      <span className="text-emerald-400 font-mono">
-                        {accounts.reduce((sum, acc) => sum + Number(acc.accepted_hours || 0), 0).toFixed(1)}h
-                      </span>
+            (() => {
+              const totalAccepted = accounts.reduce((sum, acc) => sum + Number(acc.accepted_hours || 0), 0);
+              const totalEarned = (totalAccepted * hourlyRate) + payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0);
+              const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+              const remainingBalance = totalEarned - totalPaid;
+
+              return (
+                <>
+                  {/* Selected Worker Info Bar */}
+                  <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+                    isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'
+                  }`}>
+                    <div>
+                      <h2 className="text-xl font-bold flex items-center gap-2">
+                        {workers.find(w => w.id === selectedWorkerId)?.username || ''}
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {lang === 'ar' 
+                          ? 'إدارة حسابات هذا الموظف، تعديل الساعات، وتصفير الأرصدة المستحقة.' 
+                          : 'Manage accounts, edit active hours, and log payout resets for this employee.'}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-3 items-center">
+                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          isDark ? 'bg-white/5 border-white/5 text-gray-300' : 'bg-gray-50 border-gray-150 text-gray-700'
+                        }`}>
+                          {lang === 'ar' ? 'ساعات مقبولة: ' : 'Accepted Hours: '}
+                          <span className="text-emerald-400 font-mono">{totalAccepted.toFixed(1)}h</span>
+                        </div>
+
+                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          isDark ? 'bg-indigo-500/5 border-indigo-500/10 text-indigo-300' : 'bg-indigo-50/50 border-indigo-200 text-indigo-700'
+                        }`}>
+                          {lang === 'ar' ? 'إجمالي الأرباح: ' : 'Total Earned: '}
+                          <span className="text-indigo-400 font-mono">{totalEarned.toFixed(2)} USDT</span>
+                        </div>
+
+                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          isDark ? 'bg-amber-500/5 border-amber-500/10 text-amber-300' : 'bg-amber-50/50 border-amber-200 text-amber-700'
+                        }`}>
+                          {lang === 'ar' ? 'المستلم الكلي: ' : 'Total Paid: '}
+                          <span className="text-amber-400 font-mono">{totalPaid.toFixed(2)} USDT</span>
+                        </div>
+
+                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          remainingBalance > 0 
+                            ? (isDark ? 'bg-rose-500/5 border-rose-500/10 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-700')
+                            : (isDark ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-700')
+                        }`}>
+                          {lang === 'ar' ? 'المتبقي للموظف: ' : 'Owed: '}
+                          <span className="font-mono">{remainingBalance.toFixed(2)} USDT</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-[9px] bg-slate-900 border border-slate-800 rounded px-2 py-0.5 ml-2 font-bold text-gray-400">
+                          <span>{lang === 'ar' ? 'سعر الساعة:' : 'Rate:'}</span>
+                          <input
+                            type="number"
+                            step="any"
+                            value={hourlyRate}
+                            onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
+                            className="w-8 bg-transparent text-center font-bold text-indigo-400 outline-none"
+                          />
+                          <span>USDT</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
-                      isDark ? 'bg-amber-500/5 border-amber-500/10 text-amber-300' : 'bg-amber-50/50 border-amber-200 text-amber-700'
-                    }`}>
-                      {lang === 'ar' ? 'المستلم الكلي: ' : 'Grand Total Payouts: '}
-                      <span className="text-amber-400 font-mono">
-                        {(
-                          accounts.reduce((sum, acc) => sum + Number(acc.amount_paid || 0), 0) +
-                          payouts.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
-                        ).toFixed(2)} USDT
-                      </span>
+                    
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          const defaultWallet = accounts.find(a => a.wallet_address)?.wallet_address || '';
+                          setNewPaymentForm({
+                            amount: 0,
+                            payout_method: 'USDT',
+                            wallet_address: defaultWallet,
+                            notes: ''
+                          });
+                          setIsAddPaymentOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-amber-600/25 shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'تسجيل دفعة مسلّمة' : 'Log Payment'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setIsAddAccountOpen(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-blue-600/25 shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{lang === 'ar' ? 'ربط حساب جديد' : 'Link New Account'}</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-                
-                <button
-                  onClick={() => setIsAddAccountOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-blue-600/25 shrink-0"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{lang === 'ar' ? 'ربط حساب جديد' : 'Link New Account'}</span>
-                </button>
-              </div>
 
               {/* Add Account Modal overlay */}
               {isAddAccountOpen && (
@@ -1520,180 +1626,21 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                 )}
               </div>
 
-              {/* Payout History logs */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <History className="w-4 h-4 text-blue-500" />
-                  {lang === 'ar' ? 'أرشيف عمليات التصفير السابقة' : 'Historical Payouts Logs'}
-                </h4>
-
-                {payouts.length === 0 ? (
-                  <div className={`p-8 text-center rounded-[2rem] border italic text-xs ${
-                    isDark ? 'bg-[#111] border-white/5 text-gray-500' : 'bg-white border-gray-200 text-gray-400'
-                  }`}>
-                    {lang === 'ar' ? 'لا توجد دفعات مسجلة لهذا الموظف.' : 'No payouts logged for this employee yet.'}
-                  </div>
-                ) : (
-                  <div className={`border rounded-[2rem] overflow-hidden ${isDark ? 'bg-[#111]/40 border-white/5' : 'bg-white border-gray-205 shadow-sm'}`}>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-right text-xs">
-                        <thead>
-                          <tr className={`border-b ${isDark ? 'bg-black/50 border-white/5 text-gray-400' : 'bg-gray-50 border-gray-150 text-gray-500'} font-bold`}>
-                            <th className="px-5 py-3">{lang === 'ar' ? 'تاريخ التصفير' : 'Reset Date'}</th>
-                            <th className="px-5 py-3">{lang === 'ar' ? 'الحساب' : 'Account'}</th>
-                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المقبولة' : 'Accepted'}</th>
-                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المرفوضة' : 'Rejected'}</th>
-                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'تحت المراجعة' : 'In Review'}</th>
-                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'المبلغ المستلم' : 'Amount Received'}</th>
-                            <th className="px-5 py-3">{lang === 'ar' ? 'المحفظة المستلمة' : 'Received Wallet'}</th>
-                            <th className="px-5 py-3 text-center">{lang === 'ar' ? 'إجراءات' : 'Actions'}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {payouts.map((payout) => {
-                            const isEditingPayout = editingPayoutId === payout.id;
-
-                            return (
-                              <tr key={payout.id} className={`${isDark ? 'hover:bg-white/5 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}>
-                                <td className="px-5 py-3 whitespace-nowrap">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="datetime-local"
-                                      value={editPayoutForm.created_at}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, created_at: e.target.value }))}
-                                      className={`text-xs px-2 py-0.5 rounded border outline-none font-bold ${
-                                        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-905'
-                                      }`}
-                                    />
-                                  ) : (
-                                    new Date(payout.created_at).toLocaleDateString('ar-EG', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })
-                                  )}
-                                </td>
-                                <td className="px-5 py-3 font-bold text-white">
-                                  {accounts.find(a => a.id === payout.account_id)?.account_name || 'Account'}
-                                </td>
-                                <td className="px-5 py-3 text-center">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={editPayoutForm.accepted_hours}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, accepted_hours: parseFloat(e.target.value) || 0 }))}
-                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-0.5 text-xs outline-none"
-                                    />
-                                  ) : (
-                                    <span className="font-bold text-emerald-400">{payout.accepted_hours} hr</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3 text-center">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={editPayoutForm.rejected_hours}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, rejected_hours: parseFloat(e.target.value) || 0 }))}
-                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-0.5 text-xs outline-none"
-                                    />
-                                  ) : (
-                                    <span className="font-semibold text-rose-400">{payout.rejected_hours} hr</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3 text-center">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={editPayoutForm.in_review_hours}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, in_review_hours: parseFloat(e.target.value) || 0 }))}
-                                      className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
-                                    />
-                                  ) : (
-                                    <span className="text-amber-500">{payout.in_review_hours} hr</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3 text-center">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={editPayoutForm.amount_paid}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, amount_paid: parseFloat(e.target.value) || 0 }))}
-                                      className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
-                                    />
-                                  ) : (
-                                    <span className="font-bold text-amber-400">{payout.amount_paid || 0} USDT</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3 font-mono text-[10px] text-gray-300">
-                                  {isEditingPayout ? (
-                                    <input
-                                      type="text"
-                                      value={editPayoutForm.wallet_address}
-                                      onChange={(e) => setEditPayoutForm(p => ({ ...p, wallet_address: e.target.value }))}
-                                      className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white"
-                                    />
-                                  ) : (
-                                    payout.wallet_address || '—'
-                                  )}
-                                </td>
-                                <td className="px-5 py-3">
-                                  <div className="flex justify-center items-center gap-1.5">
-                                    {isEditingPayout ? (
-                                      <>
-                                        <button
-                                          onClick={() => handleSavePayoutEdit(payout.id)}
-                                          disabled={actionLoading}
-                                          className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded transition-all"
-                                          title="حفظ"
-                                        >
-                                          <Check className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => setEditingPayoutId(null)}
-                                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-all"
-                                          title="إلغاء"
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button
-                                          onClick={() => startEditingPayout(payout)}
-                                          className="p-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/20 rounded transition-all"
-                                          title="تعديل"
-                                        >
-                                          <Edit2 className="w-2.5 h-2.5" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeletePayout(payout.id)}
-                                          disabled={actionLoading}
-                                          className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded transition-all"
-                                          title="حذف السجل نهائياً"
-                                        >
-                                          <Trash2 className="w-2.5 h-2.5" />
-                                        </button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* History logs & Payments Ledger */}
+              <AdminHistoryLogs
+                lang={lang}
+                isDark={isDark}
+                workerId={selectedWorkerId}
+                accounts={accounts}
+                payouts={payouts}
+                payments={payments}
+                onRefresh={() => fetchWorkerDetails(selectedWorkerId)}
+                showFeedback={showFeedback}
+              />
             </>
-          ) : (
+          );
+        })()
+      ) : (
             <div className={`p-16 text-center rounded-[2rem] border ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200'} flex flex-col items-center justify-center space-y-4`}>
               <Users className="w-12 h-12 text-gray-500" />
               <h3 className="text-xl font-bold">{lang === 'ar' ? 'اختر موظفاً للمتابعة' : 'Select an Employee to Continue'}</h3>
