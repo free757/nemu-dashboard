@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { RefreshCw, AlertCircle, Plus, Users } from "lucide-react";
+import { RefreshCw, AlertCircle, Plus, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Clean Subcomponents
