@@ -618,6 +618,7 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                     lang={lang}
                     isDark={isDark}
                     defaultWalletAddress={accounts.find((a) => a.wallet_address)?.wallet_address || ""}
+                    remainingBalance={remainingBalance}
                     actionLoading={actionLoading}
                     onSubmit={handleAddPayment}
                   />

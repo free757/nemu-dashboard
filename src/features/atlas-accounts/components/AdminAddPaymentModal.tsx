@@ -9,6 +9,7 @@ interface AdminAddPaymentModalProps {
   lang: "ar" | "en";
   isDark: boolean;
   defaultWalletAddress: string;
+  remainingBalance: number;
   actionLoading: boolean;
   onSubmit: (
     amount: number,
@@ -26,6 +27,7 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
   lang,
   isDark,
   defaultWalletAddress,
+  remainingBalance,
   actionLoading,
   onSubmit,
 }) => {
@@ -118,6 +120,43 @@ export const AdminAddPaymentModal: React.FC<AdminAddPaymentModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium">
+          {/* Worker Owed Balance Info card */}
+          <div
+            className={`p-4 rounded-2xl border flex items-center justify-between ${
+              isDark ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-150"
+            }`}
+          >
+            <div className="text-right">
+              <span className="block text-[10px] text-gray-400 mb-0.5">
+                {lang === "ar" ? "المبلغ المتبقي المستحق للموظف:" : "Employee Owed Balance:"}
+              </span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-bold text-amber-500">{remainingBalance.toFixed(2)} USDT</span>
+                {enableEgp && exchangeRate > 0 && (
+                  <span className="text-[10px] text-gray-500 font-semibold font-sans">
+                    {lang === "ar" ? "يعادل " : "≈ "}
+                    {(remainingBalance * exchangeRate).toLocaleString(lang === "ar" ? "ar-EG" : "en-US", {
+                      maximumFractionDigits: 1,
+                    })}{" "}
+                    EGP
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setAmount(Number(remainingBalance.toFixed(2)));
+                if (enableEgp) {
+                  setAmountEgp(Number((remainingBalance * exchangeRate).toFixed(2)));
+                }
+              }}
+              className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/25 rounded-xl font-bold text-[10px] transition-all"
+            >
+              {lang === "ar" ? "دفع كامل المبلغ" : "Pay Full Amount"}
+            </button>
+          </div>
+
           {/* EGP Conversion Toggle */}
           <div
             className={`p-3 rounded-2xl border flex items-center justify-between ${
