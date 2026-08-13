@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { History, Check, X, Edit2, Trash2, RefreshCw } from "lucide-react";
 
 interface Account {
@@ -46,6 +45,10 @@ interface AdminHistoryLogsProps {
   payments: Payment[];
   onRefresh: () => void;
   showFeedback: (type: "success" | "error", text: string) => void;
+  onUpdatePayout: (payoutId: string, updatedFields: any) => Promise<void>;
+  onDeletePayout: (payoutId: string) => Promise<void>;
+  onUpdatePayment: (paymentId: string, updatedFields: any) => Promise<void>;
+  onDeletePayment: (paymentId: string) => Promise<void>;
 }
 
 export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
@@ -57,6 +60,10 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
   payments,
   onRefresh,
   showFeedback,
+  onUpdatePayout,
+  onDeletePayout,
+  onUpdatePayment,
+  onDeletePayment,
 }) => {
   const [activeTab, setActiveTab] = useState<"resets" | "payments">("resets");
   const [actionLoading, setActionLoading] = useState(false);
@@ -98,19 +105,14 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
   const handleSavePayoutEdit = async (payoutId: string) => {
     setActionLoading(true);
     try {
-      const { error } = await supabase
-        .from("atlas_payouts")
-        .update({
-          accepted_hours: Number(editPayoutForm.accepted_hours),
-          rejected_hours: Number(editPayoutForm.rejected_hours),
-          in_review_hours: Number(editPayoutForm.in_review_hours),
-          amount_paid: Number(editPayoutForm.amount_paid),
-          wallet_address: editPayoutForm.wallet_address.trim(),
-          created_at: editPayoutForm.created_at,
-        })
-        .eq("id", payoutId);
-
-      if (error) throw error;
+      await onUpdatePayout(payoutId, {
+        accepted_hours: Number(editPayoutForm.accepted_hours),
+        rejected_hours: Number(editPayoutForm.rejected_hours),
+        in_review_hours: Number(editPayoutForm.in_review_hours),
+        amount_paid: Number(editPayoutForm.amount_paid),
+        wallet_address: editPayoutForm.wallet_address.trim(),
+        created_at: editPayoutForm.created_at,
+      });
 
       showFeedback(
         "success",
@@ -138,8 +140,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
 
     setActionLoading(true);
     try {
-      const { error } = await supabase.from("atlas_payouts").delete().eq("id", payoutId);
-      if (error) throw error;
+      await onDeletePayout(payoutId);
 
       showFeedback(
         "success",
@@ -172,18 +173,13 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
   const handleSavePaymentEdit = async (paymentId: string) => {
     setActionLoading(true);
     try {
-      const { error } = await supabase
-        .from("atlas_payments")
-        .update({
-          amount: Number(editPaymentForm.amount),
-          payout_method: editPaymentForm.payout_method,
-          wallet_address: editPaymentForm.wallet_address.trim() || null,
-          notes: editPaymentForm.notes.trim() || null,
-          created_at: editPaymentForm.created_at,
-        })
-        .eq("id", paymentId);
-
-      if (error) throw error;
+      await onUpdatePayment(paymentId, {
+        amount: Number(editPaymentForm.amount),
+        payout_method: editPaymentForm.payout_method,
+        wallet_address: editPaymentForm.wallet_address.trim() || null,
+        notes: editPaymentForm.notes.trim() || null,
+        created_at: editPaymentForm.created_at,
+      });
 
       showFeedback(
         "success",
@@ -211,8 +207,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
 
     setActionLoading(true);
     try {
-      const { error } = await supabase.from("atlas_payments").delete().eq("id", paymentId);
-      if (error) throw error;
+      await onDeletePayment(paymentId);
 
       showFeedback(
         "success",
@@ -306,31 +301,41 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                       <tr
                         key={payout.id}
                         className={`${
-                          isDark ? "hover:bg-white/5 text-gray-300" : "hover:bg-gray-50 text-gray-700"
+                          isDark
+                            ? "hover:bg-white/5 text-gray-300 border-white/5"
+                            : "hover:bg-gray-50 text-gray-700 border-gray-100"
                         }`}
                       >
                         <td className="px-5 py-3 whitespace-nowrap">
                           {isEditingPayout ? (
                             <input
-                              type="text"
-                              value={editPayoutForm.created_at}
+                              type="datetime-local"
+                              value={editPayoutForm.created_at.slice(0, 16)}
                               onChange={(e) =>
                                 setEditPayoutForm((p) => ({ ...p, created_at: e.target.value }))
                               }
-                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white font-mono"
+                              className={`text-xs px-2 py-0.5 rounded border outline-none font-bold ${
+                                isDark
+                                  ? "bg-slate-900 border-slate-800 text-white"
+                                  : "bg-gray-50 border-gray-200 text-gray-900"
+                              }`}
                             />
                           ) : (
-                            new Date(payout.created_at).toLocaleDateString("ar-EG", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            new Date(payout.created_at).toLocaleDateString(
+                              lang === "ar" ? "ar-EG" : "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
                           )}
                         </td>
-                        <td className="px-5 py-3 text-gray-400 font-bold">
-                          {accounts.find((a) => a.id === payout.account_id)?.account_name || "—"}
+                        <td className="px-5 py-3 font-bold text-white">
+                          {accounts.find((a) => a.id === payout.account_id)?.account_name ||
+                            "Account"}
                         </td>
                         <td className="px-5 py-3 text-center">
                           {isEditingPayout ? (
@@ -344,11 +349,11 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   accepted_hours: parseFloat(e.target.value) || 0,
                                 }))
                               }
-                              className="w-12 text-center bg-slate-900 border border-slate-800 rounded font-bold py-0.5 text-[10px] outline-none text-white"
+                              className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-emerald-400 py-0.5 text-xs outline-none"
                             />
                           ) : (
-                            <span className="text-emerald-400 font-bold">
-                              {payout.accepted_hours}h
+                            <span className="font-bold text-emerald-400">
+                              {payout.accepted_hours} hr
                             </span>
                           )}
                         </td>
@@ -364,11 +369,11 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   rejected_hours: parseFloat(e.target.value) || 0,
                                 }))
                               }
-                              className="w-12 text-center bg-slate-900 border border-slate-800 rounded font-bold py-0.5 text-[10px] outline-none text-white"
+                              className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-rose-400 py-0.5 text-xs outline-none"
                             />
                           ) : (
-                            <span className="text-rose-500 font-bold">
-                              {payout.rejected_hours}h
+                            <span className="font-semibold text-rose-400">
+                              {payout.rejected_hours} hr
                             </span>
                           )}
                         </td>
@@ -384,15 +389,13 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   in_review_hours: parseFloat(e.target.value) || 0,
                                 }))
                               }
-                              className="w-12 text-center bg-slate-900 border border-slate-800 rounded font-bold py-0.5 text-[10px] outline-none text-white"
+                              className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
                             />
                           ) : (
-                            <span className="text-amber-500 font-bold">
-                              {payout.in_review_hours}h
-                            </span>
+                            <span className="text-amber-500">{payout.in_review_hours} hr</span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-center font-bold text-amber-500">
+                        <td className="px-5 py-3 text-center">
                           {isEditingPayout ? (
                             <input
                               type="number"
@@ -404,10 +407,12 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   amount_paid: parseFloat(e.target.value) || 0,
                                 }))
                               }
-                              className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold py-0.5 text-[10px] outline-none text-white"
+                              className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-500 py-0.5 text-xs outline-none"
                             />
                           ) : (
-                            <span>{payout.amount_paid} USDT</span>
+                            <span className="font-bold text-amber-400">
+                              {payout.amount_paid || 0} USDT
+                            </span>
                           )}
                         </td>
                         <td className="px-5 py-3 font-mono text-[10px] text-gray-300">
@@ -418,7 +423,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                               onChange={(e) =>
                                 setEditPayoutForm((p) => ({ ...p, wallet_address: e.target.value }))
                               }
-                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white"
+                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white font-mono"
                             />
                           ) : (
                             payout.wallet_address || "—"
@@ -432,14 +437,14 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   onClick={() => handleSavePayoutEdit(payout.id)}
                                   disabled={actionLoading}
                                   className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded transition-all"
-                                  title="حفظ"
+                                  title={lang === "ar" ? "حفظ" : "Save"}
                                 >
                                   <Check className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => setEditingPayoutId(null)}
                                   className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-all"
-                                  title="إلغاء"
+                                  title={lang === "ar" ? "إلغاء" : "Cancel"}
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
@@ -449,7 +454,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                 <button
                                   onClick={() => startEditingPayout(payout)}
                                   className="p-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/20 rounded transition-all"
-                                  title="تعديل"
+                                  title={lang === "ar" ? "تعديل" : "Edit"}
                                 >
                                   <Edit2 className="w-2.5 h-2.5" />
                                 </button>
@@ -457,7 +462,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   onClick={() => handleDeletePayout(payout.id)}
                                   disabled={actionLoading}
                                   className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded transition-all"
-                                  title="حذف السجل نهائياً"
+                                  title={lang === "ar" ? "حذف" : "Delete"}
                                 >
                                   <Trash2 className="w-2.5 h-2.5" />
                                 </button>
@@ -480,9 +485,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
               isDark ? "bg-[#111] border-white/5 text-gray-500" : "bg-white border-gray-200 text-gray-400"
             }`}
           >
-            {lang === "ar"
-              ? "لا توجد دفعات مالية مسجلة مسلّمة لهذا الموظف."
-              : "No logged payments for this employee yet."}
+            {lang === "ar" ? "لا توجد دفعات مستلمة مسجلة بعد." : "No payment transfers logged yet."}
           </div>
         ) : (
           <div
@@ -499,10 +502,10 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                     } font-bold`}
                   >
                     <th className="px-5 py-3">{lang === "ar" ? "تاريخ الدفعة" : "Payment Date"}</th>
-                    <th className="px-5 py-3 text-center">{lang === "ar" ? "القيمة المسلّمة" : "Amount"}</th>
                     <th className="px-5 py-3 text-center">{lang === "ar" ? "طريقة الدفع" : "Method"}</th>
-                    <th className="px-5 py-3">{lang === "ar" ? "المحفظة المستلمة" : "Wallet Address"}</th>
-                    <th className="px-5 py-3">{lang === "ar" ? "ملاحظات / المعاملة" : "Notes / Tx"}</th>
+                    <th className="px-5 py-3 text-center">{lang === "ar" ? "المبلغ المستلم" : "Amount Paid"}</th>
+                    <th className="px-5 py-3">{lang === "ar" ? "عنوان المحفظة" : "Wallet Address"}</th>
+                    <th className="px-5 py-3">{lang === "ar" ? "ملاحظات" : "Notes"}</th>
                     <th className="px-5 py-3 text-center">{lang === "ar" ? "إجراءات" : "Actions"}</th>
                   </tr>
                 </thead>
@@ -514,30 +517,71 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                       <tr
                         key={payment.id}
                         className={`${
-                          isDark ? "hover:bg-white/5 text-gray-300" : "hover:bg-gray-50 text-gray-700"
+                          isDark
+                            ? "hover:bg-white/5 text-gray-300 border-white/5"
+                            : "hover:bg-gray-50 text-gray-700 border-gray-100"
                         }`}
                       >
                         <td className="px-5 py-3 whitespace-nowrap">
                           {isEditingPayment ? (
                             <input
-                              type="text"
-                              value={editPaymentForm.created_at}
+                              type="datetime-local"
+                              value={editPaymentForm.created_at.slice(0, 16)}
                               onChange={(e) =>
                                 setEditPaymentForm((p) => ({ ...p, created_at: e.target.value }))
                               }
-                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white font-mono"
+                              className={`text-xs px-2 py-0.5 rounded border outline-none font-bold ${
+                                isDark
+                                  ? "bg-slate-900 border-slate-800 text-white"
+                                  : "bg-gray-50 border-gray-200 text-gray-900"
+                              }`}
                             />
                           ) : (
-                            new Date(payment.created_at).toLocaleDateString("ar-EG", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            new Date(payment.created_at).toLocaleDateString(
+                              lang === "ar" ? "ar-EG" : "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
                           )}
                         </td>
-                        <td className="px-5 py-3 text-center font-bold text-amber-500 whitespace-nowrap">
+                        <td className="px-5 py-3 text-center">
+                          {isEditingPayment ? (
+                            <select
+                              value={editPaymentForm.payout_method}
+                              onChange={(e) =>
+                                setEditPaymentForm((p) => ({
+                                  ...p,
+                                  payout_method: e.target.value,
+                                }))
+                              }
+                              className={`text-xs px-2 py-0.5 rounded border outline-none font-bold ${
+                                isDark
+                                  ? "bg-slate-900 border-slate-800 text-white"
+                                  : "bg-gray-50 border-gray-200 text-gray-900"
+                              }`}
+                            >
+                              <option value="USDT">USDT</option>
+                              <option value="Cash">{lang === "ar" ? "نقداً (Cash)" : "Cash"}</option>
+                              <option value="Other">{lang === "ar" ? "أخرى (Other)" : "Other"}</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                payment.payout_method === "USDT"
+                                  ? "bg-blue-500/5 border-blue-500/10 text-blue-400"
+                                  : "bg-emerald-500/5 border-emerald-500/10 text-emerald-400"
+                              }`}
+                            >
+                              {payment.payout_method}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-center font-bold text-amber-400">
                           {isEditingPayment ? (
                             <input
                               type="number"
@@ -549,30 +593,10 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   amount: parseFloat(e.target.value) || 0,
                                 }))
                               }
-                              className="w-16 text-center bg-slate-900 border border-slate-800 rounded font-bold py-0.5 text-[10px] outline-none text-white"
+                              className="w-20 text-center bg-slate-900 border border-slate-800 rounded font-bold text-amber-400 py-0.5 text-xs outline-none"
                             />
                           ) : (
-                            <span>{payment.amount} USDT</span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-center text-gray-300 font-bold whitespace-nowrap">
-                          {isEditingPayment ? (
-                            <select
-                              value={editPaymentForm.payout_method}
-                              onChange={(e) =>
-                                setEditPaymentForm((p) => ({
-                                  ...p,
-                                  payout_method: e.target.value,
-                                }))
-                              }
-                              className="bg-slate-900 border border-slate-800 rounded py-0.5 text-[10px] outline-none text-white font-bold"
-                            >
-                              <option value="USDT">USDT</option>
-                              <option value="Cash">Cash</option>
-                              <option value="Other">Other</option>
-                            </select>
-                          ) : (
-                            payment.payout_method
+                            `${payment.amount} USDT`
                           )}
                         </td>
                         <td className="px-5 py-3 font-mono text-[10px] text-gray-300">
@@ -583,13 +607,13 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                               onChange={(e) =>
                                 setEditPaymentForm((p) => ({ ...p, wallet_address: e.target.value }))
                               }
-                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white"
+                              className="w-32 bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] outline-none text-white font-mono"
                             />
                           ) : (
                             payment.wallet_address || "—"
                           )}
                         </td>
-                        <td className="px-5 py-3 text-gray-400 max-w-xs truncate" title={payment.notes}>
+                        <td className="px-5 py-3 text-gray-400 max-w-[150px] truncate">
                           {isEditingPayment ? (
                             <input
                               type="text"
@@ -610,15 +634,15 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                 <button
                                   onClick={() => handleSavePaymentEdit(payment.id)}
                                   disabled={actionLoading}
-                                  className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded transition-all"
-                                  title="حفظ"
+                                  className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-450 border border-emerald-500/20 rounded transition-all"
+                                  title={lang === "ar" ? "حفظ" : "Save"}
                                 >
                                   <Check className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => setEditingPaymentId(null)}
                                   className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded transition-all"
-                                  title="إلغاء"
+                                  title={lang === "ar" ? "إلغاء" : "Cancel"}
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
@@ -628,7 +652,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                 <button
                                   onClick={() => startEditingPayment(payment)}
                                   className="p-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/20 rounded transition-all"
-                                  title="تعديل"
+                                  title={lang === "ar" ? "تعديل" : "Edit"}
                                 >
                                   <Edit2 className="w-2.5 h-2.5" />
                                 </button>
@@ -636,7 +660,7 @@ export const AdminHistoryLogs: React.FC<AdminHistoryLogsProps> = ({
                                   onClick={() => handleDeletePayment(payment.id)}
                                   disabled={actionLoading}
                                   className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded transition-all"
-                                  title="حذف السجل نهائياً"
+                                  title={lang === "ar" ? "حذف" : "Delete"}
                                 >
                                   <Trash2 className="w-2.5 h-2.5" />
                                 </button>

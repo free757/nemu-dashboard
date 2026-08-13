@@ -642,6 +642,42 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
     }
   };
 
+  // Handle Update Payout Reset
+  const handleUpdatePayout = async (payoutId: string, updatedFields: any) => {
+    const { error } = await supabase
+      .from('atlas_payouts')
+      .update(updatedFields)
+      .eq('id', payoutId);
+    if (error) throw error;
+  };
+
+  // Handle Delete Payout Reset (DB helper)
+  const handleDeletePayoutDb = async (payoutId: string) => {
+    const { error } = await supabase
+      .from('atlas_payouts')
+      .delete()
+      .eq('id', payoutId);
+    if (error) throw error;
+  };
+
+  // Handle Update Payment Details
+  const handleUpdatePayment = async (paymentId: string, updatedFields: any) => {
+    const { error } = await supabase
+      .from('atlas_payments')
+      .update(updatedFields)
+      .eq('id', paymentId);
+    if (error) throw error;
+  };
+
+  // Handle Delete Payment Log
+  const handleDeletePayment = async (paymentId: string) => {
+    const { error } = await supabase
+      .from('atlas_payments')
+      .delete()
+      .eq('id', paymentId);
+    if (error) throw error;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-500">
@@ -1636,6 +1672,10 @@ export default function AtlasAdminPanel({ lang, theme }: AtlasAdminPanelProps) {
                 payments={payments}
                 onRefresh={() => fetchWorkerDetails(selectedWorkerId)}
                 showFeedback={showFeedback}
+                onUpdatePayout={handleUpdatePayout}
+                onDeletePayout={handleDeletePayoutDb}
+                onUpdatePayment={handleUpdatePayment}
+                onDeletePayment={handleDeletePayment}
               />
             </>
           );
