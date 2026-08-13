@@ -339,7 +339,7 @@ export const AdminWorkerSidebar: React.FC<AdminWorkerSidebarProps> = ({
                         <span>•</span>
                         <span className="text-gray-450 font-medium">
                           {worker.atlas_accounts?.reduce(
-                            (sum, acc) => sum + Number(acc.accepted_hours || 0),
+                            (sum: number, acc: any) => sum + Number(acc.accepted_hours || 0),
                             0
                           )}
                           h
