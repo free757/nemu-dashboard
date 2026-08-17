@@ -169,15 +169,18 @@ export function translateToArabic(englishText: string): string {
     [/Action verified:\s*/gi, "تم تأكيد الحركة في المشهد: "],
 
     // Actions
-    [/\bpick up\b/gi, "التقاط"],
+    [/\bpick up\b/gi, "التقاط/رفع"],
     [/\bplace\b/gi, "وضع"],
     [/\bset\b/gi, "وضع"],
-    [/\bhold\b/gi, "إمساك"],
-    [/\bpass\b/gi, "تمرير"],
+    [/\bhold\b/gi, "إمساك/تثبيت"],
+    [/\bpass\b/gi, "تمرير/نقل"],
     [/\bwipe\b/gi, "مسح/تنظيف"],
-    [/\brotate\b/gi, "تدوير"],
-    [/\bsmoothen\b/gi, "تنعيم/فرد"],
-    [/\bsmooth\b/gi, "تنعيم"],
+    [/\brotate\b/gi, "تدوير/لف"],
+    [/\bsmoothen\b/gi, "تنعيم/فرد القماش"],
+    [/\bsmooth\b/gi, "تنعيم/فرد"],
+    [/\bflatten\b/gi, "فرد/تسطيح"],
+    [/\blook at\b/gi, "معاينة بالنظر"],
+    [/\btouch\b/gi, "لمس"],
     [/\binsert\b/gi, "إدخال"],
     [/\bpull\b/gi, "سحب"],
     [/\bdig\b/gi, "حفر/تجريف"],
@@ -189,10 +192,10 @@ export function translateToArabic(englishText: string): string {
     [/\balign\b/gi, "محاذاة"],
     [/\bcut\b/gi, "قص/قطع"],
     [/\bstrip\b/gi, "تقشير/تعرية"],
-    [/\bslide\b/gi, "سحب/انزلاق"],
-    [/\btighten\b/gi, "إحكام ربط"],
+    [/\bslide\b/gi, "تحريك على سطح"],
+    [/\btighten\b/gi, "إحكام ربط/شد"],
     [/\bfold\b/gi, "طيّ"],
-    [/\btuck\b/gi, "ثني/إدخال"],
+    [/\btuck\b/gi, "دس/إدخال طرف"],
     [/\bsqueeze\b/gi, "عصر/ضغط"],
     [/\bposition\b/gi, "تثبيت دقيق"],
 
@@ -263,4 +266,26 @@ export function translateToArabic(englishText: string): string {
   }
 
   return ar;
+}
+
+/**
+ * Sanitizes and cleans up Atlas labels to strictly follow rubric rules
+ * and auto-correct common banned words.
+ */
+export function sanitizeAtlasLabel(label: string): string {
+  if (!label) return "";
+  let text = label
+    .replace(/\b(the|a|an)\b/gi, "")
+    .replace(/\bgrab\b/gi, "pick up")
+    .replace(/\bgrabs\b/gi, "picks up")
+    .replace(/\bgrabbing\b/gi, "picking up")
+    .replace(/\bsmooth\b/gi, "smoothen")
+    .replace(/\bput\b/gi, "place")
+    .replace(/\bset\b/gi, "place")
+    .replace(/\bturn\b/gi, "rotate")
+    .replace(/\bspin\b/gi, "rotate")
+    .replace(/\bcollect\b/gi, "gather")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text;
 }

@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { DEFAULT_ATLAS_SYSTEM_PROMPT } from "../constants/atlas-prompts";
 import { CorrectedSegmentResult, SegmentItem } from "../types/atlas";
 import { memoryStore } from "./memory-store.service";
+import { sanitizeAtlasLabel } from "../lib/utils";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -279,7 +280,48 @@ export class GeminiService {
 
     const systemPrompt = customPrompt || DEFAULT_ATLAS_SYSTEM_PROMPT;
 
-    const segmentsPayload = segments.map((s) => ({
+    // For videos with many segments (> 4), process in sequential batches of 3-4 segments
+    // to prevent timestamp drift, hallucination, and model confusion on long timelines.
+    const CHUNK_SIZE = 4;
+    if (segments.length > CHUNK_SIZE) {
+      const allResults: CorrectedSegmentResult[] = [];
+      let previousActionContext = "";
+
+      for (let i = 0; i < segments.length; i += CHUNK_SIZE) {
+        const chunk = segments.slice(i, i + CHUNK_SIZE);
+        const chunkIndex = Math.floor(i / CHUNK_SIZE) + 1;
+        const totalChunks = Math.ceil(segments.length / CHUNK_SIZE);
+
+        const chunkContext = `
+[VIDEO CHUNK ${chunkIndex}/${totalChunks} — Segments ${i + 1} to ${Math.min(i + CHUNK_SIZE, segments.length)} of ${segments.length}]
+${previousActionContext ? `Previous segment ended with action: "${previousActionContext}"` : ""}
+`;
+
+        const chunkResults = await this.processSingleBatch(fileUri, chunk, systemPrompt, chunkContext);
+        allResults.push(...chunkResults);
+
+        if (chunkResults.length > 0) {
+          previousActionContext = chunkResults[chunkResults.length - 1].correctedLabel;
+        }
+      }
+
+      return allResults;
+    }
+
+    return this.processSingleBatch(fileUri, segments, systemPrompt);
+  }
+
+  /**
+   * Processes a single batch of segments (up to 4) with strict temporal isolation and full fallback chain.
+   */
+  private async processSingleBatch(
+    fileUri: string,
+    segments: SegmentItem[],
+    systemPrompt: string,
+    contextInfo = ""
+  ): Promise<CorrectedSegmentResult[]> {
+    const segmentsPayload = segments.map((s, idx) => ({
+      index: idx + 1,
       id: s.id,
       timeRange: `${s.startTime} - ${s.endTime}`,
       currentLabel: s.currentLabel,
@@ -288,31 +330,36 @@ export class GeminiService {
     const isTextOnly = fileUri.startsWith("text-rubric-");
 
     const userPrompt = `
-Here are the video segments to validate and correct according to the Atlas Label Rubric:
+${contextInfo}
+Here are the specific video segments to validate and correct according to the Atlas Label Rubric:
 ${JSON.stringify(segmentsPayload, null, 2)}
 
-Strictly adhere to all Atlas Label Rubric rules.
+TEMPORAL PRECISION & SEGMENT ISOLATION (Critical):
+1. Focus your visual analysis STRICTLY between the exact startTime and endTime of EACH segment.
+2. DO NOT confuse or mix actions happening at other timestamps with the current segment.
+3. Every input segment must have a corresponding item in the output array with the exact matching "id".
+4. Correct all banned verbs (inspect, adjust, reach, manipulate, tool, grab) to their physical equivalents.
+5. Strictly enforce "One Hand = One Action" and strip all articles (the, a, an).
 
 Output raw JSON array strictly adhering to this schema:
 [
   {
-    "id": "...",
-    "correctedLabel": "...",
-    "visualEvidence": "A descriptive 1-sentence summary of the hands movement and objects being handled in this segment."
+    "id": "segment-id",
+    "correctedLabel": "exact corrected imperative action label string",
+    "visualEvidence": "A descriptive 1-sentence summary of the hands movement and objects in this exact segment timeframe."
   }
 ]
 `;
 
     // 1. Try Gemini API Keys if available
     const modelsToTry = [
-      "gemini-3.5-flash",
-      "gemini-flash-latest",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+      "gemini-1.5-pro",
+      "gemini-1.5-flash",
       "gemini-2.5-flash-preview-05-20",
       "gemini-2.5-pro-preview-06-05",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro",
     ];
 
     for (const key of this.apiKeys) {
@@ -350,12 +397,22 @@ Output raw JSON array strictly adhering to this schema:
           const responseText = response.text || "[]";
           const parsedResults = JSON.parse(responseText);
           if (Array.isArray(parsedResults) && parsedResults.length > 0) {
-            return parsedResults.map((r: any) => ({
-              ...r,
-              visualEvidence: r.visualEvidence || `Observed action: ${r.correctedLabel}`,
-              analysisMode: isTextOnly ? "rubric" : "visual",
-              usedModel: model,
-            }));
+            const resultMap = new Map<string, any>(parsedResults.map((r: any) => [r.id, r]));
+
+            return segments.map((s) => {
+              const matched: any = resultMap.get(s.id);
+              const label = matched?.correctedLabel
+                ? sanitizeAtlasLabel(matched.correctedLabel)
+                : sanitizeAtlasLabel(s.currentLabel);
+
+              return {
+                id: s.id,
+                correctedLabel: label,
+                visualEvidence: matched?.visualEvidence || `Observed action: ${label}`,
+                analysisMode: isTextOnly ? "rubric" : "visual",
+                usedModel: model,
+              };
+            });
           }
         } catch (err: any) {
           console.error(`[Gemini] key=...${key.slice(-4)} model=${model} FAILED: ${err?.message || err}`);
@@ -407,12 +464,22 @@ Output raw JSON array strictly adhering to this schema:
             const parsed = JSON.parse(cleanedContent);
             const arrayRes = Array.isArray(parsed) ? parsed : (parsed.segments || []);
             if (arrayRes.length > 0) {
-              return arrayRes.map((r: any) => ({
-                ...r,
-                visualEvidence: r.visualEvidence || `Action verified: ${r.correctedLabel}`,
-                analysisMode: "rubric",
-                usedModel: orModel.split("/").pop() || orModel,
-              }));
+              const resultMap = new Map<string, any>(arrayRes.map((r: any) => [r.id, r]));
+
+              return segments.map((s) => {
+                const matched: any = resultMap.get(s.id);
+                const label = matched?.correctedLabel
+                  ? sanitizeAtlasLabel(matched.correctedLabel)
+                  : sanitizeAtlasLabel(s.currentLabel);
+
+                return {
+                  id: s.id,
+                  correctedLabel: label,
+                  visualEvidence: matched?.visualEvidence || `Action verified: ${label}`,
+                  analysisMode: "rubric",
+                  usedModel: orModel.split("/").pop() || orModel,
+                };
+              });
             }
           }
         } catch (orErr) {
@@ -447,12 +514,22 @@ Output raw JSON array strictly adhering to this schema:
           const parsed = JSON.parse(cleanedContent);
           const arrayRes = Array.isArray(parsed) ? parsed : (parsed.segments || []);
           if (arrayRes.length > 0) {
-            return arrayRes.map((r: any) => ({
-              ...r,
-              visualEvidence: r.visualEvidence || `Groq Llama 3.3 verified: ${r.correctedLabel}`,
-              analysisMode: "rubric",
-              usedModel: "groq/llama-3.3-70b",
-            }));
+            const resultMap = new Map<string, any>(arrayRes.map((r: any) => [r.id, r]));
+
+            return segments.map((s) => {
+              const matched: any = resultMap.get(s.id);
+              const label = matched?.correctedLabel
+                ? sanitizeAtlasLabel(matched.correctedLabel)
+                : sanitizeAtlasLabel(s.currentLabel);
+
+              return {
+                id: s.id,
+                correctedLabel: label,
+                visualEvidence: matched?.visualEvidence || `Groq Llama 3.3 verified: ${label}`,
+                analysisMode: "rubric",
+                usedModel: "groq/llama-3.3-70b",
+              };
+            });
           }
         }
       } catch (groqErr) {
@@ -462,10 +539,7 @@ Output raw JSON array strictly adhering to this schema:
 
     // 4. Guaranteed Rule-Based Rubric Fallback
     return segments.map((s) => {
-      let cleaned = s.currentLabel
-        .replace(/\b(the|a|an)\b/gi, "")
-        .replace(/\s+/g, " ")
-        .trim();
+      const cleaned = sanitizeAtlasLabel(s.currentLabel);
 
       return {
         id: s.id,

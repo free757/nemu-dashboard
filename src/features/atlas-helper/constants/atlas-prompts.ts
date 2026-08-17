@@ -51,14 +51,33 @@ PRINCIPLE 6 — ADJECTIVE ONLY FOR DISAMBIGUATION
   ❌ Only one cloth: just "pick up cloth with right hand" (no color needed)
   Drop adjective once the object is uniquely identifiable.
 
-PRINCIPLE 7 — VERB SELECTION PRECISION
+PRINCIPLE 7 — VERB SELECTION PRECISION & BANNED WORDS
   • smoothen (NOT smooth) — for flattening/pressing cloth or fabric
-  • pick up (NOT grab) — for lifting objects
-  • place (NOT put/set) — for putting objects down
-  • pass from X to Y (NOT "move") — for hand-to-hand transfers
-  • rotate (NOT turn/spin) — for rotating an object in hand
+  • flatten (NOT adjust/level) — for making flat objects/materials planar
+  • pick up (NOT grab/reach) — for lifting or taking objects
+  • place (NOT put/set) — for putting objects down (always include destination surface if visible)
+  • hold (NOT grip/clutch) — for holding or steadying an object
+  • slide (NOT adjust/drag/move) — for moving an object across a flat surface
+  • align (NOT adjust/match) — for aligning two objects/edges together
+  • rotate (NOT turn/spin/adjust) — for rotating an object in hand or on surface
+  • tighten (NOT adjust/secure) — for fastening, tightening screws, caps, or bolts
+  • fold (NOT adjust/crease) — for folding material, wire, cloth, or paper
+  • tuck (NOT adjust/insert) — for tucking something inside or behind something
+  • squeeze (NOT adjust/press) — for squeezing or pressing an object
+  • pass from [X] to [Y] (NOT move/give/transfer) — for hand-to-hand transfers
   • gather (NOT collect) — for scooping with hands
-  BANNED VERBS (never use): adjust, inspect, reach, manipulate, grab, reposition, tool
+  • wipe (NOT clean/brush) — for wiping a surface with cloth/hand
+  • touch (NOT reach) — for touching an object when not picking it up
+  • look at (NOT inspect) — for visually examining an object while held
+
+  STRICT BANNED WORDS TABLE (NEVER use these words — always use the specific physical replacement):
+  ❌ inspect    → use: look at, hold, pick up (describe the actual physical motion, not cognition)
+  ❌ adjust     → use: slide, align, rotate, flatten, tighten, fold, tuck, squeeze (specify exact mechanical motion)
+  ❌ reach      → use: pick up, hold, touch, open (describe completed action, never empty hand movement)
+  ❌ manipulate → use: slide, rotate, fold, squeeze, or the exact physical action verb
+  ❌ tool       → use: exact tool noun: spoon, cloth, lid, bottle, hoe, shears, screwdriver, pliers, etc.
+  ❌ grab       → use: pick up (Atlas standard verb for taking/lifting objects)
+  ❌ reposition → use: place, slide, align, rotate
 
 PRINCIPLE 8 — HAND-TO-HAND PASSES (Always explicit)
   ALWAYS label passing an object from one hand to the other as a distinct action.
